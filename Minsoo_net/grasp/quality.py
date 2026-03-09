@@ -13,7 +13,7 @@ import sys
 
 import numpy as np
 
-from contact import Contact3D
+from Minsoo_net.grasp.contact import Contact3D
 
 try:
     import pyhull.convex_hull as cvh
@@ -110,8 +110,10 @@ class PointGraspMetrics3D:
         float : epsilon value (0 means no force closure).
         """
         G = PointGraspMetrics3D.grasp_matrix(forces, torques, torque_scaling)
-
-        hull = cvh.ConvexHull(G.T)
+        U, S, Vh = np.linalg.svd(G)
+        rank=np.sum(S > 1e-8)
+        G_reduced=U[:,:rank].T@G
+        hull = cvh.ConvexHull(G_reduced.T)  # "QJ" for joggle to handle degenerate cases
         if len(hull.vertices) == 0:
             return 0.0
 

@@ -17,6 +17,7 @@ class ParallelJawGrasp:
         close_width: float = 0.0,
         approach: Optional[np.ndarray] = None,
         samples_per_unit: float = 500.0,
+        contact_points: Optional[List[Contact3D]] = None,
     ):
         self.center = np.array(center, dtype=np.float64)
         self.axis = np.array(axis, dtype=np.float64)
@@ -26,6 +27,7 @@ class ParallelJawGrasp:
         self.samples_per_unit = samples_per_unit
         self.approach_angle=None
         self.T_grasp_obj=np.eye(4)
+        self.contact_points=contact_points
         if approach is not None:
             self.approach = np.array(approach, dtype=np.float64)
             self.approach /= np.linalg.norm(self.approach)
@@ -148,45 +150,37 @@ class ParallelJawGrasp:
         """
         T_grasp_obj = self.T_grasp_obj        
         T_stp_obj = stable_pose
-        T_stp_grasp = T_stp_obj * T_grasp_obj
+        T_world_grasp = T_stp_obj @ T_grasp_obj
 
         stp_z = np.array([0,0,1])
-        grasp_axis_angle = np.arccos(stp_z.dot(T_stp_grasp[:3,1]))
-        grasp_approach_angle = np.arccos(abs(stp_z.dot(T_stp_grasp[:3,2])))
-        nu = stp_z.dot(T_stp_grasp[:3,0])
+        grasp_axis_angle = np.arccos(stp_z.dot(T_world_grasp[:3,1]))
+        grasp_approach_angle = np.arccos(abs(stp_z.dot(T_world_grasp[:3,2])))
+        nu = stp_z.dot(T_world_grasp[:3,0])
 
         return grasp_axis_angle, grasp_approach_angle, nu
 
     def _angle_aligned_with_table(self, table_normal):
         """
-        Returns the y-axis rotation angle that'd allow the current pose to align with the table normal.
+        Returns the y-axis rotation angle that allows the current pose 
+        to optimally align its z-axis with the table normal using an analytic solution.
         """
-        def _argmax(f, a, b, n):
-            #finds the argmax x of f(x) in the range [a, b) with n samples
-            delta = (b - a) / n
-            max_y = f(a)
-            max_x = a
-            for i in range(1, n):
-                x = i * delta
-                y = f(x)
-                if y >= max_y:
-                    max_y = y
-                    max_x = x
-            return max_x
-    
-        def _get_matrix_product_z_axis(grasp_axis, normal):
-            def matrix_product(theta):
-                cos_t = np.cos(theta)
-                sin_t = np.sin(theta)
-                R = np.c_[[cos_t, 0, sin_t], np.c_[[0, 1, 0], [-sin_t, 0, cos_t]]]
-                grasp_axis_rotated = np.dot(R, grasp_axis)
-                return np.dot(normal, grasp_axis_rotated)
-            return matrix_product
+        # 1. 그리퍼의 현재 기준 좌표계(회전 행렬) 가져오기
+        axis = self.unrotated_full_axis()
         
-        axis=self.unrotated_full_axis()
-        theta = _argmax(_get_matrix_product_z_axis(np.array([0,0,1]), np.dot(axis.T, -table_normal)), 0, 2*np.pi, 64)        
+        # 2. 월드 좌표계의 -table_normal을 그리퍼 지역 좌표계(Local frame)로 변환
+        # N = [N_x, N_y, N_z]
+        N = axis.T @ -table_normal
+        N_x, _, N_z = N
+        
+        # 3. 내적을 최대화하는 최적의 각도 계산 (Analytic solution)
+        theta = np.arctan2(N_x, N_z)
+        
+        # 4. 기존 코드가 0 ~ 2*pi 범위를 탐색했으므로, 음수일 경우 양수로 보정
+        # if theta < 0:
+        #     theta += 2 * np.pi
+            
         return theta
-
+        
     def perpendicular_table(self, stable_pose):
         """
         Returns a grasp with approach_angle set to be aligned width the table normal specified in the given stable pose.
@@ -200,15 +194,16 @@ class ParallelJawGrasp:
         :obj:`ParallelJawPtGrasp3D`
             aligned grasp
         """
-        table_normal = stable_pose[2,:3]
+        table_normal = stable_pose.T[:3,2]
         theta = self._angle_aligned_with_table(table_normal)
         new_grasp = deepcopy(self)
         new_grasp.approach_angle = theta
         
         cos_t = np.cos(theta)
         sin_t = np.sin(theta)
-        R = np.c_[[cos_t, 0, sin_t], np.c_[[0, 1, 0], [-sin_t, 0, cos_t]]]
-        new_grasp.T_grasp_obj[:3,:3]=R
+        R = np.c_[[cos_t, 0, -sin_t], np.c_[[0, 1, 0], [sin_t, 0, cos_t]]]
+        gripper_axis=self.unrotated_full_axis()
+        new_grasp.T_grasp_obj[:3,:3]=gripper_axis@R
         new_grasp.T_grasp_obj[:3,3]=self.center.T
 
         return new_grasp

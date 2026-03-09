@@ -4,5 +4,5 @@ hande:
     - [0.0,  0.0,  1.0,  0.056]
     - [0.0, -1.0,  0.0,  0.0]
     - [0.0,  0.0,  0.0,  1.0]
-  mesh_path: '/home/minsoo/dexnet_Minsoo/Minsoo_net/data/gripper/gripper.stl'
+  mesh_path: '/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/gripper/gripper.stl'
   

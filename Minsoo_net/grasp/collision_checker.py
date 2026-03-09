@@ -84,7 +84,7 @@ class CollisionChecker(object):
             if other_name != target_name:
                 ret = fcl.collide(self._objs[other_name], target_obj, request, result)
                 if ret > 0:
-                    logging.debug('Collision between: {0} and {1}'.format(other_name, target_name))
+                    print('Collision between: {0} and {1}'.format(other_name, target_name))
                     return True
 
         return False
@@ -218,14 +218,14 @@ class GraspCollisionChecker(CollisionChecker):
         bool
         """
         T_grasp_obj = grasp.T_grasp_obj
-        grasp_approach_axis = T_grasp_obj[:3, 2]  # x_axis
+        grasp_approach_axis = T_grasp_obj[:3, 2]  # Z_axis
 
         collides = False
         cur_approach = 0.0
         while cur_approach <= approach_dist and not collides:
             T_approach_obj = T_grasp_obj.copy()
             T_approach_obj[:3, 3] -= cur_approach * grasp_approach_axis
-            T_gripper_obj = T_approach_obj @ self._gripper.T_grasp_gripper
+            T_gripper_obj = T_approach_obj @ np.linalg.inv(self._gripper.T_grasp_gripper)
 
             collides = self.grasp_in_collision(T_gripper_obj, key=self._graspable_key)
             cur_approach += delta_approach

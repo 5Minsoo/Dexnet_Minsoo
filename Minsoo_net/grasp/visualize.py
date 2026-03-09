@@ -3,7 +3,7 @@ import pyrender
 import trimesh
 
 
-def visualize_grasps(graspable, grasps, sphere_radius=0.002):
+def visualize_grasps(graspable,grasps,pose, sphere_radius=0.002,gripper=None):
     """
     pyrender로 메쉬 + 그래스프 양끝점을 시각화한다.
 
@@ -20,7 +20,7 @@ def visualize_grasps(graspable, grasps, sphere_radius=0.002):
 
     # ---- 메쉬 ----
     mesh = graspable.mesh.copy()
-    scene.add(pyrender.Mesh.from_trimesh(mesh))
+    scene.add(pyrender.Mesh.from_trimesh(mesh), pose=pose)
 
     # ---- 그래스프 끝점 ----
     colors = [
@@ -39,7 +39,17 @@ def visualize_grasps(graspable, grasps, sphere_radius=0.002):
         half_w = g.open_width / 2.0
         p1 = g.center + half_w * v
         p2 = g.center - half_w * v
-
+        T=g.T_grasp_obj
+        axis=trimesh.creation.axis( transform=pose@T,axis_length=0.01,origin_size=0.001)
+        scene.add(pyrender.Mesh.from_trimesh(axis,smooth=False), pose=np.eye(4))
+        axis_world=trimesh.creation.axis( transform=np.eye(4),axis_length=0.08,origin_size=0.003)
+        scene.add(pyrender.Mesh.from_trimesh(axis_world,smooth=False), pose=np.eye(4))
+        axis_pose=trimesh.creation.axis( transform=pose,axis_length=0.03,origin_size=0.003)
+        scene.add(pyrender.Mesh.from_trimesh(axis_pose,smooth=False), pose=np.eye(4))
+        if gripper is not None:
+            gripper_mesh = gripper.mesh.copy()
+            gripper_mesh.apply_transform(pose@T@np.linalg.inv(gripper.T_grasp_gripper))
+            scene.add(pyrender.Mesh.from_trimesh(gripper_mesh,smooth=False), pose=np.eye(4))
         color = colors[i % len(colors)]
         sm = trimesh.creation.uv_sphere(radius=sphere_radius)
         sm.visual.vertex_colors = color
@@ -47,10 +57,12 @@ def visualize_grasps(graspable, grasps, sphere_radius=0.002):
         for p in [p1, p2,g.center]:
             T = np.eye(4)
             T[:3, 3] = p
-            scene.add(pyrender.Mesh.from_trimesh(sm), pose=T)
+            scene.add(pyrender.Mesh.from_trimesh(sm), pose=pose@T)
 
     # ---- 조명 + 카메라 ----
     light = pyrender.DirectionalLight(color=[1, 1, 1], intensity=3.0)
     scene.add(light)
 
     pyrender.Viewer(scene, use_raymond_lighting=True, window_title='Grasps')
+
+
