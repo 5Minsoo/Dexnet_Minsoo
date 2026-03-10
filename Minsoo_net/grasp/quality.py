@@ -208,3 +208,52 @@ class PointGraspMetrics3D:
         min_norm = np.sqrt(sol["primal objective"])
 
         return abs(min_norm), v
+    
+
+    @staticmethod
+    def grasp_quality(grasp, obj,friction_coef):
+        """
+        'ferrari_canny_L1' 메트릭에 최적화된 파지(Grasp) 품질 평가 함수입니다.
+        """
+
+        # 2. 각 접촉점의 렌치(Wrench: 힘 + 토크) 및 법선 계산
+        forces, torques, normals = [], [], []
+        contacts_found, contacts = grasp.close_fingers(obj)
+        if not contacts_found:
+            return 0
+        
+        for i, contact in enumerate(contacts):
+
+            # 마찰 원뿔(Friction Cone) 기반 접촉 힘 계산
+            f_success, c_forces, c_outward_normal = contact.friction_cone(num_cone_faces=8,friction_coef=friction_coef )
+            if not f_success:
+                return 0   
+
+            # 토크 계산
+            t_success, c_torques = contact.torques(c_forces)
+            if not t_success:
+                return 0 
+            # 수직항력 스케일링 적용
+            n_mag = contact.normal_force_magnitude()
+            
+            forces.append(n_mag * c_forces)
+            torques.append(n_mag * c_torques)
+            normals.append(n_mag * -c_outward_normal)
+
+        if not normals:
+            return 0.0
+
+        # 빠른 배열 병합
+        forces = np.hstack(forces)
+        torques = np.hstack(torques)
+        normals = np.hstack(normals)
+
+        # 3. 토크 정규화 (Ferrari-Canny 전용 핵심 로직)
+        # 힘(N)과 토크(N*m)의 단위를 맞추기 위해 물체 크기의 중앙값으로 토크를 스케일링합니다.
+        mx = obj.mesh.extents
+        torque_scaling = 1.0 / np.median(mx)
+
+        # 4. Ferrari-Canny L1 메트릭 직접 호출
+        return PointGraspMetrics3D.ferrari_canny_L1(
+            forces, torques,torque_scaling=torque_scaling
+        )

@@ -40,7 +40,7 @@ class ParallelJawGrasp:
     def close_fingers(
         self,
         obj,
-        check_approach: bool = True,
+        check_approach: bool = False,
         approach_dist: float = 0.05,
     ) -> Tuple[bool, Optional[List[Dict]]]:
         """

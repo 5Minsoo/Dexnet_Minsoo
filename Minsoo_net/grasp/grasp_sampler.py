@@ -120,7 +120,7 @@ class AntipodalGraspSampler:
             for _ in range(self.num_samples):
                 # 1) 표면점 근처 섭동
                 x1 = self._perturb_point(x_surf, graspable.surface_thresh)
-
+                
                 # 2) 마찰원뿔 계산
                 c1 = Contact3D(graspable, x1, in_direction=None)
                 in_norm, tx1, ty1 = c1.tangents()

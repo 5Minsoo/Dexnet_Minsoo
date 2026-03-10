@@ -34,7 +34,6 @@ class Contact3D:
         normal = self.graspable.surface_normal(self.point)
         if np.linalg.norm(normal) < 1e-8:
             return
-
         self.normal = normal
 
     def tangents(self, direction=None, align_axes=True, max_samples=1000):
@@ -111,7 +110,6 @@ class Contact3D:
             normal_force_mag = self.normal_force_magnitude()
             tan_force_mag = np.sqrt(np.dot(in_dir_norm, t1) ** 2 + np.dot(in_dir_norm, t2) ** 2)
             if friction_coef * normal_force_mag < tan_force_mag:
-                logging.debug('Contact would slip')
                 return False, self.friction_cone_, self.normal
 
         cone_support = np.zeros((3, num_cone_faces))
@@ -137,7 +135,7 @@ class Contact3D:
 
         num_forces = forces.shape[1]
         torques = np.zeros((3, num_forces))
-        moment_arm = self.point - self.graspable.mesh.center_mass
+        moment_arm = self.point - self.graspable.center_mass
         for i in range(num_forces):
             torques[:, i] = np.cross(moment_arm, forces[:, i])
         return True, torques

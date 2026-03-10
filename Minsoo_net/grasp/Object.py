@@ -4,12 +4,12 @@ from pysdf import SDF
 from scipy.interpolate import RegularGridInterpolator
 
 class GraspableObject3D:
-    def __init__(self, mesh_path, sdf_resolution=64, surface_thresh=0.0001):
+    def __init__(self, mesh_path, sdf_resolution=64, surface_thresh=0.001):
         self.mesh = trimesh.load(mesh_path)
         self.mesh.apply_scale(0.001)
         self.surface_thresh = surface_thresh
         self.resolution = sdf_resolution
-
+        self.center_mass=self.mesh.center_mass
         sdf_fn = SDF(self.mesh.vertices, self.mesh.faces)
 
         # 월드 좌표로 바로 그리드 생성
