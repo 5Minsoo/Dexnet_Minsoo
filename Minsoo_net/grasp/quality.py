@@ -111,9 +111,10 @@ class PointGraspMetrics3D:
         """
         G = PointGraspMetrics3D.grasp_matrix(forces, torques, torque_scaling)
         U, S, Vh = np.linalg.svd(G)
-        rank=np.sum(S > 1e-8)
+        rank=np.sum(S > 1e-6)
         G_reduced=U[:,:rank].T@G
-        hull = cvh.ConvexHull(G_reduced.T)  # "QJ" for joggle to handle degenerate cases
+        hull = cvh.ConvexHull(G_reduced.T.tolist())
+
         if len(hull.vertices) == 0:
             return 0.0
 

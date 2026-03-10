@@ -8,17 +8,21 @@ from Minsoo_net.grasp.visualize import visualize_grasps
 from Minsoo_net.grasp.quality import PointGraspMetrics3D
 import numpy as np
 import copy
+import os
+############## 파일상대경로 #################
+base_dir = os.path.dirname(os.path.abspath(__file__))
+config_path = os.path.join(base_dir,"gripper_config.yaml")
+gripper_yaml=os.path.join(base_dir,"Minsoo_net","data","gripper","gripper.yaml")
+config_path = os.path.normpath(config_path)
+gripper_yaml=os.path.normpath(gripper_yaml)
+###########################################
 
-config_path='/home/minsoo/Dexnet_Minsoo/gripper_config.yaml'
-gripper_yaml='/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/gripper/gripper.yaml'
 graspable1=GraspableObject3D('object.stl',sdf_resolution=256)
 sampler=AntipodalGraspSampler(config_path)
 gripper=RobotGripper('hande',gripper_yaml)
-
-
-
 checker=GraspCollisionChecker(gripper)
-point=sampler.generate_grasps(graspable1,100)
+
+point=sampler.generate_grasps(graspable1,50)
 
 checker.set_table()
 stable_poses, probs = graspable1.stable_poses()
@@ -60,9 +64,9 @@ for i, grasp in enumerate(collision_free_grasps):
     original_c2_pos = copy.deepcopy(c2.point)
     current_grasp_qualities = []
     # 마찰 계수 범위를 0.1 이상으로 설정하는 것이 안정적입니다.
-    for j in np.linspace(0.5, 1.5, 10): 
-        original_c1_pos=original_c1_pos+np.random.normal(scale=0.001, size=3)  # 접촉점에 작은 노이즈 추가
-        original_c2_pos=original_c2_pos+np.random.normal(scale=0.001, size=3)
+    for j in np.linspace(0.5, 5.0, 10): 
+        original_c1_pos=original_c1_pos+np.random.normal(scale=0.002, size=3)  # 접촉점에 작은 노이즈 추가
+        original_c2_pos=original_c2_pos+np.random.normal(scale=0.002, size=3)
         fric = j 
         # ferrari_canny 계산
         q = PointGraspMetrics3D.ferrari_canny_L1_from_contacts(
