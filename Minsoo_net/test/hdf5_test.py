@@ -1,8 +1,11 @@
 import zarr
 import numpy as np
+my_list = np.array([1,2,3,4])
+f=zarr.open('zarr_test',mode="w")
+a=f.create_group('object1')
 
-f=zarr.open('zarr_test',"w")
-f.create_group('object1')
-f.create_group('/object1/antipodal_samples')
-f.create_dataset('mesh',data='mesh_path')
-print(f['mesh'][()])
+for i, data in enumerate(my_list):
+    b=a.create_group(f"stable_pose{i}")
+    for j in range(len(my_list)):
+        b.create_array(f"grasp{j}",data=my_list[j])
+

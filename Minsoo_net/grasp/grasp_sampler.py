@@ -149,7 +149,7 @@ class AntipodalGraspSampler:
                     center=center,
                     axis=v,
                     open_width=self.max_width,
-                    contact_points=[c1_true, c2_true],
+                    contact_points=[c1_true.point, c2_true.point],
                 )
 
                 # 7) 반대편 마찰원뿔 + force closure

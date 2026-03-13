@@ -205,7 +205,6 @@ class ParallelJawGrasp:
         gripper_axis=self.unrotated_full_axis()
         new_grasp.T_grasp_obj[:3,:3]=gripper_axis@R
         new_grasp.T_grasp_obj[:3,3]=self.center.T
-
         return new_grasp
 
     def unrotated_full_axis(self):
@@ -225,3 +224,13 @@ class ParallelJawGrasp:
 
         R = np.c_[grasp_axis_x, np.c_[grasp_axis_y, grasp_axis_z]]
         return R
+    
+    def transform(self, pose: np.ndarray):
+            """4x4 SE(3) 변환 행렬을 적용하여 grasp의 자세를 World 기준으로 업데이트합니다."""
+            R = pose[:3, :3]
+            t = pose[:3, 3]
+            
+            self.center = R @ self.center + t
+            self.axis = R @ self.axis
+            self.axis = self.axis / np.linalg.norm(self.axis) # 정규화
+            return self
