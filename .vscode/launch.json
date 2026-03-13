@@ -9,7 +9,11 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${file}",
-            "console": "integratedTerminal"
+            "cwd":"${workspaceFolder}",
+            "console": "integratedTerminal",
+                "env": {
+        "PYTHONPATH": "${workspaceFolder}"  // VSCode 열린 폴더 기준
+    }
         }
     ]
 }

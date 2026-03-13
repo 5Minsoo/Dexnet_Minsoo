@@ -10,8 +10,8 @@ import random
 import yaml
 import numpy as np
 
-from Minsoo_net.grasp.contact import Contact3D
-from Minsoo_net.grasp.grasp import ParallelJawGrasp
+from Minsoo_net.grasp import Contact3D
+from Minsoo_net.grasp import ParallelJawGrasp
 
 
 class AntipodalGraspSampler:

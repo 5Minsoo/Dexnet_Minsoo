@@ -1,4 +1,4 @@
-# Minsoo_net/grasp/__init__.py
+# Minsoo_net/__init__.py
 
 from .contact import Contact3D
 from .Object import GraspableObject3D

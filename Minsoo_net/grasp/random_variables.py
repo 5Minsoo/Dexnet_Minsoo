@@ -2,7 +2,7 @@ import numpy as np
 import scipy
 from scipy.spatial.transform import Rotation
 import copy
-from Minsoo_net.grasp import(GraspableObject3D,ParallelJawGrasp)
+from Minsoo_net.grasp import ParallelJawGrasp
 import yaml
 class RandomVariables():
     def __init__(self):
