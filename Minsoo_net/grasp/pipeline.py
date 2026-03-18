@@ -42,6 +42,11 @@ class GraspPipeline:
         self.gripper = RobotGripper('hande', self.gripper_yaml)
         self.checker = GraspCollisionChecker(self.gripper)
 
+        self.initial_grasps = self.sampler.generate_grasps(self.graspable_obj, self.num_grasps)
+        
+        # 안정적인 Pose 계산
+        self.stable_poses, self.probs = self.graspable_obj.stable_poses()
+
     def filter_collision_free_grasps(self, aligned_grasps, pose, obj_key):
         """접근 각도 필터링 및 충돌 검사를 수행합니다."""
         collision_free_grasps = []
@@ -57,14 +62,14 @@ class GraspPipeline:
                 
         return collision_free_grasps
 
-    def evaluate_grasp_quality(self, collision_free_grasps, stable_poses, num_samples=100):
+    def evaluate_grasp_quality(self, collision_free_grasps, num_samples=100):
         """Grasp의 Quality를 확률적으로 평가합니다."""
         quality_grasps = []
         quality=[]
         print(f"{self.quality_threshold} 이하 grasp 폐기 ")
         for i, grasp in enumerate(collision_free_grasps, start=1):
             # 기존 코드에 맞춰 stable_poses를 전달합니다 (필요에 따라 현재 pose로 변경 가능)
-            obj_rv = GraspableObjectPoseGaussianRV(mean_T_obj_world=stable_poses, obj=self.graspable_obj, config_yaml=self.rv_config_path)
+            obj_rv = GraspableObjectPoseGaussianRV(obj=self.graspable_obj, config_yaml=self.rv_config_path)
             grasp_rv = ParallelJawGraspPoseGaussianRV(grasp, self.rv_config_path)
             friction_rv = ParamsGaussianRV(self.rv_config_path)
             
@@ -79,53 +84,55 @@ class GraspPipeline:
                 
         return quality_grasps,quality
 
-    def execute(self):
+    def execute(self,use_visual=False,start_index=0):
         """전체 Grasp 생성 및 필터링 파이프라인을 실행합니다.
-        initial_grasp, collision_free_grasps, quality grasps return
+        returns stable_poses,initial_grasps,collision_free,quality_grasps,qualities
         """
-        initial_grasps = self.sampler.generate_grasps(self.graspable_obj, self.num_grasps)
-        
-        # 안정적인 Pose 계산
-        stable_poses, probs = self.graspable_obj.stable_poses()
-        
-        for idx, (pose, prob) in enumerate(zip(stable_poses, probs)):
+        yielded_count = 0
+        for idx, (pose, prob) in enumerate(zip(self.stable_poses, self.probs)):
             if prob < self.prob_threshold:
                 continue
                 
+            if yielded_count < start_index:
+                print(f"  -> 유효한 Pose 스킵 (현재 {yielded_count}/{start_index})")
+                yielded_count += 1
+                continue
+            print(f"\n>>> [RUN] 원본 stable_poses[{idx}] -> 현재 계산 중 (yielded_count: {yielded_count})")
             obj_key = f'bin_{idx}'
             self.checker.set_table() 
             self.checker.set_object(obj_key, self.graspable_obj.mesh, T_world_obj=pose)
             
             # 테이블에 맞춰 정렬
-            aligned_grasps = [grasp.perpendicular_table(pose) for grasp in initial_grasps]
+            aligned_grasps = [grasp.perpendicular_table(pose) for grasp in self.initial_grasps]
             
             # 1. 충돌 검사
             collision_free_grasps = self.filter_collision_free_grasps(aligned_grasps, pose, obj_key)
             
-            print(f"Total grasps: {len(initial_grasps)}")
+            print(f"Total grasps: {len(self.initial_grasps)}")
             print(f"Collision-free grasps: {len(collision_free_grasps)}")
             
             # 2. Quality 평가
-            quality_grasps,quality = self.evaluate_grasp_quality(collision_free_grasps, stable_poses)
+            quality_grasps,quality = self.evaluate_grasp_quality(collision_free_grasps)
             
             self.checker.remove_object(obj_key)
             
             print(f'collision free grasp 개수: {len(collision_free_grasps)}')
             print(f'quality grasp 개수: {len(quality_grasps)}')
-            
-            visualize_grasps(self.graspable_obj,collision_free_grasps,pose=np.eye(4))
-            # collision_free_grasps=[grasp.transform(pose) for grasp in collision_free_grasps]
-            # quality_grasps = [grasp.transform(pose) for grasp in quality_grasps]
-            visualize_grasps(self.graspable_obj,quality_grasps,pose=pose)
-            return stable_poses,initial_grasps, collision_free_grasps, quality_grasps, quality
+            if use_visual:
+                visualize_grasps(self.graspable_obj,collision_free_grasps,pose=pose,gripper=self.gripper)
+                # collision_free_grasps=[grasp.transform(pose) for grasp in collision_free_grasps]
+                # quality_grasps = [grasp.transform(pose) for grasp in quality_grasps]
+                visualize_grasps(self.graspable_obj,quality_grasps,pose=pose,gripper=self.gripper)
+            yield pose, collision_free_grasps,quality_grasps, quality
+            yielded_count += 1
 
 
 # === 실행 예시 ===
 if __name__ == "__main__":
     # 클래스 초기화 시 파라미터를 유연하게 변경 가능합니다.
     pipeline = GraspPipeline(
-        obj_file='object.stl',
-        num_grasps=3,
+        obj_file='/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object.stl',
+        num_grasps=10,
         prob_threshold=0.012,
         quality_threshold=0.03
     )

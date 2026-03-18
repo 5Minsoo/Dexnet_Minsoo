@@ -15,10 +15,9 @@ class RandomVariables():
 
 
 class GraspableObjectPoseGaussianRV(RandomVariables):
-    def __init__(self, obj, mean_T_obj_world,config_yaml):
+    def __init__(self, obj,config_yaml):
         super().__init__()
         self.obj_ = obj
-        self.mean_T_obj_world_ = mean_T_obj_world
         self.config=self._parse_config(config_yaml)
         self.s_rv_ = scipy.stats.norm(1.0, self.sigma_scale_)
         self.t_rv_ = scipy.stats.multivariate_normal(np.zeros(3), self.sigma_trans_**2)
