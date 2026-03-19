@@ -5,8 +5,9 @@ import cv2
 import math
 from sapien.core import Pose
 from sapien.sensor import StereoDepthSensor, StereoDepthSensorConfig
+from Minsoo_net.grasp.random_variables import ParamsGaussianRV
 from scipy.spatial.transform import Rotation as R
-
+import yaml
 class GraspRenderer:
     """
     DexNet용 깊이 이미지 렌더러.
@@ -41,6 +42,7 @@ class GraspRenderer:
         image_size: tuple = (480, 640),      # (H, W) — D435 기본
         spp: int = 32,
         path_depth: int = 8,
+        config_path='/home/minsoo/Dexnet_Minsoo/Minsoo_net/config/master_config.yaml'
     ):
         self.mesh_path = mesh_path
         self.mesh_scale = mesh_scale
@@ -53,25 +55,32 @@ class GraspRenderer:
             sapien.render.set_ray_tracing_denoiser("optix")
             GraspRenderer._render_initialized = True
 
+        self.rv=ParamsGaussianRV(config_yaml=config_path)
+        self.material=sapien.render.RenderMaterial()
+        self.material.set_metallic(1.0)
+        self.material.set_roughness(0.6)
+
         # ── Scene ──
         self.scene = sapien.Scene()
         self.scene.set_timestep(1 / 10.0)
         self.scene.add_ground(altitude=0)
         self.scene.set_ambient_light([0.5, 0.5, 0.5])
         self.scene.add_directional_light([0, 1, -1], [0.5, 0.5, 0.5])
-
+        
         # ── 물체 로드 ──
         builder = self.scene.create_actor_builder()
         builder.add_convex_collision_from_file(mesh_path)
-        builder.add_visual_from_file(mesh_path, scale=(0.001,0.001,0.001))
+        builder.add_visual_from_file(mesh_path, scale=(0.001,0.001,0.001),material=self.material)
         self.obj = builder.build_kinematic(name="object")
         self.obj.set_pose(Pose(p=[0, 0, 0]))
 
         ################################## ── 센서(카메라) ──###############################################
         self.sensor_config = StereoDepthSensorConfig(model=sensor_model)
-        self.sensor_config.block_height=5
+        with open(config_path) as f:
+            config = yaml.safe_load(f)
+        self.sensor_config.block_height=config.get('block_height',7)
         self.sensor_config.block_width=self.sensor_config.block_height
-        self.sensor_config.uniqueness_ratio=45
+        self.sensor_config.uniqueness_ratio=config.get('uniqueness_ratio',30)
         self._mount = self.scene.create_actor_builder().build_kinematic()
         # 초기 위치는 임시 — render() 호출 시 갱신
         self.sensor = StereoDepthSensor(
@@ -92,6 +101,11 @@ class GraspRenderer:
         self.intrinsic = np.eye(4)
         self.intrinsic[:3, :3] = self.sensor_config.ir_intrinsic
 
+    def set_material(self,metalic,roughness):
+        self.material.set_metallic(metalic)
+        self.material.set_roughness(roughness)
+
+
     # ── Stable Pose ─────────────────────────────────────────
 
     def set_stable_pose(self, SE):
@@ -107,6 +121,9 @@ class GraspRenderer:
         
         p=SE[:3,3]
         self.obj.set_pose(Pose(p=p, q=q))
+
+    def sample_material(self,size=1):
+        return self.rv.sample_material(size)
 
     # ── 카메라 유틸 ─────────────────────────────────────────
 
@@ -278,8 +295,7 @@ class GraspRenderer:
             pt2 = (int(cx + ux * line_length), int(cy + uy * line_length))
             cv2.line(vis, pt1, pt2, (0, 0, 0), 4)
         return vis
-
-
+ 
 # ── 사용 예시 ───────────────────────────────────────────────
 
 if __name__ == "__main__":

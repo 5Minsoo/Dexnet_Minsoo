@@ -9,12 +9,12 @@ mode=1 ## 1 for clean start  2 for resume
 use_visual=True
 zarr_path = "grasp_dataset.zarr"
 output_size = 64
-batch_size = 100 
+batch_size = 10 
 
-num_grasps=100
+num_grasps=30
 quality_threshold=0.03
 num_camera_points=50
-camera_radius=(0.3,0.6)
+camera_radius=(0.4,0.6)
 
 if mode ==1:
     print("기존 데이터를 초기화하고 처음부터 다시 시작합니다.")
@@ -31,6 +31,7 @@ mesh_path=Path(__file__).parent.parent.resolve()
 mesh_path=mesh_path/"data"/"object"
 mesh_files = list(mesh_path.glob("*.obj")) + list(mesh_path.glob("*.stl"))
 
+
 tmp_imgs, tmp_labels,tmp_z = [], [],[]
 
 def flush_to_zarr(img_ds,label_ds,z_ds):
@@ -46,6 +47,7 @@ def flush_to_zarr(img_ds,label_ds,z_ds):
     tmp_imgs, tmp_labels,tmp_z = [], [],[]
 
 
+
 for mesh_path in mesh_files:
     object_name=mesh_path.stem
     mesh_path=str(mesh_path)
@@ -54,7 +56,10 @@ for mesh_path in mesh_files:
     grasp_pipeline=GraspPipeline(mesh_path,quality_threshold=quality_threshold,num_grasps=num_grasps)
     renderer=GraspRenderer(mesh_path)
     points=GraspRenderer.sample_spherical_positions(camera_radius,(0,3.14/6),(0,3.14),num_points=num_camera_points)
-
+    if use_visual:
+        viewer=renderer.scene.create_viewer()
+        for _ in range(10):
+            viewer.render()
     obj_group=store.require_group(object_name)
 
     existing_pose_keys = sorted(
@@ -75,10 +80,13 @@ for mesh_path in mesh_files:
         else:
             # 정상이라면 다음 번호로 start_idx 갱신
             start_idx = pose_num +1
-    
+
+
+
     # --- 메인 루프 ---
-    for pose, collision_free_grasps, quality_grasps, quality_scores in grasp_pipeline.execute(start_index=start_idx):
+    for pose, failed_grasps, quality_grasps, quality_scores in grasp_pipeline.execute(start_index=start_idx):
         renderer.set_stable_pose(pose)
+        metalic,roughness=renderer.sample_material(num_camera_points)
         pose_group=obj_group.require_group(f"pose{start_idx}")
         start_idx+=1
         img_ds = pose_group.create_array("images", shape=(0, output_size, output_size), 
@@ -92,24 +100,27 @@ for mesh_path in mesh_files:
                                         dtype='float32',overwrite=True)
         # 성공(quality) / 실패(0) 데이터 분류
         tasks = [(quality_grasps, quality_scores), 
-                (collision_free_grasps, [0.0]*len(collision_free_grasps))]
+                (failed_grasps, [0.0]*len(failed_grasps))]
 
         for grasps, labels in tasks:
             for grasp, label in zip(grasps, labels):
+                metalic,roughness=renderer.sample_material()
+                renderer.set_material(metalic=metalic[0],roughness=roughness[0])
                 for point in points:
                     depth = renderer.render(camera_pos=point)
-                    
                     # 좌표 계산 및 시각화 (기존 로직)
                     origin = [0, 0, 0]
                     center = (pose @ np.append(grasp.center, 1.0))[:3]
                     axis = (pose @ np.append(grasp.axis, 1.0))[:3]
                     image_point = renderer.world_to_pixel([origin, center, axis])
+                    grasp_depth=(renderer.get_extrinsic()@np.append(center,1.0))[2]
                     
                     cropped = GraspRenderer.crop_grasp_image(
                         depth, image_point[1], image_point[2]-image_point[0], 
                         crop_size=96, output_size=output_size
                     )
                     if use_visual:
+                        viewer.render()
                         depth_norm = cv2.normalize(depth, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
                         depth_color = cv2.applyColorMap(depth_norm, cv2.COLORMAP_JET)
                         
@@ -132,13 +143,13 @@ for mesh_path in mesh_files:
 
                         # 4. 화면 출력
                         cv2.imshow('Depth vs Cropped', combined_img)
-                        
+                        viewer.render()
                         # 디버깅 시 하나씩 확인하려면 waitKey(0), 자동으로 휙휙 넘어가게 하려면 waitKey(1)
                         cv2.waitKey(1)
                     
                     tmp_imgs.append(cropped)
                     tmp_labels.append(label)
-                    tmp_z.append(center[2])
+                    tmp_z.append(grasp_depth)
                     if len(tmp_imgs) >= batch_size:
                         flush_to_zarr(img_ds,label_ds,z_ds)
         flush_to_zarr(img_ds,label_ds,z_ds)

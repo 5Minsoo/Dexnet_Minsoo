@@ -23,12 +23,12 @@ class GraspPipeline:
                  num_grasps=3, 
                  prob_threshold=0.012, 
                  quality_threshold=0.03,
-                 max_approach_angle_deg=30):
+                 max_approach_angle_deg=15):
         
         # 1. 파일 경로 설정
-        self.config_path = p / "config" / "gripper_config.yaml"
-        self.gripper_yaml = p /"data"/ "gripper" / "gripper.yaml"
-        self.rv_config_path = p/ "config" / "random_variables.yaml"
+        self.config_path = p / "config" / "master_config.yaml"
+        self.gripper_yaml = p / "config" / "master_config.yaml"
+        self.rv_config_path = p / "config" / "master_config.yaml"
         
         # 2. 파라미터 초기화
         self.num_grasps = num_grasps
@@ -50,6 +50,7 @@ class GraspPipeline:
     def filter_collision_free_grasps(self, aligned_grasps, pose, obj_key):
         """접근 각도 필터링 및 충돌 검사를 수행합니다."""
         collision_free_grasps = []
+        collision_grasps = []        
         for grasp in aligned_grasps:
             _, approach_angle, _ = grasp.grasp_angles_from_stp_z(pose)
             
@@ -59,8 +60,9 @@ class GraspPipeline:
                 
             if not self.checker.grasp_in_collision(grasp.T_grasp_obj, key=obj_key):
                 collision_free_grasps.append(grasp)
-                
-        return collision_free_grasps
+            else:
+                collision_grasps.append(grasp)
+        return collision_grasps,collision_free_grasps
 
     def evaluate_grasp_quality(self, collision_free_grasps, num_samples=100):
         """Grasp의 Quality를 확률적으로 평가합니다."""
@@ -106,24 +108,32 @@ class GraspPipeline:
             aligned_grasps = [grasp.perpendicular_table(pose) for grasp in self.initial_grasps]
             
             # 1. 충돌 검사
-            collision_free_grasps = self.filter_collision_free_grasps(aligned_grasps, pose, obj_key)
+            collision_grasps, collision_free_grasps = self.filter_collision_free_grasps(aligned_grasps, pose, obj_key)
             
             print(f"Total grasps: {len(self.initial_grasps)}")
             print(f"Collision-free grasps: {len(collision_free_grasps)}")
-            
+            print(f"Collision grasps: {len(collision_grasps)}")
             # 2. Quality 평가
-            quality_grasps,quality = self.evaluate_grasp_quality(collision_free_grasps)
+            quality_grasps, quality = self.evaluate_grasp_quality(collision_free_grasps)
+            
+            # 3. Failed Grasps 병합 (충돌 발생 + Quality 미달)
+            # evaluate_grasp_quality 구현에 따라 다르겠지만, 일반적인 리스트 필터링 기준입니다.
+            low_quality_grasps = [g for g in collision_free_grasps if g not in quality_grasps]
+            failed_grasps = collision_grasps + low_quality_grasps
             
             self.checker.remove_object(obj_key)
             
-            print(f'collision free grasp 개수: {len(collision_free_grasps)}')
+            print(f'failed grasp 개수: {len(failed_grasps)}') # 추가된 로그
             print(f'quality grasp 개수: {len(quality_grasps)}')
+            
             if use_visual:
-                visualize_grasps(self.graspable_obj,collision_free_grasps,pose=pose,gripper=self.gripper)
+                visualize_grasps(self.graspable_obj, collision_free_grasps, pose=pose, gripper=self.gripper)
                 # collision_free_grasps=[grasp.transform(pose) for grasp in collision_free_grasps]
                 # quality_grasps = [grasp.transform(pose) for grasp in quality_grasps]
-                visualize_grasps(self.graspable_obj,quality_grasps,pose=pose,gripper=self.gripper)
-            yield pose, collision_free_grasps,quality_grasps, quality
+                visualize_grasps(self.graspable_obj, quality_grasps, pose=pose, gripper=self.gripper)
+            
+            # 요청하신 반환값으로 변경
+            yield pose, failed_grasps, quality_grasps, quality
             yielded_count += 1
 
 

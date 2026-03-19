@@ -72,29 +72,37 @@ scene.set_timestep(1)
 scene.add_ground(altitude=0)
 scene.set_ambient_light([0.5, 0.5, 0.5])
 scene.add_directional_light([0, 1, -1], [0.5, 0.5, 0.5])
-
-builder = scene.create_actor_builder()
-builder.add_visual_from_file('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/object.stl', scale=(0.001,0.001,0.001))
-bin = builder.build_kinematic(name="bin")
-bin.set_pose(sapien.Pose(p=t, q=r_quat))
-
 sapien.render.set_camera_shader_dir("rt")
 sapien.render.set_ray_tracing_samples_per_pixel(32)
 sapien.render.set_ray_tracing_path_depth(8)
 sapien.render.set_ray_tracing_denoiser("optix")
 
-# --- 기본 센서 설정 ---
-sensor_config = StereoDepthSensorConfig(model="D435")
-# sensor_config.block_width = 5
-# sensor_config.block_height = 5
-# sensor_config.uniqueness_ratio = 45
-# sensor_config.p1_penalty = 8
-# sensor_config.p2_penalty = 24
-sensor_mount_actor = scene.create_actor_builder().build_kinematic()
+# 머티리얼 초기 설정
+material = sapien.render.RenderMaterial()
+material.set_metallic(1.0)
+material.set_roughness(0.6)
 
-initial_cam_pos = generate_spherical_points((0.5,0.6),(0,3.14/6),(0,3.14))
-initial_cam_pos=initial_cam_pos[0]
-sensor = StereoDepthSensor(config=sensor_config, mount_entity=sensor_mount_actor, pose=Pose(initial_cam_pos, look_at(initial_cam_pos)))
+builder = scene.create_actor_builder()
+builder.add_visual_from_file('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/object.stl', scale=(0.001,0.001,0.001), material=material)
+bin = builder.build_kinematic(name="bin")
+bin.set_pose(sapien.Pose(p=t, q=r_quat))
+
+# --- 기본 센서 및 고정 카메라 설정 ---
+# 기존 슬라이더의 기본값을 사용해 카메라 위치 고정
+fixed_r = 0.5
+fixed_theta = np.radians(45)
+fixed_phi = np.radians(45)
+
+cam_pos = np.array([
+    fixed_r * np.sin(fixed_theta) * np.cos(fixed_phi),
+    fixed_r * np.sin(fixed_theta) * np.sin(fixed_phi),
+    fixed_r * np.cos(fixed_theta)
+])
+orientation = look_at(cam_pos)
+
+sensor_config = StereoDepthSensorConfig(model="D435")
+sensor_mount_actor = scene.create_actor_builder().build_kinematic()
+sensor = StereoDepthSensor(config=sensor_config, mount_entity=sensor_mount_actor, pose=Pose(cam_pos, orientation))
 
 R_S2O = np.array([
     [0, -1,  0, 0],
@@ -111,10 +119,9 @@ def nothing(x): pass
 cv2.namedWindow("Depth Viewer", cv2.WINDOW_NORMAL)
 cv2.resizeWindow("Depth Viewer", 800, 800) 
 
-# 카메라 위치 파라미터
-cv2.createTrackbar("Radius", "Depth Viewer", 50, 100, nothing) 
-cv2.createTrackbar("Theta", "Depth Viewer", 45, 180, nothing)
-cv2.createTrackbar("Phi", "Depth Viewer", 45, 360, nothing)
+# 머티리얼 파라미터 (0~100 범위를 0.0~1.0으로 사용)
+cv2.createTrackbar("Metallic", "Depth Viewer", 100, 100, nothing) 
+cv2.createTrackbar("Roughness", "Depth Viewer", 60, 100, nothing)
 
 # 센서 파라미터
 cv2.createTrackbar("Block Width (Odd)", "Depth Viewer", 2, 15, nothing) 
@@ -123,28 +130,24 @@ cv2.createTrackbar("P1 Penalty", "Depth Viewer", 8, 100, nothing)
 cv2.createTrackbar("P2 Penalty", "Depth Viewer", 24, 200, nothing)
 
 prev_sensor_params = {'bw': 2, 'unq': 50, 'p1': 8, 'p2': 24}
-real_bw = 5 
+real_bw = 7 
 real_p2 = 24
 
 viewer = scene.create_viewer()
+viewer.set_camera_pose(sensor.get_pose()) # 초기 카메라 뷰어 동기화
 
 print("\n--- 조작 안내 ---")
-print("슬라이더를 움직여 파라미터를 조절하세요.")
+print("슬라이더를 움직여 재질(Material)과 센서 파라미터를 조절하세요.")
 print("'s' 키: 현재 파라미터 JSON 파일로 저장")
 print("'q' 키: 프로그램 종료\n")
 
 while not viewer.closed:
-    # --- 1. 카메라 위치 업데이트 ---
-    r_val = max(0.1, cv2.getTrackbarPos("Radius", "Depth Viewer") / 100.0)
-    theta_val = np.radians(cv2.getTrackbarPos("Theta", "Depth Viewer"))
-    phi_val = np.radians(cv2.getTrackbarPos("Phi", "Depth Viewer"))
-
-    cam_pos = np.array([
-        r_val * np.sin(theta_val) * np.cos(phi_val),
-        r_val * np.sin(theta_val) * np.sin(phi_val),
-        r_val * np.cos(theta_val)
-    ])
-    orientation = look_at(cam_pos)
+    # --- 1. 머티리얼 업데이트 ---
+    # 슬라이더 값(0~100)을 0.0~1.0 범위로 변환하여 적용
+    metallic_val = cv2.getTrackbarPos("Metallic", "Depth Viewer") / 100.0
+    roughness_val = cv2.getTrackbarPos("Roughness", "Depth Viewer") / 100.0
+    material.set_metallic(metallic_val)
+    material.set_roughness(roughness_val)
 
     # --- 2. 센서 Config 업데이트 ---
     cur_bw_val = cv2.getTrackbarPos("Block Width (Odd)", "Depth Viewer")
@@ -157,7 +160,7 @@ while not viewer.closed:
         cur_p1 != prev_sensor_params['p1'] or 
         cur_p2 != prev_sensor_params['p2']):
         
-        # [수정됨] 조명 누적(Too many textured lights) 방지를 위해 기존 액터 제거
+        # 조명 누적(Too many textured lights) 방지를 위해 기존 액터 제거
         scene.remove_actor(sensor_mount_actor)
         sensor_mount_actor = scene.create_actor_builder().build_kinematic()
         
@@ -170,14 +173,11 @@ while not viewer.closed:
         sensor_config.p1_penalty = cur_p1
         sensor_config.p2_penalty = real_p2
 
-        # 센서 재생성
+        # 센서 재생성 (고정된 cam_pos, orientation 사용)
         sensor = StereoDepthSensor(config=sensor_config, mount_entity=sensor_mount_actor, pose=Pose(cam_pos, orientation))
+        viewer.set_camera_pose(sensor.get_pose()) # 센서 재생성 시 뷰어 포즈 재동기화
         
         prev_sensor_params = {'bw': cur_bw_val, 'unq': cur_unq, 'p1': cur_p1, 'p2': cur_p2}
-
-    # 포즈 갱신
-    sensor.set_local_pose(Pose(cam_pos, orientation))
-    viewer.set_camera_pose(sensor.get_pose())
 
     # --- 3. 씬 렌더링 및 뎁스 연산 ---
     scene.update_render()
@@ -202,7 +202,7 @@ while not viewer.closed:
 
     # --- 5. 이미지 위에 파라미터 정보 텍스트 오버레이 (OSD) ---
     info_texts = [
-        f"[Camera] R: {r_val:.2f}m, Theta: {np.degrees(theta_val):.0f}deg, Phi: {np.degrees(phi_val):.0f}deg",
+        f"[Material] Metallic: {metallic_val:.2f}, Roughness: {roughness_val:.2f}",
         f"[Sensor] Block Width: {real_bw}",
         f"[Sensor] Uniqueness: {sensor_config.uniqueness_ratio}",
         f"[Sensor] P1 Penalty: {sensor_config.p1_penalty}",
@@ -212,7 +212,7 @@ while not viewer.closed:
     y0, dy = 30, 30
     for i, text in enumerate(info_texts):
         y = y0 + i * dy
-        # 가독성을 위해 검은색 테두리를 먼저 그리고 하얀색 글씨를 씁니다
+        # 가독성을 위해 검은색 테두리를 먼저 그리고 하얀색 글씨 작성
         cv2.putText(depth_colored, text, (10, y), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 3)
         cv2.putText(depth_colored, text, (10, y), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 1)
 
@@ -225,10 +225,9 @@ while not viewer.closed:
     elif key == ord('s'):
         # 현재 파라미터를 JSON 형태로 묶어서 파일로 저장
         save_data = {
-            "camera_pose": {
-                "radius_m": r_val,
-                "theta_deg": float(np.degrees(theta_val)),
-                "phi_deg": float(np.degrees(phi_val))
+            "material": {
+                "metallic": float(metallic_val),
+                "roughness": float(roughness_val)
             },
             "sensor_config": {
                 "block_width": real_bw,

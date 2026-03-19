@@ -1,0 +1,7 @@
+{
+    "python.defaultInterpreterPath": "/usr/bin/python3.12",
+    "python.analysis.extraPaths": [
+        "/home/minsoo/.local/lib/python3.12/site-packages"
+    ],
+    "python.analysis.indexing": true
+}
