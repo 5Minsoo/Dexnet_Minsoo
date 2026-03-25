@@ -60,9 +60,9 @@ def draw_grasp_debug(image, center, axis, line_length=200):
     return debug_image
 
 # --- 환경 설정 및 객체 로드 ---
-mesh = trimesh.load('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/object.stl')
+mesh = trimesh.load('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/bin.stl')
 trans, _ = mesh.compute_stable_poses()
-trans = trans[1]
+trans = trans[0]
 r_quat = R.from_matrix(trans[:3,:3]).as_quat()
 r_quat = np.array([r_quat[3], r_quat[0], r_quat[1], r_quat[2]]) 
 t = trans[:3,3] * 0.001
@@ -83,15 +83,15 @@ material.set_metallic(1.0)
 material.set_roughness(0.6)
 
 builder = scene.create_actor_builder()
-builder.add_visual_from_file('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/object.stl', scale=(0.001,0.001,0.001), material=material)
+builder.add_visual_from_file('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/bin.stl', scale=(0.001,0.001,0.001), material=material)
 bin = builder.build_kinematic(name="bin")
 bin.set_pose(sapien.Pose(p=t, q=r_quat))
 
 # --- 기본 센서 및 고정 카메라 설정 ---
 # 기존 슬라이더의 기본값을 사용해 카메라 위치 고정
 fixed_r = 0.5
-fixed_theta = np.radians(45)
-fixed_phi = np.radians(45)
+fixed_theta = np.radians(0)
+fixed_phi = np.radians(0)
 
 cam_pos = np.array([
     fixed_r * np.sin(fixed_theta) * np.cos(fixed_phi),

@@ -3,7 +3,7 @@ import pyrender
 import trimesh
 
 
-def visualize_grasps(graspable,grasps,pose, sphere_radius=0.002,gripper=None):
+def visualize_grasps(graspable,grasps,pose, sphere_radius=0.002,gripper=None,title=None):
     """
     pyrender로 메쉬 + 그래스프 양끝점을 시각화한다.
 
@@ -63,6 +63,6 @@ def visualize_grasps(graspable,grasps,pose, sphere_radius=0.002,gripper=None):
     light = pyrender.DirectionalLight(color=[1, 1, 1], intensity=3.0)
     scene.add(light)
 
-    pyrender.Viewer(scene, use_raymond_lighting=True, window_title='Grasps')
+    pyrender.Viewer(scene, use_raymond_lighting=True,window_title=title)
 
 

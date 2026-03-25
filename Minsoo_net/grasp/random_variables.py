@@ -13,6 +13,7 @@ class RandomVariables():
         self.sigma_trans_ = 1e-6
         self.sigma_approach_ = 1e-6
         self.sigma_friction_=1e-6
+        self.mean_friction_=0.8
 
 
 class GraspableObjectPoseGaussianRV(RandomVariables):
@@ -129,7 +130,7 @@ class ParamsGaussianRV(RandomVariables):
     def __init__(self,config_yaml):
         super().__init__()
         self._parse_config(config_yaml)
-        self.friction_rv_=scipy.stats.halfnorm(0.5,self.sigma_friction_)
+        self.friction_rv_=scipy.stats.halfnorm(self.mean_friction_,self.sigma_friction_)
         
         # --- Metallic (Truncated Normal) ---
         a_met = (self.min_matalic_ - self.mean_matalic_) / self.sigma_matalic_
@@ -145,6 +146,7 @@ class ParamsGaussianRV(RandomVariables):
         if config_yaml is not None:
             with open(config_yaml) as f:
                 config = yaml.safe_load(f)
+                self.mean_friction_=config.get("mean_friction",0.8)
                 self.sigma_friction_ = config.get("sigma_friction", 0.1)
 
                 self.sigma_matalic_ = config.get('sigma_metalic', 0.1)
@@ -155,7 +157,8 @@ class ParamsGaussianRV(RandomVariables):
                 self.mean_roughness = config.get('mean_roughness', 0.6)
                 self.min_roughness = config.get('min_roughness', 0.6)
                 self.sigma_roughness = config.get('sigma_roughness', 0.1)
-                self.max_roughness = config.get('max_roughness', 1.0)                                   
+                self.max_roughness = config.get('max_roughness', 1.0)    
+                                               
 
     def sample(self,size=1):
         return self.friction_rv_.rvs(size)

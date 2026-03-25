@@ -24,6 +24,7 @@ sigma_gripper_approach_angle: 0.05
 # 4. 물리/환경 파라미터 노이즈 (Params RV)
 # 표면 마찰 계수(Friction Coefficient) 노이즈
 sigma_friction: 0.15
+mean_friction: 0.8
 
 # 5. 시뮬레이션 랜더링 관련 물리값들
 sigma_matalic : 0.1

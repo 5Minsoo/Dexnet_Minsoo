@@ -4,28 +4,39 @@ import numpy as np
 import zarr, sys
 import cv2
 from pathlib import Path
+import time
 # --- 설정 ---
-mode=1 ## 1 for clean start  2 for resume
-use_visual=True
+use_visual=False
+
+num_grasps=300
+quality_threshold=0.002
+prob_threshold=0.012 
+tolerance=0.1 # 물체 충돌 검사 시 10%축소된 mesh로 판단
+num_poses=10
+max_angle=15
+
+num_camera_points=200
+camera_radius=(0.4,0.7)
+camera_tilt=(0,3.14/6)
+
+
 zarr_path = "grasp_dataset.zarr"
-output_size = 64
+output_size = 32
+crop_size=96
 batch_size = 10 
 
-num_grasps=30
-quality_threshold=0.03
-num_camera_points=50
-camera_radius=(0.4,0.6)
+print("다시쓰기 / 이어하기 선택")
+mode=input("모드 선택(처음부터: 1번 / 이어하기 2번) 입력 후 Enter ")
 
-if mode ==1:
-    print("기존 데이터를 초기화하고 처음부터 다시 시작합니다.")
-    user=input("데이터 초기화. 계속 진행하겠습니까 (Yes: 1번) 입력 후 Enter ")
-    if user=="1":
-        store = zarr.open(zarr_path, mode='w')
-    else:
-        sys.exit()
+
+if mode=="1":
+    print("기존 데이터를 삭제하고 새로 작업을 시작합니다.")
+    store = zarr.open(zarr_path, mode='w')
 elif mode==2:
     print("기존 데이터에 이어서 작업을 시작합니다.")
     store = zarr.open(zarr_path, mode='a')
+else:
+    sys.exit()
 
 mesh_path=Path(__file__).parent.parent.resolve()
 mesh_path=mesh_path/"data"/"object"
@@ -47,15 +58,14 @@ def flush_to_zarr(img_ds,label_ds,z_ds):
     tmp_imgs, tmp_labels,tmp_z = [], [],[]
 
 
-
 for mesh_path in mesh_files:
     object_name=mesh_path.stem
     mesh_path=str(mesh_path)
     print(f'{object_name} 로드중')
 
-    grasp_pipeline=GraspPipeline(mesh_path,quality_threshold=quality_threshold,num_grasps=num_grasps)
+    grasp_pipeline=GraspPipeline(mesh_path,quality_threshold=quality_threshold,num_grasps=num_grasps,max_approach_angle_deg=max_angle,num_poses=num_poses,tolerance=tolerance)
     renderer=GraspRenderer(mesh_path)
-    points=GraspRenderer.sample_spherical_positions(camera_radius,(0,3.14/6),(0,3.14),num_points=num_camera_points)
+    points=GraspRenderer.sample_spherical_positions(camera_radius,camera_tilt,(0,3.14),num_points=num_camera_points)
     if use_visual:
         viewer=renderer.scene.create_viewer()
         for _ in range(10):
@@ -82,16 +92,18 @@ for mesh_path in mesh_files:
             start_idx = pose_num +1
 
 
-
+    finish=time.time()
     # --- 메인 루프 ---
     for pose, failed_grasps, quality_grasps, quality_scores in grasp_pipeline.execute(start_index=start_idx):
+        start=time.time()
+        print(f'Grasp sampling 시간 {int(start-finish)}초')
         renderer.set_stable_pose(pose)
         metalic,roughness=renderer.sample_material(num_camera_points)
         pose_group=obj_group.require_group(f"pose{start_idx}")
         start_idx+=1
         img_ds = pose_group.create_array("images", shape=(0, output_size, output_size), 
                                 chunks=(batch_size, output_size, output_size), 
-                                dtype='uint8',overwrite=True)
+                                dtype='float32',overwrite=True)
         label_ds = pose_group.create_array("labels", shape=(0,), 
                                         chunks=(batch_size,), 
                                         dtype='float32',overwrite=True)
@@ -103,6 +115,7 @@ for mesh_path in mesh_files:
                 (failed_grasps, [0.0]*len(failed_grasps))]
 
         for grasps, labels in tasks:
+            print("이미지 랜더링 시작 (진행중..)")
             for grasp, label in zip(grasps, labels):
                 metalic,roughness=renderer.sample_material()
                 renderer.set_material(metalic=metalic[0],roughness=roughness[0])
@@ -117,7 +130,7 @@ for mesh_path in mesh_files:
                     
                     cropped = GraspRenderer.crop_grasp_image(
                         depth, image_point[1], image_point[2]-image_point[0], 
-                        crop_size=96, output_size=output_size
+                        crop_size=crop_size, output_size=output_size
                     )
                     if use_visual:
                         viewer.render()
@@ -153,6 +166,8 @@ for mesh_path in mesh_files:
                     if len(tmp_imgs) >= batch_size:
                         flush_to_zarr(img_ds,label_ds,z_ds)
         flush_to_zarr(img_ds,label_ds,z_ds)
+        finish=time.time()
+        print(f'이미지 랜더링 종료 Pose{start_idx-1} 걸린시간: {int(finish-start)}초')
 
 
 print(f"Zarr 데이터셋 생성 완료! 경로: {zarr_path}")

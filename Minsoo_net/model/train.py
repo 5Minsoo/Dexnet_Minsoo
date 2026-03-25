@@ -19,7 +19,7 @@ import argparse
 import logging
 import os
 import time
-
+from datetime import datetime
 import cv2
 import numpy as np
 import scipy.stats as ss
@@ -43,30 +43,30 @@ CFG = dict(
     # ── 학습 ──
     train_batch_size=64,
     val_batch_size=64,
-    num_epochs=50,
+    num_epochs=40,
     train_pct=0.8,
 
     # ── optimizer ──
-    base_lr=0.01,
+    base_lr=0.001,
     momentum=0.9,
-    weight_decay=0.0005,        # L2 regularization
+    weight_decay=0.0000,        # L2 regularization
     decay_rate=0.95,
     decay_step_multiplier=0.66, # epoch 단위
     drop_rate=0.0,
 
     # ── 라벨 ──
-    metric_thresh=0.002,        # label > thresh → positive (1)
+    metric_thresh=0.034 ,       # label > thresh → positive (1)
 
     # ── 로깅 / 저장 ──
-    eval_frequency=5,           # epoch 단위
-    save_frequency=5,           # epoch 단위
-    log_frequency=50,           # step 단위
+    eval_frequency=1,           # epoch 단위
+    save_frequency=1,           # epoch 단위
+    log_frequency=200,           # step 단위
 
     # ── 데이터 증강 ──
-    multiplicative_denoising=True,
+    multiplicative_denoising=False,
     gamma_shape=1000.0,
 
-    gaussian_process_denoising=True,
+    gaussian_process_denoising=False,
     gaussian_process_rate=0.5,
     gaussian_process_sigma=0.005,
     gaussian_process_scaling_factor=4.0,
@@ -77,10 +77,17 @@ CFG = dict(
     num_random_files=10000,     # mean/std 계산 시 사용할 최대 샘플 수
 
     # ── 기타 ──
-    seed=24098,
-)
+    seed=24098
+    )
 
-
+def init_weights(m):
+    # Conv2d 또는 Linear 레이어인 경우에만 적용
+    if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
+        # He 정규분포 초기화
+        nn.init.kaiming_normal_(m.weight, mode='fan_in', nonlinearity='relu')
+        # 편향(bias)이 존재하면 0으로 초기화
+        if m.bias is not None:
+            nn.init.constant_(m.bias, 0)
 # ══════════════════════════════════════════════════════════════════════
 #  Zarr Dataset
 # ══════════════════════════════════════════════════════════════════════
@@ -93,13 +100,13 @@ class DexNetZarrDataset(Dataset):
     """
 
     def __init__(self, zarr_path, indices=None, im_height=32, im_width=32,
-                 metric_thresh=0.002, augment=False, cfg=None,
+                 metric_thresh=0.00001, augment=False, cfg=None,
                  im_mean=0.0, im_std=1.0, pose_mean=0.0, pose_std=1.0):
         super().__init__()
         self.root = zarr.open(str(zarr_path), mode="r")
         self.im_height = im_height
         self.im_width = im_width
-        self.metric_thresh = metric_thresh
+        self.metric_thresh = metric_thresh ##어차피 특정 확률 필터링은 데이터 생성때 함. 이진화는 그냥 확률이 0이 아니기만 하면 다 1로 처리.
         self.augment = augment
         self.cfg = cfg or CFG
 
@@ -108,13 +115,38 @@ class DexNetZarrDataset(Dataset):
         self.pose_mean = pose_mean
         self.pose_std = pose_std
 
-        # 모든 (object, pose) 경로를 평탄화
-        self.paths = []  # list of (obj_key, pose_key)
+        # 모든 (object, pose, grasp) 경로를 평탄화
+        self.paths = []
+        self.success = 0  
+        self.total_samples = 0 # 전체 샘플 수를 저장할 변수 추가
+
         for obj_key in self.root.keys():
             obj_group = self.root[obj_key]
             for pose_key in obj_group.keys():
-                self.paths.append((obj_key, pose_key))
+                # 1. 이 포즈의 데이터 개수 확인
+                labels = np.array(obj_group[pose_key]["labels"])
+                num_grasps = labels.shape[0]
+                images = np.array(obj_group[pose_key]["images"])
+                if np.isnan(images).any():
+                    raise ValueError(f"데이터셋에 Nan 이미지가 있음.")
+                # 2. 전체 샘플 수 누적
+                self.total_samples += num_grasps
 
+                # 3. 성공 데이터 누적
+                self.success += np.sum(labels > metric_thresh)
+                
+                # 4. 경로 저장
+                for grasp_idx in range(num_grasps):
+                    self.paths.append((obj_key, pose_key, grasp_idx))
+
+
+        # 5. 최종 결과 출력 (전체 샘플 수에서 성공을 뺌)
+        print("-" * 30)
+        print(f"데이터셋 통계 ({datetime.now().strftime('%m/%d %H:%M')})")
+        print(f"전체 Data : {self.total_samples}개")
+        print(f"성공 Data : {self.success}개 ({(self.success/self.total_samples)*100:.1f}%)")
+        print(f"실패 Data : {self.total_samples - self.success}개")
+        print("-" * 30)
         # 인덱스 필터링 (train/val split)
         if indices is not None:
             self.paths = [self.paths[i] for i in indices]
@@ -123,22 +155,21 @@ class DexNetZarrDataset(Dataset):
         return len(self.paths)
 
     def __getitem__(self, idx):
-        obj_key, pose_key = self.paths[idx]
+        # 이제 idx를 통해 obj, pose, 그리고 N개 중 몇 번째인지(grasp_idx)까지 알 수 있습니다!
+        obj_key, pose_key, grasp_idx = self.paths[idx]
         group = self.root[obj_key][pose_key]
 
         # ── 이미지 로드 ──
-        image = np.array(group["image"], dtype=np.float32)
-        if image.ndim == 3:
-            image = image[:, :, 0]  # (H, W, 1) → (H, W)
+        # 통째로 다 불러오지 말고, zarr에서 필요한 그 1장만 쏙 빼옵니다. (속도 훨씬 빠름)
+        image = np.array(group["images"][grasp_idx], dtype=np.float32)
 
-        # 리사이즈 (필요한 경우)
+        # 리사이즈 (차원이 [H, W]가 되었으므로 shape[0], shape[1]로 검사)
         if image.shape[0] != self.im_height or image.shape[1] != self.im_width:
-            image = cv2.resize(image, (self.im_width, self.im_height),
-                               interpolation=cv2.INTER_CUBIC)
+            image = cv2.resize(image, (self.im_width, self.im_height), interpolation=cv2.INTER_CUBIC)
 
         # ── depth / label ──
-        depth = float(np.array(group["depth"]))
-        label = float(np.array(group["label"]))
+        depth = float(np.array(group["gripper_depth"][grasp_idx]))
+        label = float(np.array(group["labels"][grasp_idx]))
 
         # ── 증강 ──
         if self.augment:
@@ -215,7 +246,9 @@ def compute_data_stats(zarr_path, train_indices, im_height, im_width,
     all_paths = []
     for obj_key in root.keys():
         for pose_key in root[obj_key].keys():
-            all_paths.append((obj_key, pose_key))
+            num_grasps=root[obj_key][pose_key]["labels"].shape[0]
+            for grasps in range(num_grasps):
+                all_paths.append((obj_key,pose_key,grasps))
 
     train_paths = [all_paths[i] for i in train_indices]
 
@@ -233,14 +266,15 @@ def compute_data_stats(zarr_path, train_indices, im_height, im_width,
     for k, idx in enumerate(sampled):
         if k % 2000 == 0:
             log.info(f"  Processing {k}/{n} samples...")
-        obj_key, pose_key = train_paths[idx]
+        obj_key, pose_key, grasp_num = train_paths[idx]
         group = root[obj_key][pose_key]
 
-        image = np.array(group["image"], dtype=np.float64)
+        image = np.array(group["images"][grasp_num], dtype=np.float64)
         if image.ndim == 3:
             image = image[:, :, 0]
 
         if image.shape[0] != im_height or image.shape[1] != im_width:
+            print('저장된 Image 사이즈가 모델 입력과 다릅니다')
             image = cv2.resize(image.astype(np.float32),
                                (im_width, im_height),
                                interpolation=cv2.INTER_CUBIC).astype(np.float64)
@@ -249,7 +283,7 @@ def compute_data_stats(zarr_path, train_indices, im_height, im_width,
         im_sq_sum += (image ** 2).sum()
         num_pixels += image.size
 
-        depth = float(np.array(group["depth"]))
+        depth = float(np.array(group["gripper_depth"][grasp_num]))
         pose_values.append(depth)
 
     im_mean = im_sum / num_pixels
@@ -326,12 +360,13 @@ def train(args):
 
     # ── zarr 열어서 전체 샘플 수 파악 ──
     root = zarr.open(str(args.data), mode="r")
-    all_paths = []
+    all_paths =0
     for obj_key in root.keys():
         for pose_key in root[obj_key].keys():
-            all_paths.append((obj_key, pose_key))
-    num_total = len(all_paths)
-    log.info(f"Total samples: {num_total}")
+            all_paths+=root[obj_key][pose_key]["labels"].shape[0]
+
+    num_total = all_paths
+    log.info(f"Total samples (전체 Pose 개수): {num_total}")
 
     # ── Train / Val split ──
     indices = np.arange(num_total)
@@ -363,11 +398,11 @@ def train(args):
 
     train_loader = DataLoader(
         train_ds, batch_size=cfg["train_batch_size"],
-        shuffle=True, num_workers=4, pin_memory=True, drop_last=True)
+        shuffle=True, num_workers=12, pin_memory=True, drop_last=True)
 
     val_loader = DataLoader(
         val_ds, batch_size=cfg["val_batch_size"],
-        shuffle=False, num_workers=2, pin_memory=True)
+        shuffle=False, num_workers=12, pin_memory=True)
 
     # ── 모델 ──
     model = DexNet2(im_height=args.im_height, im_width=args.im_width)
@@ -375,22 +410,24 @@ def train(args):
     model.im_std = im_std
     model.pose_mean = np.array([pose_mean], dtype=np.float32)
     model.pose_std = np.array([pose_std], dtype=np.float32)
+    model.apply(init_weights)
     model.to(device)
 
     # ── Loss / Optimizer / Scheduler ──
-    criterion = nn.CrossEntropyLoss()
+    num_pos = train_ds.success
+    num_neg = train_ds.total_samples - num_pos
+    weight = torch.tensor([1.0, num_neg / num_pos], dtype=torch.float32).to(device)
+    criterion = nn.CrossEntropyLoss(weight=weight)
 
-    optimizer = torch.optim.SGD(
+    optimizer = torch.optim.Adam(
         model.parameters(),
         lr=cfg["base_lr"],
-        momentum=cfg["momentum"],
         weight_decay=cfg["weight_decay"])
 
     # lr decay: 매 (decay_step_multiplier * num_train) 샘플마다 decay
     decay_step_epochs = cfg["decay_step_multiplier"]
-    scheduler = torch.optim.lr_scheduler.StepLR(
+    scheduler = torch.optim.lr_scheduler.ExponentialLR(
         optimizer,
-        step_size=max(1, int(decay_step_epochs * len(train_loader))),
         gamma=cfg["decay_rate"])
 
     # ── 출력 디렉토리 ──
@@ -422,11 +459,7 @@ def train(args):
             optimizer.zero_grad()
             loss.backward()
 
-            # gradient clipping
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1e10)
-
             optimizer.step()
-            scheduler.step()
 
             # 통계
             preds = logits.argmax(dim=1)
@@ -445,6 +478,7 @@ def train(args):
                     f"loss={loss.item():.4f}  "
                     f"batch_acc={batch_correct/batch_total:.3f}  "
                     f"lr={lr_now:.6f}")
+        scheduler.step()
 
         # ── Epoch 요약 ──
         train_loss = epoch_loss / max(epoch_total, 1)
@@ -484,10 +518,14 @@ def train(args):
 #  CLI
 # ══════════════════════════════════════════════════════════════════════
 def main():
+    now=datetime.now()
+    file_name_time = now.strftime("%Y%m%d_%H-%M")
+    print(file_name_time)
+    
     parser = argparse.ArgumentParser(description="Dex-Net 2.0 GQ-CNN 학습")
     parser.add_argument("--data", type=str, required=True,
                         help="zarr 데이터셋 경로")
-    parser.add_argument("--output", type=str, default="./output",
+    parser.add_argument("--output", type=str, default=f"./output/{file_name_time}",
                         help="모델 저장 경로")
     parser.add_argument("--im-height", type=int, default=32,
                         help="이미지 높이 (기본 32)")

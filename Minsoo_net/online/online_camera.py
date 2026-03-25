@@ -26,7 +26,7 @@ class RealSenseCamera:
         self.config = rs.config()
         self.width = width
         self.height = height
-
+        self.align=rs.align(rs.stream.color)
         # 스트림 활성화
         self.config.enable_stream(rs.stream.depth, width, height, rs.format.z16, fps)
         self.config.enable_stream(rs.stream.color, width, height, rs.format.bgr8, fps)
@@ -41,7 +41,6 @@ class RealSenseCamera:
 
         # Depth 스케일 (미터 변환용)
         self.depth_scale = self.depth_sensor.get_depth_scale()
-
         # [중요] 오직 Depth 센서 기준의 Intrinsic (내부 파라미터) 가져오기
         depth_stream = self.profile.get_stream(rs.stream.depth)
         self.intrinsic_parameter=parse_intrinsic_string_to_K(depth_stream.as_video_stream_profile().get_intrinsics())
@@ -66,7 +65,7 @@ class RealSenseCamera:
     def update_frames(self):
         """새로운 프레임 세트를 받아오고 내부 버퍼를 업데이트합니다. (Align 없음)"""
         frames = self.pipeline.wait_for_frames()
-        
+        frames=self.align.process(frames)
         # 순수 raw 프레임 사용
         self.depth_frame = frames.get_depth_frame()
         self.color_frame = frames.get_color_frame()
@@ -107,88 +106,110 @@ class RealSenseCamera:
         cv2.imshow('RealSense Debug (Left: Color, Right: Depth)', images)
         cv2.waitKey(1)
 
-    # 7. Axis, Center 기준 Crop & Rotate (16-bit Depth 안전 처리 포함)
-    @staticmethod
-    def crop_and_rotate(image, center, axis, crop_size=(200, 200)):
-        """
-        center를 중앙으로 하고, 지정된 axis가 수직 방향이 되도록 회전 및 크롭합니다.
-        Depth 이미지(uint16) 입력 시에도 안전하게 작동하도록 보강됨.
-        """
-        cx, cy = center
-        dx, dy = axis
-        
-        # 각도 계산 후 수직 지향 보정 (+90도)
-        angle_rad = math.atan2(dy, dx)
-        angle_deg = math.degrees(angle_rad)
-        rotation_angle = angle_deg + 90 
+    def inside_box_image(self,lower_value= np.array([90, 100, 100]),upper_value= np.array([110, 255, 255]),area_threshold=40000):
+        depth=self.get_depth_image()
+        color=self.get_color_image()
+        if depth is not None:
+            hsv = cv2.cvtColor(color, cv2.COLOR_RGB2HSV)
+            mask = cv2.inRange(hsv, lower_value, upper_value)
+            contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            color_result = color.copy()
+            depth_result = np.zeros_like(depth)
+            for i, cnt in enumerate(contours):
+                if cv2.contourArea(cnt) < area_threshold:
+                    continue
+                contour_mask = np.zeros(color.shape[:2], dtype=np.uint8)
+                cv2.drawContours(contour_mask, [cnt], -1, 255, cv2.FILLED)
 
-        # OpenCV의 getRectSubPix는 16-bit uint를 직접 지원하지 않으므로 float32로 변환 후 처리
-        is_uint16 = image.dtype == np.uint16
-        if is_uint16:
-            image = image.astype(np.float32)
-
-        # 1) 회전 매트릭스 생성 및 회전 적용
-        M = cv2.getRotationMatrix2D((cx, cy), rotation_angle, 1.0)
-        rotated_image = cv2.warpAffine(image, M, (image.shape[1], image.shape[0]))
-
-        # 2) 크롭
-        cropped_image = cv2.getRectSubPix(rotated_image, crop_size, (cx, cy))
-        
-        # 다시 uint16으로 복원 (Depth 값 유지)
-        if is_uint16:
-            cropped_image = np.round(cropped_image).astype(np.uint16)
+                color_result[contour_mask == 0] = (0, 0, 0)
+                depth_result[contour_mask == 255] = depth[contour_mask == 255]
             
-        return cropped_image
+            return color_result,depth_result
+        
+    @staticmethod
+    def crop_and_rotate_batch(image, grasps, crop_size=(200, 200)):
+        """
+        image: 원본 Depth 이미지 (2D 배열)
+        grasps: Sampler에서 반환된 (N, 4) 배열 [u, v, theta, depth]
+        반환값: N개의 크롭된 이미지 배열 (N, crop_size[1], crop_size[0])
+        """
+        cropped_images = []
+        
+        for grasp in grasps:
+            u, v, theta, _ = grasp
+            cx, cy = float(u), float(v)
+            
+            # 1. 각도 계산 (Sampler의 theta는 라디안이므로 도(Degree)로 변환)
+            angle_deg = math.degrees(theta)
+            rotation_angle = angle_deg + 90 
+            
+            # 2. 중심점 기준 회전 행렬 생성
+            M = cv2.getRotationMatrix2D((cx, cy), rotation_angle, 1.0)
+            
+            # 3. [최적화 핵심] 잘라낼 영역의 중심이 결과 이미지의 정중앙에 오도록 평행 이동
+            M[0, 2] += (crop_size[0] / 2.0) - cx
+            M[1, 2] += (crop_size[1] / 2.0) - cy
+            
+            # 4. 회전과 크롭을 한 방에 처리
+            # 🚨 Depth 이미지는 보간(Interpolation)을 하면 경계선 픽셀 값이 뭉개지므로 
+            # 반드시 INTER_NEAREST를 써야 물리적인 깊이값이 훼손되지 않습니다.
+            cropped_image = cv2.warpAffine(
+                image, 
+                M, 
+                crop_size, 
+                flags=cv2.INTER_NEAREST, 
+                borderMode=cv2.BORDER_CONSTANT, 
+                borderValue=0
+            )
+            
+            cropped_images.append(cropped_image)
+            
+        # 파이토치 모델에 넣기 좋게 (N, H, W) 형태의 다차원 넘파이 배열로 묶어서 반환
+        return np.array(cropped_images, dtype=image.dtype)
+
+    @staticmethod
+    def show_images(color=None, depth=None, window_name="Camera View"):
+        frames = []
+
+        if color is not None:
+            if len(color.shape) == 2:
+                color = cv2.cvtColor(color, cv2.COLOR_GRAY2BGR)
+            frames.append(color)
+
+        if depth is not None:
+            depth_float = depth.astype(np.float32)
+            mask = depth_float > 0
+
+            if mask.any():
+                d_min, d_max = depth_float[mask].min(), depth_float[mask].max()
+                depth_norm = np.zeros_like(depth_float, dtype=np.uint8)
+                if d_max - d_min > 0:
+                    depth_norm[mask] = ((depth_float[mask] - d_min) / (d_max - d_min) * 255).astype(np.uint8)
+                else:
+                    depth_norm[mask] = 128
+                depth_colormap = cv2.applyColorMap(depth_norm, cv2.COLORMAP_JET)
+                depth_colormap[~mask] = (0, 0, 0)
+            else:
+                depth_colormap = np.zeros((*depth.shape, 3), dtype=np.uint8)
+            frames.append(depth_colormap)
+
+        if not frames:
+            return
+
+        combined = np.hstack(frames) if len(frames) > 1 else frames[0]
+        cv2.imshow(window_name, combined)
+        cv2.waitKey(1)
 
     def release(self):
         self.pipeline.stop()
         cv2.destroyAllWindows()
 
-
-# ==========================================
-# 실행 예시 (Main)
-# ==========================================
-if __name__ == "__main__":
+if __name__ == '__main__':
     camera = RealSenseCamera()
-    
-    # 예시용 Extrinsic (로봇 베이스 기준 카메라의 위치/자세 등)
-    # 실제 환경에서는 캘리브레이션된 4x4 변환 행렬을 넣어주세요.
-    T_wc_dummy = np.eye(4)
-    camera.set_extrinsic(T_wc_dummy) # 클래스에 Extrinsic 세팅
-
     try:
         while True:
-            if not camera.update_frames():
-                continue
-            
-            # 1. Depth 이미지 집중 활용
-            depth_img = camera.get_depth_image()
-
-            # 2. 디버깅 화면 출력
-            camera.show_debug_colormap()
-            
-            # 3. 좌표 변환 테스트
-            # 화면 중앙 픽셀의 월드 좌표 구하기
-            center_u, center_v = 320, 240
-            world_pt = camera.pixel_to_world(center_u, center_v)
-            if world_pt is not None:
-                # 출력량이 너무 많아지므로 주석 처리
-                # print(f"중앙 픽셀 월드 좌표: {world_pt}")
-                pass
-
-            # 전체 포인트 클라우드 월드 좌표로 한 방에 얻기
-            all_world_pts = camera.get_world_pointcloud()
-            
-            # 4. Depth 이미지 Crop & Rotate 테스트 (16-bit 데이터 그대로 유지됨)
-            axis_vector = (1, 1) 
-            cropped_depth = camera.crop_and_rotate(depth_img, (center_u, center_v), axis_vector, crop_size=(150, 150))
-            
-            # 잘라낸 Depth 이미지 시각화용 (확인용으로 컬러맵 입힘)
-            cropped_depth_vis = cv2.applyColorMap(cv2.convertScaleAbs(cropped_depth, alpha=0.03), cv2.COLORMAP_JET)
-            cv2.imshow('Cropped & Rotated Depth', cropped_depth_vis)
-
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+            camera.update_frames()
+            color, depth = camera.inside_box_image()
 
     finally:
         camera.release()

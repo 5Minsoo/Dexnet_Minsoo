@@ -1,27 +1,16 @@
 import trimesh
 import numpy as np
 
-mesh = trimesh.load("/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/gripper/gripper.stl")
+# 1. 파일 로드 및 스케일 조정 (사용자 코드 유지)
+mesh = trimesh.load("/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/bin.stl")
+mesh2=trimesh.load("/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/PVCTT13.stl")
 mesh.apply_scale(0.001)
-# 원점에 축 표시 (RGB = XYZ)
-axis = trimesh.creation.axis(origin_size=5, axis_length=50)
-axis.apply_scale(0.001)
-trans=np.array([[ 1.0,  0.0,  0.0,  0.0   ],
- [ 0.0,  0.0,  1.0,  0.056 ],
- [ 0.0, -1.0,  0.0,  0.0   ],
- [ 0.0,  0.0,  0.0,  1.0   ]])
+# 2. Scene 생성 및 물체 추가
+scene = trimesh.Scene()
+scene.add_geometry([mesh2])
 
-trans2=np.eye(4)
-trans2[:3,3]=np.array([0.0,0.0,-0.056])
-new=axis.copy()
-new=new.apply_transform(trans)
-
-# mesh_old=mesh.copy()
-mesh.apply_transform(np.linalg.inv(trans))
-
-    
-print('모델크기: ',mesh.extents)
-# 함께 시각화
-scene = trimesh.Scene([mesh,axis,new])
+# 3. 시각화 창 띄우기
 scene.show()
 
+_,probs=mesh2.compute_stable_poses()
+print(probs)

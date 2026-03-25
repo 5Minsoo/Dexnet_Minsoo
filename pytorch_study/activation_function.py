@@ -1,9 +1,8 @@
-import torch
-
-x_train=torch.FloatTensor([1,2,3])
-y_train=torch.FloatTensor([4,5,6])
-print(x_train.shape)
-
-W=torch.zeros(x_train.shape,requires_grad=True)
-b=torch.zeros(x_train.shape,requires_grad=True)
-print(W)
+from Minsoo_net.grasp import GraspPipeline
+p=GraspPipeline('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/object.stl',30,0.0,0.012,30)
+gen=    p.execute(use_visual=True,start_index=8)
+for i in range(30):
+    try:
+        result = next(gen) # 하나씩 가져오기
+    except StopIteration:
+        break

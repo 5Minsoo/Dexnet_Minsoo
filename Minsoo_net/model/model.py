@@ -78,8 +78,8 @@ class DexNet2(nn.Module):
         nn.init.zeros_(self.fc5.bias)
 
         # ── 정규화 통계 ──
-        self.im_mean = 0.0
-        self.im_std = 1.0
+        self.im_mean = None
+        self.im_std = None
         self.pose_mean = np.zeros(pose_dim, dtype=np.float32)
         self.pose_std = np.ones(pose_dim, dtype=np.float32)
 
@@ -133,6 +133,17 @@ class DexNet2(nn.Module):
         for i in range(0, im_t.shape[0], 64):
             logits = self(im_t[i:i+64], po_t[i:i+64])
             outs.append(F.softmax(logits, dim=-1))
+        # print("raw pose:", images[:5])
+        # print(f"raw depth range: min={np.nanmin(images):.4f}, max={np.nanmax(images):.4f}")
+        # print(f"raw depth shape: {images.shape}")
+        # print(f"NaN count: {np.isnan(images).sum()} / {images.size} ({np.isnan(images).sum()/images.size*100:.1f}%)")
+        # print(f"Inf count: {np.isinf(images).sum()}")
+        # print(f"Zero count: {(images == 0).sum()} ({(images == 0).sum()/images.size*100:.1f}%)")
+        # print("pose_mean:", self.pose_mean, "pose_std:", self.pose_std) 
+        # print("logits:", logits[:5])  # softmax 전 raw 값 확인
+        # print("probs:", F.softmax(logits, dim=-1)[:5])
+        # print("input range:", im_t.min(), im_t.max())
+        # print("pose range:", po_t.min(), po_t.max())
         return torch.cat(outs, 0).cpu().numpy()
 
     def predict_success(self, images, poses):
@@ -147,7 +158,7 @@ class DexNet2(nn.Module):
         }, path)
 
     @classmethod
-    def load(cls, path, device="cpu"):
+    def load(cls, path, device="cuda"):
         ckpt = torch.load(path, map_location=device, weights_only=False)
         m = cls(im_height=ckpt["im_height"], im_width=ckpt["im_width"])
         m.load_state_dict(ckpt["state_dict"])

@@ -23,7 +23,8 @@ class GraspPipeline:
                  num_grasps=3, 
                  prob_threshold=0.012, 
                  quality_threshold=0.03,
-                 max_approach_angle_deg=15):
+                 max_approach_angle_deg=15,
+                 num_poses=10,tolerance=0.1):
         
         # 1. 파일 경로 설정
         self.config_path = p / "config" / "master_config.yaml"
@@ -40,13 +41,13 @@ class GraspPipeline:
         self.graspable_obj = GraspableObject3D(obj_file, sdf_resolution=256)    
         self.sampler = AntipodalGraspSampler(self.config_path)
         self.gripper = RobotGripper('hande', self.gripper_yaml)
-        self.checker = GraspCollisionChecker(self.gripper)
+        self.checker = GraspCollisionChecker(self.gripper,tolerance=tolerance)
 
         self.initial_grasps = self.sampler.generate_grasps(self.graspable_obj, self.num_grasps)
         
         # 안정적인 Pose 계산
         self.stable_poses, self.probs = self.graspable_obj.stable_poses()
-
+        self.num_poses=num_poses
     def filter_collision_free_grasps(self, aligned_grasps, pose, obj_key):
         """접근 각도 필터링 및 충돌 검사를 수행합니다."""
         collision_free_grasps = []
@@ -54,12 +55,15 @@ class GraspPipeline:
         for grasp in aligned_grasps:
             _, approach_angle, _ = grasp.grasp_angles_from_stp_z(pose)
             
-            if approach_angle < self.max_approach_angle:
-                collision_free_grasps.append(grasp)
+            if approach_angle > self.max_approach_angle:
                 continue
-                
+            
+            #######################collide along approach로 변경 가능####################
             if not self.checker.grasp_in_collision(grasp.T_grasp_obj, key=obj_key):
                 collision_free_grasps.append(grasp)
+
+            # if not self.checker.collides_along_approach(grasp, key=obj_key):
+            #     collision_free_grasps.append(grasp)
             else:
                 collision_grasps.append(grasp)
         return collision_grasps,collision_free_grasps
@@ -91,7 +95,7 @@ class GraspPipeline:
         returns stable_poses,initial_grasps,collision_free,quality_grasps,qualities
         """
         yielded_count = 0
-        for idx, (pose, prob) in enumerate(zip(self.stable_poses, self.probs)):
+        for idx, (pose, prob) in enumerate(zip(self.stable_poses[:self.num_poses], self.probs[:self.num_poses])):
             if prob < self.prob_threshold:
                 continue
                 
@@ -127,25 +131,68 @@ class GraspPipeline:
             print(f'quality grasp 개수: {len(quality_grasps)}')
             
             if use_visual:
-                visualize_grasps(self.graspable_obj, collision_free_grasps, pose=pose, gripper=self.gripper)
-                # collision_free_grasps=[grasp.transform(pose) for grasp in collision_free_grasps]
-                # quality_grasps = [grasp.transform(pose) for grasp in quality_grasps]
-                visualize_grasps(self.graspable_obj, quality_grasps, pose=pose, gripper=self.gripper)
+                visualize_grasps(self.graspable_obj, collision_grasps, pose=pose, gripper=self.gripper,title="Collision Grasps")
+                visualize_grasps(self.graspable_obj, collision_free_grasps, pose=pose, gripper=self.gripper,title="Collision free Grasps")
+                visualize_grasps(self.graspable_obj, quality_grasps, pose=pose, gripper=self.gripper,title="Quality Grasps")
             
-            # 요청하신 반환값으로 변경
             yield pose, failed_grasps, quality_grasps, quality
             yielded_count += 1
 
 
-# === 실행 예시 ===
 if __name__ == "__main__":
-    # 클래스 초기화 시 파라미터를 유연하게 변경 가능합니다.
-    pipeline = GraspPipeline(
-        obj_file='/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object.stl',
-        num_grasps=10,
-        prob_threshold=0.012,
-        quality_threshold=0.03
-    )
+    # 1. 설정 파라미터
+    # 실제 환경에 맞춰 경로를 수정하세요.
+    OBJ_FILE_PATH = '/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/PVCTT13.stl'
     
-    # 파이프라인 실행
-    pipeline.execute()
+    # --- 테스트 제어 변수 ---
+    START_INDEX = 0      # 0부터 시작하거나, 특정 Pose부터 재개하고 싶을 때 변경
+    NUM_TEST_GRASPS = 30 # 한 Pose당 생성할 Grasp 후보 개수
+    VISUALIZE = True    # 시각화 여부
+    # -----------------------
+
+    print(f"\n" + "="*60)
+    print(f"🚀 Grasp 파이프라인 테스트를 시작합니다. (시작 인덱스: {START_INDEX})")
+    print(f"📦 대상 파일: {OBJ_FILE_PATH}")
+    print("="*60)
+
+    # 2. 파이프라인 초기화
+    try:
+        pipeline = GraspPipeline(
+            obj_file=OBJ_FILE_PATH,
+            num_grasps=NUM_TEST_GRASPS,
+            prob_threshold=0.012,
+            quality_threshold=0.002
+        )
+        
+        print(f"✅ 객체 로드 및 Stable Poses 계산 완료. (총 {len(pipeline.stable_poses)}개 발견)")
+
+        # 3. 파이프라인 실행 (Generator 순회)
+        # execute 메서드에 start_index를 전달하여 내부 스킵 로직 작동
+        results_generator = pipeline.execute(use_visual=VISUALIZE, start_index=START_INDEX)
+
+        for i, (pose, failed_grasps, quality_grasps, qualities) in enumerate(results_generator):
+            current_pose_idx = START_INDEX + i
+            
+            print(f"\n[결과 리포트 - Pose {current_pose_idx}]")
+            print(f"  - 성공(Quality) Grasp: {len(quality_grasps)}개")
+            print(f"  - 실패(Collision/Low Quality) Grasp: {len(failed_grasps)}개")
+            
+            if len(qualities) > 0:
+                print(f"  - 최고 품질 점수: {max(qualities):.4f}")
+                print(f"  - 평균 품질 점수: {np.mean(qualities):.4f}")
+            else:
+                print("  - ⚠️ 이 Pose에서는 유효한 Grasp을 찾지 못했습니다.")
+
+            print("-" * 40)
+            # 시각화가 켜져 있을 경우, 창을 닫아야 다음 Pose로 넘어갑니다.
+            if VISUALIZE:
+                print(f"💡 Pose {current_pose_idx} 시각화 중... 다음으로 넘어가려면 창을 닫으세요.")
+
+    except FileNotFoundError:
+        print(f"❌ 오류: 파일을 찾을 수 없습니다. 경로를 확인하세요: {OBJ_FILE_PATH}")
+    except Exception as e:
+        print(f"❌ 실행 중 예상치 못한 오류 발생: {e}")
+        import traceback
+        traceback.print_exc()
+
+    print("\n[🏁 테스트 종료] 모든 처리가 완료되었습니다.")

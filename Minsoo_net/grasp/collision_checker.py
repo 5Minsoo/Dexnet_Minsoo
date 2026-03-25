@@ -26,11 +26,12 @@ def _se3_to_fcl_transform(T):
 class CollisionChecker(object):
     """Wrapper for collision checking with python-fcl"""
 
-    def __init__(self):
+    def __init__(self,tolerance=0.1):
         self._geoms = {}
         self._objs = {}
         self._objs_tf = {}
         self._meshes = {}
+        self.tolerance=1-tolerance
 
     def remove_object(self, name):
         if name not in self._objs:
@@ -49,9 +50,13 @@ class CollisionChecker(object):
         T_world_obj : np.ndarray, shape (4,4)
             SE(3) transformation from object to world frame
         """
-        bvh = _load_mesh_as_bvh(mesh)
+        mesh_object=mesh.copy()
+        if name != "gripper":
+            centroid = mesh_object.centroid
+            mesh_object.vertices = centroid + (mesh_object.vertices - centroid) * self.tolerance
+        bvh = _load_mesh_as_bvh(mesh_object)
         self._geoms[name] = bvh
-        self._meshes[name] = mesh
+        self._meshes[name] = mesh_object
 
         if T_world_obj is None:
             T_world_obj = np.eye(4)
@@ -84,7 +89,7 @@ class CollisionChecker(object):
             if other_name != target_name:
                 ret = fcl.collide(self._objs[other_name], target_obj, request, result)
                 if ret > 0:
-                    print('Collision between: {0} and {1}'.format(other_name, target_name))
+                    # print('Collision between: {0} and {1}'.format(other_name, target_name))
                     return True
 
         return False
@@ -104,7 +109,7 @@ class CollisionChecker(object):
                 result = fcl.CollisionResult()
                 ret = fcl.collide(self._objs[name1], self._objs[name2], request, result)
                 if ret > 0:
-                    print('Collision between: {0} and {1}'.format(name1, name2))
+                    # print('Collision between: {0} and {1}'.format(name1, name2))
                     collision_pairs.append((name1, name2))
                     has_collision = True
 
@@ -146,8 +151,9 @@ class CollisionChecker(object):
 class GraspCollisionChecker(CollisionChecker):
     """Collision checker that automatically handles grasp objects."""
 
-    def __init__(self, gripper):
+    def __init__(self, gripper,tolerance):
         super().__init__()
+        self.tolerance=1-tolerance
         self._gripper = gripper
         self.set_object('gripper', self._gripper.mesh)
 
@@ -204,7 +210,7 @@ class GraspCollisionChecker(CollisionChecker):
 
         return self.in_collision_single('gripper')
 
-    def collides_along_approach(self, grasp, approach_dist, delta_approach, key=None):
+    def collides_along_approach(self, grasp, delta_approach=0.01,approach_dist=0.09,key=None):
         """
         Parameters
         ----------
@@ -222,12 +228,12 @@ class GraspCollisionChecker(CollisionChecker):
 
         collides = False
         cur_approach = 0.0
-        while cur_approach <= approach_dist and not collides:
+        while cur_approach <= approach_dist+1e-6 and not collides:
             T_approach_obj = T_grasp_obj.copy()
             T_approach_obj[:3, 3] -= cur_approach * grasp_approach_axis
-            T_gripper_obj = T_approach_obj @ np.linalg.inv(self._gripper.T_grasp_gripper)
+            T_gripper_obj = T_approach_obj
 
-            collides = self.grasp_in_collision(T_gripper_obj, key=self._graspable_key)
+            collides = self.grasp_in_collision(T_gripper_obj, key=key)
             cur_approach += delta_approach
 
         return collides
