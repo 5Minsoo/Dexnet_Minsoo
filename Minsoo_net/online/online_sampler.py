@@ -1,5 +1,15 @@
 import numpy as np
 import cv2
+import deapth_image
+from scipy.spatial.distance import pdist, squareform
+def force_closure(p1s, p2s, n1s, n2s, mu):
+    v = p2s - p1s  # (N, 2)
+    v = v / np.linalg.norm(v, axis=1, keepdims=True)
+    alpha = np.arctan(mu)
+    dot_1 = np.clip(np.sum(n1s * (-v), axis=1), -1, 1)
+    dot_2 = np.clip(np.sum(n2s * v, axis=1), -1, 1)
+    return (np.arccos(dot_1) < alpha) & (np.arccos(dot_2) < alpha)  # (N,) bool
+
 
 class OnlineAntipodalSampler:
     def __init__(self, gripper_width_m, K, max_grasps=100):
@@ -8,6 +18,7 @@ class OnlineAntipodalSampler:
         self.K_inv = np.linalg.inv(self.K)
         self.max_grasps = max_grasps
         self.grad_threshold=0.1
+
     def sample_grasps(self, depth_image):
         """
         깊이 이미지를 기반으로 N개의 4-DOF 파지 후보군을 배치로 반환합니다.
@@ -15,20 +26,15 @@ class OnlineAntipodalSampler:
         """
         sampled_grasps = []
         
-        # 1. 깊이 이미지에서 직접 엣지(경계) 추출
-        sobel_x = cv2.Sobel(depth_image, cv2.CV_32F, 1, 0, ksize=3)
-        sobel_y = cv2.Sobel(depth_image, cv2.CV_32F, 0, 1, ksize=3)
+        edge_pixels=depth_image.gradient_threshold()
+        ys,xs=np.where(edge_pixels==0)
+        pixels=np.stack([ys,xs],axis=1)
+        dists=pdist(pixels)
         
-        # 여기서부터는 동일하게 hypot로 크기 계산
-        grad = np.hypot(sobel_x, sobel_y)
+        min_depth = np.min(edge_pixels)
+        max_depth = np.max(edge_pixels)
         
-        mask = grad > 15
-        edge_pixels = np.zeros_like(depth_image)
-        edge_pixels[mask] = 1.0
-        
-        if len(edge_pixels) < 2:
-            print('edge가 없습니다')
-            return np.zeros((0, 4), dtype=np.float32)
+        edge_normals=depth_image.surface_normals(edge_pixels)
 
         max_iterations = self.max_grasps * 20 
         

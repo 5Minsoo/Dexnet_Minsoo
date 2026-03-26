@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 import math,re
 from deapth_image import DepthImage
+
 def parse_intrinsic_string_to_K(intrinsics):
     """
     RealSense 등의 출력 문자열을 파싱하여 3x3 Intrinsic Matrix (K)로 변환합니다.
@@ -80,7 +81,7 @@ class RealSenseCamera:
         """Depth 이미지를 numpy 배열(uint16)로 반환합니다."""
         if not self.depth_frame:
             return None
-        return np.asanyarray(self.depth_frame.get_data())
+        return DepthImage(np.asanyarray(self.depth_frame.get_data()))
 
     # 2. Color Image Return (디버깅용)
     def get_color_image(self):
@@ -94,7 +95,7 @@ class RealSenseCamera:
     def show_debug_colormap(self):
         """디버깅용: Color 이미지와 Depth 컬러맵을 나란히 출력합니다."""
         color_image = self.get_color_image()
-        depth_image = self.get_depth_image()
+        depth_image = self.get_depth_image()._data
         
         if color_image is None or depth_image is None:
             return
@@ -108,7 +109,7 @@ class RealSenseCamera:
         cv2.waitKey(1)
 
     def inside_box_image(self,lower_value= np.array([90, 100, 100]),upper_value= np.array([110, 255, 255]),area_threshold=40000):
-        depth=self.get_depth_image()
+        depth=self.get_depth_image()._data
         color=self.get_color_image()
         if depth is not None:
             hsv = cv2.cvtColor(color, cv2.COLOR_RGB2HSV)

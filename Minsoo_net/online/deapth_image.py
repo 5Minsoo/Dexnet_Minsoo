@@ -7,19 +7,39 @@ class DepthImage:
         self._data=depth_data.astype(np.float32)
         self._data[np.isnan(self._data)] = 0.0
 
-    
     def gradient_threshold(self, threshold=15):
-        # ksize=3은 3x3 커널을 의미 (노이즈 억제력 상승)
         sobel_x = cv2.Sobel(self._data, cv2.CV_32F, 1, 0, ksize=3)
         sobel_y = cv2.Sobel(self._data, cv2.CV_32F, 0, 1, ksize=3)
         
-        # 여기서부터는 동일하게 hypot로 크기 계산
         grad = np.hypot(sobel_x, sobel_y)
         
         mask = grad > threshold
         edge_pixels = np.copy(self._data)
         edge_pixels[mask] = 0.0
         return edge_pixels
+
+    def resize(self,scale):
+        depth=np.copy(self._data)
+        return cv2.resize(depth,None,fx=scale,fy=scale)
+    
+    def surface_normals(self,edge_pixels):
+        """
+        모든 edge의 normal vector를 구함 Return (N,2)
+        """
+        sobel_x = cv2.Sobel(self._data, cv2.CV_32F, 1, 0, ksize=3)
+        sobel_y = cv2.Sobel(self._data, cv2.CV_32F, 0, 1, ksize=3)
+
+        normals = np.zeros([edge_pixels.shape[0], 2])
+        for i, px in enumerate(edge_pixels):
+            dx=sobel_x[px[0],px[1]]
+            dy=sobel_y[px[0],px[1]]
+            normal_vec=np.array([dy,dx])
+            if np.linalg.norm(normal_vec) == 0:
+                normal_vec = np.array([1, 0])
+            normal_vec = normal_vec / np.linalg.norm(normal_vec)
+            normals[i, :] = normal_vec
+        return normals
+
 
 
 def nothing(x):
