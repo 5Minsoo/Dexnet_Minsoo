@@ -158,7 +158,8 @@ class DexNet2(nn.Module):
         }, path)
 
     @classmethod
-    def load(cls, path, device="cuda"):
+    def load(cls, path):
+        device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
         ckpt = torch.load(path, map_location=device, weights_only=False)
         m = cls(im_height=ckpt["im_height"], im_width=ckpt["im_width"])
         m.load_state_dict(ckpt["state_dict"])

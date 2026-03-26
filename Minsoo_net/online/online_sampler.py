@@ -7,7 +7,7 @@ class OnlineAntipodalSampler:
         self.K = np.array(K)                    
         self.K_inv = np.linalg.inv(self.K)
         self.max_grasps = max_grasps
-
+        self.grad_threshold=0.1
     def sample_grasps(self, depth_image):
         """
         깊이 이미지를 기반으로 N개의 4-DOF 파지 후보군을 배치로 반환합니다.
@@ -16,18 +16,19 @@ class OnlineAntipodalSampler:
         sampled_grasps = []
         
         # 1. 깊이 이미지에서 직접 엣지(경계) 추출
-        depth_norm = cv2.normalize(depth_image, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-        edges = cv2.Canny(depth_norm, 10, 50) 
-            
-        edge_pixels = np.argwhere(edges > 0) # [y, x] 형태의 배열
+        sobel_x = cv2.Sobel(depth_image, cv2.CV_32F, 1, 0, ksize=3)
+        sobel_y = cv2.Sobel(depth_image, cv2.CV_32F, 0, 1, ksize=3)
+        
+        # 여기서부터는 동일하게 hypot로 크기 계산
+        grad = np.hypot(sobel_x, sobel_y)
+        
+        mask = grad > 15
+        edge_pixels = np.zeros_like(depth_image)
+        edge_pixels[mask] = 1.0
         
         if len(edge_pixels) < 2:
             print('edge가 없습니다')
             return np.zeros((0, 4), dtype=np.float32)
-
-        # 2. 이미지 그래디언트 (표면 법선) 계산
-        grad_x = cv2.Sobel(depth_image, cv2.CV_64F, 1, 0, ksize=3)
-        grad_y = cv2.Sobel(depth_image, cv2.CV_64F, 0, 1, ksize=3)
 
         max_iterations = self.max_grasps * 20 
         
@@ -50,7 +51,7 @@ class OnlineAntipodalSampler:
                 
             # -----------------------------------------------------------
             # [Step 2] p1의 깊이(z1)에서 그리퍼 1.5배 너비가 몇 픽셀인지 계산
-            # (z1 단위가 mm이므로, max_reach_m을 mm로 변환(*1000)하여 계산)
+            # (z1 단위가 mm이므로, max_reach_m을 mm로 변환(*1000)하여 계산) -> 수정됨
             # -----------------------------------------------------------
             pixel_radius = (max_reach_m * fx) / z1
             # -----------------------------------------------------------
