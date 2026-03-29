@@ -1,121 +1,174 @@
+import logging
+
 import numpy as np
 import cv2
-import deapth_image
-from scipy.spatial.distance import pdist, squareform
+from scipy.spatial import cKDTree
+
+from Minsoo_net.online.depth_image import DepthImage
+from Minsoo_net.online.visualize import GraspVisualizer2D
+from Minsoo_net.online.online_camera import RealSenseCamera
+
+logger = logging.getLogger(__name__)
+
 def force_closure(p1s, p2s, n1s, n2s, mu):
     v = p2s - p1s  # (N, 2)
     v = v / np.linalg.norm(v, axis=1, keepdims=True)
     alpha = np.arctan(mu)
     dot_1 = np.clip(np.sum(n1s * (-v), axis=1), -1, 1)
     dot_2 = np.clip(np.sum(n2s * v, axis=1), -1, 1)
-    return (np.arccos(dot_1) < alpha) & (np.arccos(dot_2) < alpha)  # (N,) bool
+    return (np.arccos(dot_1) < alpha) & (np.arccos(dot_2) < alpha)
 
+def camera_coords(depth_image, pixel_points, K_inv):
+    """
+    depth_image: (H, W)
+    pixel_points: (N, 2), 각 행이 (y,x)
+    K: (3, 3)
+    return: (N, 3)
+    """
+
+    ones = np.ones((len(pixel_points), 1))
+    # pixel_points는 (y,x) 순서이므로 K_inv에 맞게 (x,y,1)로 변환
+    pixels_uv = np.hstack([pixel_points[:, 1:2], pixel_points[:, 0:1], ones])  # (N, 3) [u,v,1]
+
+    depths = depth_image[pixel_points[:, 0].astype(int),
+                         pixel_points[:, 1].astype(int)]  # (N,)
+
+    camera_points = (pixels_uv @ K_inv.T) * depths[:, np.newaxis]  # (N, 3)
+
+    return camera_points
+
+viz=GraspVisualizer2D()
 
 class OnlineAntipodalSampler:
-    def __init__(self, gripper_width_m, K, max_grasps=100):
+    def __init__(self, gripper_width_m,grad_threshold=0.015, K=None, max_grasps=10000, image_margin=0.30, max_edge=100,visualize=False):
         self.gripper_width_m = gripper_width_m  
-        self.K = np.array(K)                    
+        if K is None:
+            self.K=np.array([[392.23574829  , 0.     ,    324.36325073],
+                            [  0.    ,     392.23574829 ,239.42385864],
+                            [  0.     ,      0.         ,  1.        ]])
+        else: self.K = np.array(K)                    
         self.K_inv = np.linalg.inv(self.K)
         self.max_grasps = max_grasps
-        self.grad_threshold=0.1
+        self.grad_threshold=grad_threshold
+        self.max_edge=max_edge
+        self.image_margin=image_margin
+        self.visualize=visualize
 
-    def sample_grasps(self, depth_image):
+    def sample_grasps(self, depth_image,use_visualize=False):
         """
         깊이 이미지를 기반으로 N개의 4-DOF 파지 후보군을 배치로 반환합니다.
         반환 형태: (N, 4) 크기의 NumPy 배열 [u(x), v(y), theta, depth]
         """
-        sampled_grasps = []
-        
-        edge_pixels=depth_image.gradient_threshold()
-        ys,xs=np.where(edge_pixels==0)
-        pixels=np.stack([ys,xs],axis=1)
-        dists=pdist(pixels)
-        
-        min_depth = np.min(edge_pixels)
-        max_depth = np.max(edge_pixels)
-        
-        edge_normals=depth_image.surface_normals(edge_pixels)
+        edge = depth_image.gradient_threshold(self.grad_threshold,visualize=use_visualize)
 
-        max_iterations = self.max_grasps * 20 
+        h, w = edge.shape[:2]
+        margin = self.image_margin
+        t, b = int(h * margin), int(h * (1 - margin))
+        l, r = int(w * margin), int(w * (1 - margin))
+        edge[:t, :] = 1.0
+        edge[b:, :] = 1.0
+        edge[:, :l] = 1.0
+        edge[:, r:] = 1.0
+
+        if use_visualize:
+            cv2.imshow('edge',edge)
+            cv2.waitKey(0)
+        logger.debug(f'edge image size: {edge.shape}')
+        logger.debug(f'edge size {edge.size}')
+
+        ys, xs = np.where(edge == 0)
+        pixels = np.stack([ys, xs], axis=1) # (N,2)
+        pixels = pixels.astype(np.int16)
+        if len(pixels)  > self.max_edge:
+            idx=np.random.choice(len(pixels),self.max_edge,replace=False)
+            pixels=pixels[idx]
         
-        # 💡 [최적화 파라미터] 초점거리 및 탐색 반경(m) 설정
-        fx = self.K[0, 0] 
-        max_reach_m = self.gripper_width_m * 1.5 
+        logger.debug(f'edge pixel shape: {pixels.shape}')
+
+        # depth=0(무효)인 픽셀 제거 — 안 하면 (0,0,0)에 몰려서 거리 필터 무의미
+        valid_depths = depth_image._data[pixels[:, 0], pixels[:, 1]] > 0
+        pixels = pixels[valid_depths]
+        logger.debug(f'valid depth pixels: {pixels.shape}')
+
+        max_reach_m = self.gripper_width_m *1.2
+        min_reach_m=self.gripper_width_m*1.0
+        point_cloud=camera_coords(depth_image._data,pixels,self.K_inv)
+        logger.debug(f'Camera coord max {np.max(point_cloud)}')
+        logger.debug(f'전체 가능 pair 개수: {int(len(point_cloud)*(len(point_cloud)-1)/2)}')
+        tree = cKDTree(point_cloud)
+        pair_set = tree.query_pairs(r=max_reach_m, output_type='ndarray')  # (M, 2)
+        logger.debug(f'실제 max pair 개수: {pair_set.shape}')
         
-        for _ in range(max_iterations):
-            if len(sampled_grasps) >= self.max_grasps:
-                break
-                
-            # -----------------------------------------------------------
-            # [Step 1] 점 1(p1) 무작위 선택
-            # -----------------------------------------------------------
-            idx1 = np.random.choice(len(edge_pixels))
-            p1 = edge_pixels[idx1] 
-            z1 = depth_image[p1[0], p1[1]]
-            if z1 <= 0:
-                continue
-                
-            # -----------------------------------------------------------
-            # [Step 2] p1의 깊이(z1)에서 그리퍼 1.5배 너비가 몇 픽셀인지 계산
-            # (z1 단위가 mm이므로, max_reach_m을 mm로 변환(*1000)하여 계산) -> 수정됨
-            # -----------------------------------------------------------
-            pixel_radius = (max_reach_m * fx) / z1
-            # -----------------------------------------------------------
-            # [Step 3] p1 주변 pixel_radius 반경 이내의 모서리 점들만 필터링
-            # -----------------------------------------------------------
-            diff = edge_pixels - p1
-            dist_sq = diff[:, 0]**2 + diff[:, 1]**2 
-            radius_sq = pixel_radius**2
+        dists = np.linalg.norm(point_cloud[pair_set[:, 0]] - point_cloud[pair_set[:, 1]], axis=1)
+        mask = dists >= min_reach_m
+        pairs = pair_set[mask]
+        pairs = np.array(pairs,dtype=np.intp)
+        logger.debug(f'실제 min pair 개수: {pairs.shape}')
+
+        if use_visualize:
+            midpoints = (pixels[pairs[:, 0]] + pixels[pairs[:, 1]]) / 2.0
+            viz.visualize_2d(edge, midpoints,title='candidate centers (distance filtered)')
+
+        edge_normals=depth_image.surface_normals(edge)
+
+        p0=pixels[pairs[:,0]]
+        p1=pixels[pairs[:,1]]
+        n0 = edge_normals[p0[:, 0], p0[:, 1]]  # y0들, x0들로 한번에
+        n1 = edge_normals[p1[:, 0], p1[:, 1]]
+
+
+        ############ 0필터링 추가 #########################
+        valid = (np.linalg.norm(n0, axis=1) > 0) & (np.linalg.norm(n1, axis=1) > 0)
+        pairs = pairs[valid]
+        p0, p1 = p0[valid], p1[valid]
+        n0, n1 = n0[valid], n1[valid]
+        ############ 0필터링 추가 #########################
+
+        force_closure_mask=force_closure(p0,p1,n0,n1,0.8)
+        pairs=pairs[force_closure_mask]
+        logger.debug(f'force closure pairs: {pairs.shape}')
+
+        p0 = pixels[pairs[:, 0]]
+        p1 = pixels[pairs[:, 1]]
+
+        centers = (p0 + p1) // 2
+        axes = p1 - p0
+        axes = axes / np.linalg.norm(axes, axis=1, keepdims=True)
+        thetas = np.arctan2(axes[:, 0], axes[:, 1])
             
-            # 거리가 0보다 크고(자기 자신 제외), 반경 이내인 점들의 인덱스 찾기
-            valid_indices = np.where((dist_sq > 0) & (dist_sq <= radius_sq))[0]
-            
-            # 탐색 반경 내에 짝꿍 점이 없으면 이번 루프는 포기
-            if len(valid_indices) == 0:
-                continue
-                
-            # -----------------------------------------------------------
-            # [Step 4] 반경 안쪽의 유효한 점들 중에서 점 2(p2) 무작위 선택
-            # -----------------------------------------------------------
-            idx2 = np.random.choice(valid_indices)
-            p2 = edge_pixels[idx2]
-            z2 = depth_image[p2[0], p2[1]]
-            
-            if z2 <= 0:
-                continue
-                
-            # -----------------------------------------------------------
-            # [Step 5] 3D 좌표 복원 및 거리, 표면 법선 검사
-            # -----------------------------------------------------------
-            uv1 = np.array([p1[1], p1[0], 1.0])
-            uv2 = np.array([p2[1], p2[0], 1.0])
-            
-            pt1_3d = z1 * self.K_inv.dot(uv1)
-            pt2_3d = z2 * self.K_inv.dot(uv2)
-            
-            phys_dist = np.linalg.norm(pt1_3d - pt2_3d)
-            
-            if phys_dist * 0.001 > self.gripper_width_m:
-                continue 
-            
-            n1 = np.array([grad_x[p1[0], p1[1]], grad_y[p1[0], p1[1]]])
-            n2 = np.array([grad_x[p2[0], p2[1]], grad_y[p2[0], p2[1]]])
-            
-            n1 = n1 / (np.linalg.norm(n1) + 1e-6)
-            n2 = n2 / (np.linalg.norm(n2) + 1e-6)
-            
-            if np.dot(n1, n2) < -0.7:  ###################################
-                center_v = (p1[0] + p2[0]) / 2.0
-                center_u = (p1[1] + p2[1]) / 2.0
-                center_depth = depth_image[int(center_v), int(center_u)]
-                if center_depth <0.005:
-                    continue
-                
-                dv = p2[0] - p1[0]
-                du = p2[1] - p1[1]
-                theta = np.arctan2(dv, du)
-                offset=[0.0,0.01,0.02,0.03]*1000
-                for offset in offset:
-                    sampled_grasps.append([center_u, center_v, theta, center_depth+offset])
-                
-        return np.array(sampled_grasps, dtype=np.float32)
+
+        depth_mean = cv2.GaussianBlur(depth_image._data, (0, 0), sigmaX=5)
+        depths = depth_mean[centers[:, 0], centers[:, 1]]  # (N,) 끝
+
+        # offsets = np.array([0.0, 0.01, 0.02, 0.03])  # 미터 단위 오프셋
+        offsets = np.array([0.0])  # 미터 단위 오프셋
+        # 각 grasp마다 offset 개수만큼 복제
+        N = len(centers)
+        K = len(offsets)
+
+        us = np.tile(centers[:, 1], K)          # (N*K,)
+        vs = np.tile(centers[:, 0], K)          # (N*K,)
+        ts = np.tile(thetas, K)                 # (N*K,)
+        ds = np.repeat(offsets, N) + np.tile(depths, K)  # (N*K,)
+        logger.debug(f'전체 결과 {us.shape, vs.shape, ts.shape, ds.shape}')
+        grasps = np.column_stack([us, vs, ts, ds])  # (N*K, 4)
+
+        # max_grasps 제한
+        # if len(grasps) > self.max_grasps:
+        #     idx = np.random.choice(len(grasps), self.max_grasps, replace=False)
+        #     grasps = grasps[idx]
+        logger.debug(f'최종 결과 {grasps.shape}')
+        if self.visualize:
+            viz.visualize_from_grasps(depth._data, grasp, title="Antipodal Grasps")
+        return grasps.astype(np.float32)
+
+
+if __name__=="__main__":
+    logging.basicConfig(level=logging.DEBUG)
+    camera=RealSenseCamera()
+    sampler=OnlineAntipodalSampler(gripper_width_m=0.05,grad_threshold=0.015,K=camera.intrinsic_parameter)
+    while True:
+        camera.update_frames()
+        depth=camera.get_depth_image()
+        grasp=np.float16(sampler.sample_grasps(depth,use_visualize=True))
+        viz.visualize_from_grasps(depth._data, grasp, title="Antipodal Grasps")

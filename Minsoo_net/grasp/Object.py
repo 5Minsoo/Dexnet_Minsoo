@@ -12,6 +12,7 @@ class GraspableObject3D:
         self.resolution = sdf_resolution
         self.center_mass=self.mesh.center_mass
         sdf_fn = SDF(self.mesh.vertices, self.mesh.faces)
+        self.T_world_obj=None
 
         # 월드 좌표로 바로 그리드 생성
         margin = 0.05

@@ -1,8 +1,10 @@
+import math,re
+
 import pyrealsense2 as rs
 import numpy as np
 import cv2
-import math,re
-from deapth_image import DepthImage
+
+from Minsoo_net.online.depth_image import DepthImage
 
 def parse_intrinsic_string_to_K(intrinsics):
     """
@@ -45,6 +47,7 @@ class RealSenseCamera:
         self.depth_scale = self.depth_sensor.get_depth_scale()
         # [중요] 오직 Depth 센서 기준의 Intrinsic (내부 파라미터) 가져오기
         depth_stream = self.profile.get_stream(rs.stream.depth)
+        color_stream = self.profile.get_stream(rs.stream.color)
         self.intrinsic_parameter=parse_intrinsic_string_to_K(depth_stream.as_video_stream_profile().get_intrinsics())
 
         # 내부 프레임 버퍼 및 변환 행렬
@@ -67,7 +70,7 @@ class RealSenseCamera:
     def update_frames(self):
         """새로운 프레임 세트를 받아오고 내부 버퍼를 업데이트합니다. (Align 없음)"""
         frames = self.pipeline.wait_for_frames()
-        frames=self.align.process(frames)
+        # frames=self.align.process(frames)
         # 순수 raw 프레임 사용
         self.depth_frame = frames.get_depth_frame()
         self.color_frame = frames.get_color_frame()
@@ -81,7 +84,7 @@ class RealSenseCamera:
         """Depth 이미지를 numpy 배열(uint16)로 반환합니다."""
         if not self.depth_frame:
             return None
-        return DepthImage(np.asanyarray(self.depth_frame.get_data()))
+        return DepthImage(np.asanyarray(self.depth_frame.get_data())*self.depth_scale)
 
     # 2. Color Image Return (디버깅용)
     def get_color_image(self):
@@ -109,7 +112,7 @@ class RealSenseCamera:
         cv2.waitKey(1)
 
     def inside_box_image(self,lower_value= np.array([90, 100, 100]),upper_value= np.array([110, 255, 255]),area_threshold=40000):
-        depth=self.get_depth_image()._data
+        depth=self.get_depth_image()
         color=self.get_color_image()
         if depth is not None:
             hsv = cv2.cvtColor(color, cv2.COLOR_RGB2HSV)

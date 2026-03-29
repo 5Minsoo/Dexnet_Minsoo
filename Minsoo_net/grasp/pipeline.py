@@ -41,7 +41,7 @@ class GraspPipeline:
         self.graspable_obj = GraspableObject3D(obj_file, sdf_resolution=256)    
         self.sampler = AntipodalGraspSampler(self.config_path)
         self.gripper = RobotGripper('hande', self.gripper_yaml)
-        self.checker = GraspCollisionChecker(self.gripper,tolerance=tolerance)
+        self.checker = GraspCollisionChecker(self.gripper)
 
         self.initial_grasps = self.sampler.generate_grasps(self.graspable_obj, self.num_grasps)
         
@@ -59,11 +59,11 @@ class GraspPipeline:
                 continue
             
             #######################collide along approach로 변경 가능####################
-            if not self.checker.grasp_in_collision(grasp.T_grasp_obj, key=obj_key):
-                collision_free_grasps.append(grasp)
-
-            # if not self.checker.collides_along_approach(grasp, key=obj_key):
+            # if not self.checker.grasp_in_collision(grasp.T_grasp_obj, key=obj_key):
             #     collision_free_grasps.append(grasp)
+
+            if not self.checker.collides_along_approach(grasp, key=obj_key):
+                collision_free_grasps.append(grasp)
             else:
                 collision_grasps.append(grasp)
         return collision_grasps,collision_free_grasps

@@ -1,94 +1,82 @@
+import sys,logging
+
+import cv2,time
+import numpy as np
+import torch
+
+import rclpy
+from rclpy.node import Node
+from scipy.spatial.transform import Rotation
+from tf2_ros import Buffer, TransformListener, TransformBroadcaster,StaticTransformBroadcaster
+from geometry_msgs.msg import TransformStamped
+
 from Minsoo_net.online.online_camera import RealSenseCamera
 from Minsoo_net.model.model import DexNet2
 from Minsoo_net.online.online_sampler import OnlineAntipodalSampler
-import rclpy
-from rclpy.node import Node
-import torch
-import numpy as np
-import cv2,time
-from scipy.spatial.transform import Rotation
+from Minsoo_net.online.visualize import GraspVisualizer2D
 from moveit_helper_functions import MoveItMoveHelper
-from tf2_ros import Buffer, TransformListener, TransformBroadcaster
-from geometry_msgs.msg import TransformStamped
+sys.path.append('/home/minsoo/Dexnet_Minsoo/Minsoo_net/online')
 
 class GraspPlannerNode(Node):
-    def __init__(self, Checkpoint_path):
+    def __init__(self, Checkpoint_path,use_visualize=False):
         super().__init__('Grasp_planning_node')
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.viz=GraspVisualizer2D()
         self.model=DexNet2.load(path=Checkpoint_path)
         self.model.to(device)
         self.camera=RealSenseCamera()
         
-        self.color=None
         self.depth=None
         self.image_size=None
 
-        self.sampler=OnlineAntipodalSampler(0.05,self.camera.intrinsic_parameter)
-        self.sample_buffer=[]
-        self.sampling_time=3.0
-        self.sampling_start=time.time()
+        self.sampler=OnlineAntipodalSampler(gripper_width_m=0.05,K=self.camera.intrinsic_parameter)
+        self.samples=None
 
         self.helper=MoveItMoveHelper()
         self.timer=self.create_timer(0.1,self.main_loop)
+        self.timer=self.create_timer(0.1,self.tf_pub)
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
         self.tf_broadcaster = TransformBroadcaster(self)
-        self.roi = None
+
+        self.visualize=use_visualize
 
     def main_loop(self):
         self.helper.move_to_joint_values(joint_goal={
-            "joint_1": 0.2269,
-            "joint_2": 0.1745,
-            "joint_3": 1.6232,
-            "joint_4": 0.0,
-            "joint_5": 1.3439,
+            "joint_1": 0.1396,
+            "joint_2": 0.2094,
+            "joint_3": 1.5359,
+            "joint_4": 0.0349,
+            "joint_5": 1.4137,
             "joint_6": -1.3439
         })
-        if self.roi is None:
-            self.roi = self._select_roi()
-            return
         
         self.update_frame()
         self.collect_samples()
-
-        if time.time()-self.sampling_start>=self.sampling_time:
-            if len(self.sample_buffer) == 0:
-                self.sampling_start = time.time()
-                return
+        if len(self.samples)>0:
             pos,quat=self.plan_grasp(self.get_extrinsic())
-            self.sample_buffer.clear()
-            self.sampling_start=time.time()
-        
+            
             if pos is not None:
                 self.publish_grasp_tf(pos, quat)  # 추가
+                pos[2]+=0.15
+                # self.helper.move_cartesian(pos,quat,0.15)
+                # self.helper.move_cartesian(pos,quat)
                 self.helper.move_pick_and_place(pos,quat,0.15)
-        
-        cv2.imshow("ROI", self.color)
-        cv2.waitKey(0)
-
-        
+                
+                
     def update_frame(self):
         self.camera.update_frames()
-        color, depth = self.camera.inside_box_image()
-        self.depth = self.apply_roi_mask(depth) * self.camera.depth_scale
-        self.color = self.apply_roi_mask(color)
-        self.image_size = depth.shape[1]
-
-        samples = self.sampler.sample_grasps(self.depth)
-        if samples is not None and len(samples) > 0:
-            self.sample_buffer.append(samples)
+        self.depth = self.camera.get_depth_image()
 
     def collect_samples(self):
-        samples=self.sampler.sample_grasps(self.depth)
-        if len(samples)>0:
-            self.sample_buffer.append(samples)
+        samples=self.sampler.sample_grasps(self.depth,use_visualize=self.visualize)
+        self.samples=samples
 
     def plan_grasp(self,extrinsic):
-        all_samples = np.vstack(self.sample_buffer)
-        all_samples = np.unique(all_samples, axis=0)
+        all_samples = self.samples
         cropped = RealSenseCamera.crop_and_rotate_batch(
-        self.depth, all_samples, crop_size=(96, 96))
+        self.depth._data, all_samples, crop_size=(96, 96))
         cropped = np.array([
             cv2.resize(img, (32, 32), interpolation=cv2.INTER_CUBIC)
             for img in cropped
@@ -101,34 +89,36 @@ class GraspPlannerNode(Node):
         best_idx = np.argmax(success_probs)
         self.best_grasp = all_samples[best_idx]
         self.best_score = success_probs[best_idx]
-
-        return self._pixel_to_world_coordinate(self.best_grasp,extrinsic=extrinsic)
+        if self.visualize:
+            self.viz.visualize_debug(self.depth._data,all_samples,success_probs)
+        return self._pixel_to_world_coordinate(self.best_grasp,extrinsic)
 
     def _pixel_to_world_coordinate(self, grasp, extrinsic):
         u, v, theta, z = grasp
         K = self.camera.intrinsic_parameter
-        T = np.eye(4)
-        T[:3, :3] = K
-
-        # ── 위치 변환 ──
-        cam = np.linalg.inv(T) @ np.array([u, v, 1, 1])
-        cam[:3] *= z
+        cam = np.linalg.inv(K) @ np.array([u, v, 1.0])
+        cam *= z  # depth 스케일링
+        cam=np.append(cam,1.0)
+        logging.debug(f'카메라 좌표계 좌표: {cam}')
         world = extrinsic @ cam
 
         # ── theta 변환 ──
         R = extrinsic[:3, :3]
         dir_cam = np.array([np.cos(theta), np.sin(theta), 0])
         dir_world = R @ dir_cam
-        yaw = np.arctan2(dir_world[1], dir_world[0])
+        yaw = np.arctan2(dir_world[1], dir_world[0]) +np.pi/2
 
-        rpy = Rotation.from_matrix(R).as_euler('xyz')
-        roll, pitch = rpy[0], rpy[1]
+        t = self.tf_buffer.lookup_transform('base_link', 'link_6', rclpy.time.Time())
+        r = t.transform.rotation
+        gripper_rpy = Rotation.from_quat([r.x, r.y, r.z, r.w]).as_euler('xyz')
+        roll, pitch = gripper_rpy[0], gripper_rpy[1]
         quat = Rotation.from_euler('xyz', [roll, pitch, yaw]).as_quat()
-
+        logging.debug(f'최종 월드 좌표: {world,quat}')
         return world[:3], quat
     
     def get_extrinsic(self):
         t = self.tf_buffer.lookup_transform('base_link', 'camera_link', rclpy.time.Time())
+        logging.debug(f'base_link - camera_link {t}')
         p = t.transform.translation
         r = t.transform.rotation
         mat = np.eye(4)
@@ -144,31 +134,15 @@ class GraspPlannerNode(Node):
         t.transform.translation.x, t.transform.translation.y, t.transform.translation.z = pos
         t.transform.rotation.x, t.transform.rotation.y, t.transform.rotation.z, t.transform.rotation.w = quat
         self.tf_broadcaster.sendTransform(t)
-
-    def _select_roi(self):
-        self.camera.update_frames()
-        color=self.camera.get_color_image() 
-        depth = self.camera.get_depth_image()
-        cv2.namedWindow("ROI", cv2.WINDOW_NORMAL)
-        roi = cv2.selectROI("ROI", depth)
-        # 확인용
-        x, y, w, h = roi
-        masked = np.zeros_like(color)
-        masked[y:y+h, x:x+w] = color[y:y+h, x:x+w]
-        cv2.imshow("ROI", masked)
-        cv2.waitKey(1)
-        return roi
-
-    def apply_roi_mask(self, image):
-        mask = np.zeros_like(image)
-        x, y, w, h = self.roi
-        mask[y:y+h, x:x+w] = image[y:y+h, x:x+w]
-        return mask
-    
+        self.last_tf=t
+        
+    def tf_pub(self):
+        self.tf_broadcaster.sendTransform(self.last_tf)
 
 def main():
+    logging.basicConfig(level=logging.DEBUG)
     rclpy.init()
-    node = GraspPlannerNode('/home/minsoo/Dexnet_Minsoo/output/20260324_15-07/best.pt')
+    node = GraspPlannerNode('/home/minsoo/Dexnet_Minsoo/output/20260324_15-07/best.pt',use_visualize=True)
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:

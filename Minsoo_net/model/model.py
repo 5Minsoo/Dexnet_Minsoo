@@ -130,8 +130,8 @@ class DexNet2(nn.Module):
         po_t = torch.from_numpy(po_n.astype(np.float32)).to(dev)
 
         outs = []
-        for i in range(0, im_t.shape[0], 64):
-            logits = self(im_t[i:i+64], po_t[i:i+64])
+        for i in range(0, im_t.shape[0], 128):
+            logits = self(im_t[i:i+128], po_t[i:i+128])
             outs.append(F.softmax(logits, dim=-1))
         # print("raw pose:", images[:5])
         # print(f"raw depth range: min={np.nanmin(images):.4f}, max={np.nanmax(images):.4f}")

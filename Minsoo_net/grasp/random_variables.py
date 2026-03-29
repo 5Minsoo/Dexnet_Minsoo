@@ -2,9 +2,7 @@ import numpy as np
 import scipy
 from scipy.spatial.transform import Rotation
 import copy
-from Minsoo_net.grasp import ParallelJawGrasp
 import yaml
-import sapien
 class RandomVariables():
     def __init__(self):
         self.sigma_com_=1e-6
@@ -80,7 +78,45 @@ class GraspableObjectPoseGaussianRV(RandomVariables):
             return samples[0]
         return samples
         
+    def sample_transpose(self, size=1):
+        """ Sample random variables from the model.
 
+        Parameters
+        ----------
+        size : int
+            number of sample to take
+        
+        Returns
+        -------
+        :4x4 SE(3) Numpy array
+        """
+        samples = []
+        for i in range(size):
+            num_consecutive_failures = 0
+            prev_len = len(samples)
+            while len(samples) == prev_len:
+                try:
+                    # sample random pose
+                    r = self.r_rv_.rvs(size=1)
+                    R=Rotation.from_rotvec(r).as_matrix()
+                    c = self.com_rv_.rvs(size=1)
+                    t = self.t_rv_.rvs(size=1)
+                    T= np.eye(4)
+                    T[:3,3]=t.T
+                    T[:3,:3]=R
+                    # transform object by pose
+                    samples.append(T)
+
+                except Exception as e:
+                    num_consecutive_failures += 1
+                    if num_consecutive_failures > 3:
+                        raise
+
+        # not a list if only 1 sample
+        if size == 1 and len(samples) > 0:
+            return samples[0]
+        return samples
+    
 class ParallelJawGraspPoseGaussianRV(RandomVariables):
     """ Random variable for sampling grasps in different poses, to model uncertainty in robot repeatability
 

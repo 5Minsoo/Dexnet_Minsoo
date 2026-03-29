@@ -6,6 +6,7 @@ import numpy as np
 import fcl
 import trimesh
 
+from Minsoo_net.grasp.random_variables import GraspableObjectPoseGaussianRV, ParallelJawGraspPoseGaussianRV
 
 def _load_mesh_as_bvh(mesh):
     """Load a mesh file from graspable class and return an fcl BVHModel."""
@@ -26,12 +27,13 @@ def _se3_to_fcl_transform(T):
 class CollisionChecker(object):
     """Wrapper for collision checking with python-fcl"""
 
-    def __init__(self,tolerance=0.1):
+    def __init__(self,tolerance=0.1,use_visual=False):
         self._geoms = {}
         self._objs = {}
         self._objs_tf = {}
         self._meshes = {}
         self.tolerance=1-tolerance
+        self.use_visual=use_visual
 
     def remove_object(self, name):
         if name not in self._objs:
@@ -89,7 +91,7 @@ class CollisionChecker(object):
             if other_name != target_name:
                 ret = fcl.collide(self._objs[other_name], target_obj, request, result)
                 if ret > 0:
-                    # print('Collision between: {0} and {1}'.format(other_name, target_name))
+                    logging.debug('Collision between: {0} and {1}'.format(other_name, target_name))
                     return True
 
         return False
@@ -126,6 +128,17 @@ class CollisionChecker(object):
             colliding_names.add(n2)
 
         for name in names:
+            # 바닥(table)은 Halfspace라 mesh가 없으므로 평면으로 시각화
+            if name == 'table':
+                T = self._objs_tf.get(name, np.eye(4))
+                floor_mesh = trimesh.creation.box(extents=[0.5, 0.5, 0.001])
+                floor_mesh.visual.face_colors = [200, 200, 200, 150]
+                scene.add_geometry(floor_mesh, transform=T, node_name='table')
+                # 테이블 좌표축
+                table_axes = trimesh.creation.axis(origin_size=0.005, axis_length=0.08)
+                scene.add_geometry(table_axes, transform=T, node_name='table_axes')
+                continue
+
             if name not in self._meshes:
                 continue
             mesh_copy = self._meshes[name].copy()
@@ -135,6 +148,14 @@ class CollisionChecker(object):
             else:
                 mesh_copy.visual.face_colors = [80, 200, 80, 180]
             scene.add_geometry(mesh_copy, transform=T, node_name=name)
+
+            # 각 물체 좌표축
+            obj_axes = trimesh.creation.axis(origin_size=0.003, axis_length=0.05)
+            scene.add_geometry(obj_axes, transform=T, node_name=f'{name}_axes')
+
+        # 월드 좌표축 (원점)
+        world_axes = trimesh.creation.axis(origin_size=0.008, axis_length=0.12)
+        scene.add_geometry(world_axes, transform=np.eye(4), node_name='world_axes')
 
         # 접촉점 표시
         contact_points = []
@@ -151,9 +172,8 @@ class CollisionChecker(object):
 class GraspCollisionChecker(CollisionChecker):
     """Collision checker that automatically handles grasp objects."""
 
-    def __init__(self, gripper,tolerance):
-        super().__init__()
-        self.tolerance=1-tolerance
+    def __init__(self, gripper, use_visual=False):
+        super().__init__(use_visual=use_visual)
         self._gripper = gripper
         self.set_object('gripper', self._gripper.mesh)
 
@@ -211,20 +231,9 @@ class GraspCollisionChecker(CollisionChecker):
         return self.in_collision_single('gripper')
 
     def collides_along_approach(self, grasp, delta_approach=0.01,approach_dist=0.09,key=None):
-        """
-        Parameters
-        ----------
-        grasp : ParallelJawPtGrasp3D
-        approach_dist : float
-        delta_approach : float
-        key : str
-
-        Returns
-        -------
-        bool
-        """
         T_grasp_obj = grasp.T_grasp_obj
         grasp_approach_axis = T_grasp_obj[:3, 2]  # Z_axis
+        logging.debug(f'T_grasp_obj: {T_grasp_obj}')
 
         collides = False
         cur_approach = 0.0
@@ -236,4 +245,35 @@ class GraspCollisionChecker(CollisionChecker):
             collides = self.grasp_in_collision(T_gripper_obj, key=key)
             cur_approach += delta_approach
 
+        if collides and self.use_visual:
+            self.in_collision(visualize=True)
+
         return collides
+
+    def collision_prob(self, obj, grasp, key, num):                                                                                                     
+        config_path = '/home/minsoo/Dexnet_Minsoo/Minsoo_net/config/master_config.yaml'
+        grasp_rv = ParallelJawGraspPoseGaussianRV(grasp, config_path)                                                                                   
+        obj_rv = GraspableObjectPoseGaussianRV(obj, config_path)
+        grasp_samples = grasp_rv.sample(num)                                                                                                            
+        T_samples = obj_rv.sample_transpose(num)
+                                                                                                                                                        
+        # 원래 pose 저장                                                                                                                                
+        original_tfs = {name: self._objs_tf[name].copy() for name in self.obj_names}
+                                                                                                                                                        
+        collisions = 0                                                                                                                                
+        for T_pert, g in zip(T_samples, grasp_samples):
+            # 모든 물체에 perturbation 적용                                                                                                             
+            for name in self.obj_names:
+                if name != 'table' and name != 'gripper':
+                    logging.debug(f'{name}에 Perturbation 적용')                                                                                               
+                    self.set_transform(name, original_tfs[name] @ T_pert)
+                                                                                                                                                        
+            if self.collides_along_approach(g, key=key):
+                collisions += 1
+
+        # 원래 pose 복원
+        for name, tf in original_tfs.items():
+            if name != 'table' and name != 'gripper':                                                                                                   
+                self.set_transform(name, tf)
+                                                                                                                                                        
+        return collisions / num
