@@ -29,7 +29,7 @@ class GraspPlannerNode(Node):
         self.depth=None
         self.image_size=None
 
-        self.sampler=OnlineAntipodalSampler(gripper_width_m=0.05,K=self.camera.intrinsic_parameter)
+        self.sampler=OnlineAntipodalSampler(gripper_width_m=0.05,K=self.camera.intrinsic_parameter,image_margin=0.0)
         self.samples=None
 
         self.helper=MoveItMoveHelper()
@@ -44,25 +44,41 @@ class GraspPlannerNode(Node):
 
     def main_loop(self):
         self.helper.move_to_joint_values(joint_goal={
-            "joint_1": 0.1396,
-            "joint_2": 0.2094,
-            "joint_3": 1.5359,
-            "joint_4": 0.0349,
-            "joint_5": 1.4137,
-            "joint_6": -1.3439
+            "joint_1": 0.1945,
+            "joint_2": 0.1722,
+            "joint_3": 1.6341,
+            "joint_4": 0.0021,
+            "joint_5": 1.3097,
+            "joint_6": -1.3113
         })
-        
+        self.helper.move_to_joint_values(joint_goal={
+            "joint_1": 0.1920,
+            "joint_2": 0.2094,
+            "joint_3": 1.7279,
+            "joint_4": 0.0000,
+            "joint_5": 1.1868,
+            "joint_6": -1.3090
+        })
+        self.helper.gripper_open()
         self.update_frame()
         self.collect_samples()
         if len(self.samples)>0:
             pos,quat=self.plan_grasp(self.get_extrinsic())
-            
+            pos[2]+=0.148
+            logging.debug(f' 물체 world (TCP 기준) Position: {pos}')
             if pos is not None:
                 self.publish_grasp_tf(pos, quat)  # 추가
                 pos[2]+=0.15
-                # self.helper.move_cartesian(pos,quat,0.15)
-                # self.helper.move_cartesian(pos,quat)
-                self.helper.move_pick_and_place(pos,quat,0.15)
+                logging.debug(f' 다음 이동 Position: {pos}')
+                input1=input('계속하려면 Enter')
+                if input1=='q':
+                    return
+                self.helper.move_cartesian(pos,quat)
+                pos[2]-=0.15
+                logging.debug(f' 다음 이동 Position: {pos}')
+                input('계속하려면 Enter')
+                self.helper.move_cartesian(pos,quat)
+                
                 
                 
     def update_frame(self):
@@ -99,8 +115,10 @@ class GraspPlannerNode(Node):
         cam = np.linalg.inv(K) @ np.array([u, v, 1.0])
         cam *= z  # depth 스케일링
         cam=np.append(cam,1.0)
+        
         logging.debug(f'카메라 좌표계 좌표: {cam}')
         world = extrinsic @ cam
+        logging.debug(f'물체의 월드 좌표계 좌표: {world}')
 
         # ── theta 변환 ──
         R = extrinsic[:3, :3]
@@ -113,12 +131,11 @@ class GraspPlannerNode(Node):
         gripper_rpy = Rotation.from_quat([r.x, r.y, r.z, r.w]).as_euler('xyz')
         roll, pitch = gripper_rpy[0], gripper_rpy[1]
         quat = Rotation.from_euler('xyz', [roll, pitch, yaw]).as_quat()
-        logging.debug(f'최종 월드 좌표: {world,quat}')
+        logging.debug(f'물체 최종 월드 좌표: {world,quat}')
         return world[:3], quat
     
     def get_extrinsic(self):
         t = self.tf_buffer.lookup_transform('base_link', 'camera_link', rclpy.time.Time())
-        logging.debug(f'base_link - camera_link {t}')
         p = t.transform.translation
         r = t.transform.rotation
         mat = np.eye(4)
@@ -142,7 +159,7 @@ class GraspPlannerNode(Node):
 def main():
     logging.basicConfig(level=logging.DEBUG)
     rclpy.init()
-    node = GraspPlannerNode('/home/minsoo/Dexnet_Minsoo/output/20260324_15-07/best.pt',use_visualize=True)
+    node = GraspPlannerNode('/home/minsoo/Dexnet_Minsoo/output/20260327_19-23/best.pt',use_visualize=True)
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:

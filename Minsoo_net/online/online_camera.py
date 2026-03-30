@@ -48,7 +48,7 @@ class RealSenseCamera:
         # [중요] 오직 Depth 센서 기준의 Intrinsic (내부 파라미터) 가져오기
         depth_stream = self.profile.get_stream(rs.stream.depth)
         color_stream = self.profile.get_stream(rs.stream.color)
-        self.intrinsic_parameter=parse_intrinsic_string_to_K(depth_stream.as_video_stream_profile().get_intrinsics())
+        self.intrinsic_parameter=parse_intrinsic_string_to_K(color_stream.as_video_stream_profile().get_intrinsics())
 
         # 내부 프레임 버퍼 및 변환 행렬
         self.depth_frame = None
@@ -59,18 +59,10 @@ class RealSenseCamera:
         # 포인트 클라우드 계산기 (내장 함수 사용용)
         self.pc = rs.pointcloud()
 
-    def set_extrinsic(self, T_wc):
-        """
-        카메라-월드 간의 Extrinsic 행렬을 클래스 내부에 설정합니다.
-        T_wc: Camera to World Extrinsic Matrix (SE3, 4x4 numpy array)
-        """
-        self.T_wc = T_wc
-        self.T_cw = np.linalg.inv(T_wc) # 역행렬 미리 계산 (월드 -> 카메라용)
-
     def update_frames(self):
         """새로운 프레임 세트를 받아오고 내부 버퍼를 업데이트합니다. (Align 없음)"""
         frames = self.pipeline.wait_for_frames()
-        # frames=self.align.process(frames)
+        frames=self.align.process(frames)
         # 순수 raw 프레임 사용
         self.depth_frame = frames.get_depth_frame()
         self.color_frame = frames.get_color_frame()
@@ -214,7 +206,7 @@ if __name__ == '__main__':
     try:
         while True:
             camera.update_frames()
-            color, depth = camera.inside_box_image()
-
+            depth=camera.get_depth_image()._data
+            print(depth.max())
     finally:
         camera.release()
