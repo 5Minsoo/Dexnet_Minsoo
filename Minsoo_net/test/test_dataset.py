@@ -18,10 +18,36 @@ zarr_path='/home/minsoo/Dexnet_Minsoo/grasp_dataset_260000.zarr'
 
 class TestDataset(TestCase):
     def setUp(self):
-        self.f=zarr.open(zarr_path,'r',zarr_version=3)
+        self.f=zarr.open(zarr_path,mode='r')
 
     def tearDown(self):
         None
 
     def test_dataset_length(self):
-        print(self.f.keys())
+        keys=list(self.f.keys())
+        for i, key in enumerate(keys):
+            poses=list(self.f[key].keys())
+            for i,pose in enumerate(poses):
+                len_image=self.f[key][pose]['images'].shape[0]
+                len_label=self.f[key][pose]['labels'].shape[0]
+                len_gripper=self.f[key][pose]['gripper_depth'].shape[0]
+                self.assertEqual(len_image,len_label)
+                self.assertEqual(len_label,len_gripper)
+    
+    def test_dataset_dimension(self):
+        keys=list(self.f.keys())
+        for i, key in enumerate(keys):
+            poses=list(self.f[key].keys())
+            for i,pose in enumerate(poses):
+                shape=self.f[key][pose]['images'].shape
+                self.assertEqual(len(shape),3)
+                self.assertEqual(shape[1],32)
+                self.assertEqual(shape[2],32)
+    
+    def test_dataset_clean(self):
+        keys = list(self.f.keys())
+        for i, key in enumerate(keys):
+            poses = list(self.f[key].keys())
+            for j, pose in enumerate(poses):
+                img = self.f[key][pose]['images'][:]
+                self.assertFalse(np.any(np.isnan(img)))

@@ -250,30 +250,25 @@ class GraspCollisionChecker(CollisionChecker):
 
         return collides
 
-    def collision_prob(self, obj, grasp, key, num):                                                                                                     
+    def collision_prob(self, obj, grasp, key, num):
         config_path = '/home/minsoo/Dexnet_Minsoo/Minsoo_net/config/master_config.yaml'
         grasp_rv = ParallelJawGraspPoseGaussianRV(grasp, config_path)                                                                                   
         obj_rv = GraspableObjectPoseGaussianRV(obj, config_path)
         grasp_samples = grasp_rv.sample(num)                                                                                                            
         T_samples = obj_rv.sample_transpose(num)
-                                                                                                                                                        
-        # 원래 pose 저장                                                                                                                                
+
         original_tfs = {name: self._objs_tf[name].copy() for name in self.obj_names}
-                                                                                                                                                        
-        collisions = 0                                                                                                                                
+        collisions=0                                                                                                                                
         for T_pert, g in zip(T_samples, grasp_samples):
-            # 모든 물체에 perturbation 적용                                                                                                             
+            #모든 물체에 perturbation 적용
             for name in self.obj_names:
                 if name != 'table' and name != 'gripper':
-                    logging.debug(f'{name}에 Perturbation 적용')                                                                                               
+                    logging.debug(f'{name}에 Perturbation 적용')     
                     self.set_transform(name, original_tfs[name] @ T_pert)
-                                                                                                                                                        
             if self.collides_along_approach(g, key=key):
                 collisions += 1
-
         # 원래 pose 복원
         for name, tf in original_tfs.items():
-            if name != 'table' and name != 'gripper':                                                                                                   
+            if name != 'table' and name != 'gripper':
                 self.set_transform(name, tf)
-                                                                                                                                                        
         return collisions / num
