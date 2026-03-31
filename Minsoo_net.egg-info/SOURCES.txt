@@ -1,5 +1,0 @@
-setup.py
-Minsoo_net.egg-info/PKG-INFO
-Minsoo_net.egg-info/SOURCES.txt
-Minsoo_net.egg-info/dependency_links.txt
-Minsoo_net.egg-info/top_level.txt

@@ -36,7 +36,7 @@ class MoveItMoveHelper(Node):
         # ===== 사용 환경에 맞게 수정 =====
         self.BASE_FRAME = "base_link"
         self.GROUP_NAME = "manipulator"
-        self.EE_LINK = "link_6"
+        self.EE_LINK = "hande_tcp_link"
         self.JOINT_NAMES = [
             "joint_1", "joint_2", "joint_3",
             "joint_4", "joint_5", "joint_6",

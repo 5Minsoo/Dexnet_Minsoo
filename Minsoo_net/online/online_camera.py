@@ -24,7 +24,7 @@ def parse_intrinsic_string_to_K(intrinsics):
     
     return K
 class RealSenseCamera:
-    def __init__(self, width=640, height=480, fps=30):
+    def __init__(self, width=848, height=480, fps=30):
         # 1. 파이프라인 및 설정 초기화
         self.pipeline = rs.pipeline()
         self.config = rs.config()
@@ -207,6 +207,6 @@ if __name__ == '__main__':
         while True:
             camera.update_frames()
             depth=camera.get_depth_image()._data
-            print(depth.max())
+            print(depth.shape)
     finally:
         camera.release()

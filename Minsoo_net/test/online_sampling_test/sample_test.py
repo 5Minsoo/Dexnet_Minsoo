@@ -62,8 +62,8 @@ class GraspPlanner:
                  poses=poses_input,
                  samples=all_samples,
                  success_probs=success_probs)
-        cv2.imwrite(os.path.join(save_dir, 'depth_raw.png'),
-                    (self.depth._data / self.depth._data.max() * 255).astype(np.uint8))
+        depth_uint16 = self.depth._data.astype(np.uint16)
+        cv2.imwrite(os.path.join(save_dir, 'depth_raw.png'), depth_uint16)
         logging.debug(f'saved to {save_dir}')
 
         return self.best_grasp, self.best_score
@@ -79,7 +79,7 @@ class GraspPlanner:
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
-    planner = GraspPlanner('/home/minsoo/Dexnet_Minsoo/output/20260324_15-07/best.pt',use_visualize=True)
+    planner = GraspPlanner('/home/minsoo/Dexnet_Minsoo/output/Best_03-30/best.pt',use_visualize=True)
     grasp, score = planner.run()
     if grasp is not None:
         logging.debug(f'Best grasp (u,v,theta,z): {grasp}, score: {score}')

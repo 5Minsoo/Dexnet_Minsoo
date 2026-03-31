@@ -11,12 +11,11 @@ use_visual=False
 num_grasps=300
 quality_threshold=0.002
 prob_threshold=0.012 
-tolerance=0.1 # 물체 충돌 검사 시 10%축소된 mesh로 판단
 num_poses=10
 max_angle=15
 
 num_camera_points=200
-camera_radius=(0.4,0.7)
+camera_radius=(0.40,0.60)
 camera_tilt=(0,3.14/6)
 
 
@@ -63,7 +62,7 @@ for mesh_path in mesh_files:
     mesh_path=str(mesh_path)
     print(f'{object_name} 로드중')
 
-    grasp_pipeline=GraspPipeline(mesh_path,quality_threshold=quality_threshold,num_grasps=num_grasps,max_approach_angle_deg=max_angle,num_poses=num_poses,tolerance=tolerance)
+    grasp_pipeline=GraspPipeline(mesh_path,quality_threshold=quality_threshold,num_grasps=num_grasps,max_approach_angle_deg=max_angle,num_poses=num_poses)
     renderer=GraspRenderer(mesh_path)
     points=GraspRenderer.sample_spherical_positions(camera_radius,camera_tilt,(0,3.14),num_points=num_camera_points)
     if use_visual:

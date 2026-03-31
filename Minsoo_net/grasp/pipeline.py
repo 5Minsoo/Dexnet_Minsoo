@@ -24,7 +24,7 @@ class GraspPipeline:
                  prob_threshold=0.012, 
                  quality_threshold=0.03,
                  max_approach_angle_deg=15,
-                 num_poses=10,tolerance=0.1):
+                 num_poses=10):
         
         # 1. 파일 경로 설정
         self.config_path = p / "config" / "master_config.yaml"

@@ -7,7 +7,7 @@ from sapien.core import Pose
 from sapien.sensor import StereoDepthSensor, StereoDepthSensorConfig
 from Minsoo_net.grasp.random_variables import ParamsGaussianRV
 from scipy.spatial.transform import Rotation as R
-import yaml
+import yaml,trimesh
 class GraspRenderer:
     """
     DexNet용 깊이 이미지 렌더러.
@@ -58,11 +58,11 @@ class GraspRenderer:
         self.rv=ParamsGaussianRV(config_yaml=config_path)
         self.material=sapien.render.RenderMaterial()
         self.material.set_metallic(1.0)
-        self.material.set_roughness(0.6)
+        self.material.set_roughness(0.8)
 
         # ── Scene ──
         self.scene = sapien.Scene()
-        self.scene.set_timestep(1 / 10.0)
+        self.scene.set_timestep(1 / 1)
         self.scene.add_ground(altitude=0)
         self.scene.set_ambient_light([0.5, 0.5, 0.5])
         self.scene.add_directional_light([0, 1, -1], [0.5, 0.5, 0.5])
@@ -80,7 +80,7 @@ class GraspRenderer:
             config = yaml.safe_load(f)
         self.sensor_config.block_height=config.get('block_height',7)
         self.sensor_config.block_width=self.sensor_config.block_height
-        self.sensor_config.uniqueness_ratio=config.get('uniqueness_ratio',30)
+        self.sensor_config.uniqueness_ratio=config.get('uniqueness_ratio',50)
         self._mount = self.scene.create_actor_builder().build_kinematic()
         # 초기 위치는 임시 — render() 호출 시 갱신
         self.sensor = StereoDepthSensor(
@@ -299,8 +299,9 @@ class GraspRenderer:
 # ── 사용 예시 ───────────────────────────────────────────────
 
 if __name__ == "__main__":
-    MESH = "/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object.stl"
-
+    MESH = "/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/bin.stl"
+    mesh=trimesh.load(MESH)
+    trans,_=mesh.compute_stable_poses()
     renderer = GraspRenderer(MESH, mesh_scale=(0.001, 0.001, 0.001))
 
     # stable pose 예시 (단위 행렬 = 기본 자세)
@@ -308,12 +309,16 @@ if __name__ == "__main__":
     # renderer.set_stable_pose(stable_rotation_matrix)
 
     # 1) 단일 시점 렌더링
-    cam_pos = np.array([0.15, 0.05, 0.25])
-    depth = renderer.render(cam_pos)
-    origin_px = renderer.world_to_pixel(np.array([0, 0, 0]))
-    vis = renderer.visualize_depth(depth, point=origin_px)
-    cv2.imshow("depth", vis)
-    cv2.waitKey(0)
+    while True:
+        cam_pos = np.array([0.0, 0.0, 0.4])
+        renderer.set_material(1.0,0.8)
+        renderer.set_stable_pose(trans[1])
+        depth = renderer.render(cam_pos)
+        print(depth.shape)
+        origin_px = renderer.world_to_pixel(np.array([0, 0, 0]))
+        vis = renderer.visualize_depth(depth, point=origin_px)
+        cv2.imshow("depth", vis)
+        cv2.waitKey(0)
 
     # 2) 구면 좌표 다시점 렌더링 → DexNet 학습 데이터 생성
     for depth, extrinsic, pos in renderer.render_spherical(num_views=10):

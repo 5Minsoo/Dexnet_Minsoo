@@ -170,10 +170,12 @@ class OnlineAntipodalSampler:
 
 if __name__=="__main__":
     logging.basicConfig(level=logging.DEBUG)
-    camera=RealSenseCamera()
-    sampler=OnlineAntipodalSampler(gripper_width_m=0.05,grad_threshold=0.015,K=camera.intrinsic_parameter)
+    # camera=RealSenseCamera()
+    sampler=OnlineAntipodalSampler(gripper_width_m=0.05,grad_threshold=0.015)
     while True:
-        camera.update_frames()
-        depth=camera.get_depth_image()
+        # camera.update_frames()
+        # depth=camera.get_depth_image()
+        depth=cv2.imread('/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/test_data/saved_data/depth_raw.png',cv2.IMREAD_GRAYSCALE)
+        depth=DepthImage(depth)
         grasp=np.float16(sampler.sample_grasps(depth,use_visualize=True))
         viz.visualize_from_grasps(depth._data, grasp, title="Antipodal Grasps")
