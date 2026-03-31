@@ -39,9 +39,8 @@ class GraspPlanner:
             cv2.resize(img, (32, 32), interpolation=cv2.INTER_CUBIC)
             for img in cropped
         ])
-        for i, image in enumerate(cropped):
-            cv2.imshow(f'cropped {i}', image)
-            cv2.waitKey(0)
+        # cv2.imshow(f'cropped', cropped[0])
+        # cv2.waitKey(0)
         
         cropped_input = np.expand_dims(cropped, axis=-1)
         poses_input = all_samples[:, 3].reshape(-1, 1)
@@ -54,17 +53,17 @@ class GraspPlanner:
         if self.visualize:
             self.viz.visualize_debug(self.depth._data,all_samples,success_probs)
 
-        save_dir = '/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/saved_data1'
-        os.makedirs(save_dir, exist_ok=True)
-        np.savez(os.path.join(save_dir, 'grasp_data.npz'),
-                 depth=self.depth._data,
-                 cropped=cropped_input,
-                 poses=poses_input,
-                 samples=all_samples,
-                 success_probs=success_probs)
-        depth_uint16 = self.depth._data.astype(np.uint16)
-        cv2.imwrite(os.path.join(save_dir, 'depth_raw.png'), depth_uint16)
-        logging.debug(f'saved to {save_dir}')
+        # save_dir = '/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/saved_data1'
+        # os.makedirs(save_dir, exist_ok=True)
+        # np.savez(os.path.join(save_dir, 'grasp_data.npz'),
+        #          depth=self.depth._data,
+        #          cropped=cropped_input,
+        #          poses=poses_input,
+        #          samples=all_samples,
+        #          success_probs=success_probs)
+        # depth_uint16 = self.depth._data.astype(np.uint16)
+        # cv2.imwrite(os.path.join(save_dir, 'depth_raw.png'), depth_uint16)
+        # logging.debug(f'saved to {save_dir}')
 
         return self.best_grasp, self.best_score
 
@@ -79,6 +78,7 @@ class GraspPlanner:
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
+    # planner = GraspPlanner('/home/minsoo/Dexnet_Minsoo/output/20260330_19-53/best.pt',use_visualize=True)
     planner = GraspPlanner('/home/minsoo/Dexnet_Minsoo/output/Best_03-30/best.pt',use_visualize=True)
     grasp, score = planner.run()
     if grasp is not None:

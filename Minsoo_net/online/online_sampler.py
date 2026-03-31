@@ -40,7 +40,7 @@ def camera_coords(depth_image, pixel_points, K_inv):
 viz=GraspVisualizer2D()
 
 class OnlineAntipodalSampler:
-    def __init__(self, gripper_width_m,grad_threshold=0.015, K=None, max_grasps=10000, image_margin=0.30, max_edge=100,visualize=False):
+    def __init__(self, gripper_width_m,grad_threshold=0.015, K=None, max_grasps=10000, image_margin=0.10, max_edge=100,visualize=False):
         self.gripper_width_m = gripper_width_m  
         if K is None:
             self.K=np.array([[392.23574829  , 0.     ,    324.36325073],
@@ -59,7 +59,7 @@ class OnlineAntipodalSampler:
         깊이 이미지를 기반으로 N개의 4-DOF 파지 후보군을 배치로 반환합니다.
         반환 형태: (N, 4) 크기의 NumPy 배열 [u(x), v(y), theta, depth]
         """
-        edge = depth_image.gradient_threshold(self.grad_threshold,visualize=use_visualize)
+        edge = depth_image.gradient_threshold(self.grad_threshold,visualize=False)
 
         h, w = edge.shape[:2]
         margin = self.image_margin
@@ -70,9 +70,9 @@ class OnlineAntipodalSampler:
         edge[:, :l] = 1.0
         edge[:, r:] = 1.0
 
-        if use_visualize:
-            cv2.imshow('edge',edge)
-            cv2.waitKey(0)
+        # if use_visualize:
+        #     cv2.imshow('edge',edge)
+        #     cv2.waitKey(0)
         logger.debug(f'edge image size: {edge.shape}')
         logger.debug(f'edge size {edge.size}')
 
@@ -90,7 +90,7 @@ class OnlineAntipodalSampler:
         pixels = pixels[valid_depths]
         logger.debug(f'valid depth pixels: {pixels.shape}')
 
-        max_reach_m = self.gripper_width_m *1.0
+        max_reach_m = self.gripper_width_m *1.2
         min_reach_m=self.gripper_width_m*0.8
         point_cloud=camera_coords(depth_image._data,pixels,self.K_inv)
         logger.debug(f'Camera coord max {np.max(point_cloud)}')
@@ -105,9 +105,9 @@ class OnlineAntipodalSampler:
         pairs = np.array(pairs,dtype=np.intp)
         logger.debug(f'실제 min pair 개수: {pairs.shape}')
 
-        if use_visualize:
-            midpoints = (pixels[pairs[:, 0]] + pixels[pairs[:, 1]]) / 2.0
-            viz.visualize_2d(edge, midpoints,title='candidate centers (distance filtered)')
+        # if use_visualize:
+        #     midpoints = (pixels[pairs[:, 0]] + pixels[pairs[:, 1]]) / 2.0
+        #     viz.visualize_2d(edge, midpoints,title='candidate centers (distance filtered)')
 
         edge_normals=depth_image.surface_normals(edge)
 
@@ -146,7 +146,7 @@ class OnlineAntipodalSampler:
         thetas = thetas[valid_mask]
         depths = depths[valid_mask]
         logging.debug(f'필터링 된 Depth: {depths}')
-        offsets = np.array([ 0.0,-0.01, -0.02, -0.03])  # 미터 단위 오프셋
+        offsets = np.array([ -0.01, -0.02, -0.03,-0.04])  # 미터 단위 오프셋
         # 각 grasp마다 offset 개수만큼 복제
         N = len(centers)
         K = len(offsets)
@@ -163,19 +163,18 @@ class OnlineAntipodalSampler:
         #     idx = np.random.choice(len(grasps), self.max_grasps, replace=False)
         #     grasps = grasps[idx]
         logger.debug(f'최종 결과 {grasps.shape}')
-        if self.visualize:
-            viz.visualize_from_grasps(depth._data, grasp, title="Antipodal Grasps")
+        if use_visualize:
+            viz.visualize_from_grasps(depth_image._data, grasps, title="Antipodal Grasps")
         return grasps.astype(np.float32)
 
 
 if __name__=="__main__":
     logging.basicConfig(level=logging.DEBUG)
-    # camera=RealSenseCamera()
+    camera=RealSenseCamera()
     sampler=OnlineAntipodalSampler(gripper_width_m=0.05,grad_threshold=0.015)
     while True:
-        # camera.update_frames()
-        # depth=camera.get_depth_image()
-        depth=cv2.imread('/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/test_data/saved_data/depth_raw.png',cv2.IMREAD_GRAYSCALE)
-        depth=DepthImage(depth)
+        camera.update_frames()
+        depth=camera.get_depth_image()
+        # depth=cv2.imread('/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/test_data/saved_data/depth_raw.png',cv2.IMREAD_GRAYSCALE)
+        # depth=DepthImage(depth)
         grasp=np.float16(sampler.sample_grasps(depth,use_visualize=True))
-        viz.visualize_from_grasps(depth._data, grasp, title="Antipodal Grasps")

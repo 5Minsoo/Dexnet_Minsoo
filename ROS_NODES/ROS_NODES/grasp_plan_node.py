@@ -60,11 +60,11 @@ class GraspPlannerNode(Node):
             "joint_6": -1.3090
         })
         self.helper.gripper_open()
+        time.sleep(1.0)
         self.update_frame()
         self.collect_samples()
         if len(self.samples)>0:
             pos,quat=self.plan_grasp(self.get_extrinsic())
-            pos[2]+=0.148
             logging.debug(f' 물체 world (TCP 기준) Position: {pos}')
             if pos is not None:
                 self.publish_grasp_tf(pos, quat)  # 추가
@@ -78,6 +78,16 @@ class GraspPlannerNode(Node):
                 logging.debug(f' 다음 이동 Position: {pos}')
                 input('계속하려면 Enter')
                 self.helper.move_cartesian(pos,quat)
+                time.sleep(1.0)
+                self.helper.gripper_close()
+                time.sleep(1.0)
+                pos[2]+=0.15
+                self.helper.move_cartesian(pos,quat)
+                pos[2]-=0.15
+                self.helper.move_cartesian(pos,quat)
+                time.sleep(1.0)
+                self.helper.gripper_open()
+                time.sleep(1.0)
                 
                 
                 
@@ -118,6 +128,7 @@ class GraspPlannerNode(Node):
         
         logging.debug(f'카메라 좌표계 좌표: {cam}')
         world = extrinsic @ cam
+        world[2]-=0.03
         logging.debug(f'물체의 월드 좌표계 좌표: {world}')
 
         # ── theta 변환 ──
@@ -159,7 +170,7 @@ class GraspPlannerNode(Node):
 def main():
     logging.basicConfig(level=logging.DEBUG)
     rclpy.init()
-    node = GraspPlannerNode('/home/minsoo/Dexnet_Minsoo/output/20260327_19-23/best.pt',use_visualize=True)
+    node = GraspPlannerNode('/home/minsoo/Dexnet_Minsoo/output/20260331_12-00/best.pt',use_visualize=True)
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:

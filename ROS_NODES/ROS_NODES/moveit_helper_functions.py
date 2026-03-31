@@ -46,8 +46,8 @@ class MoveItMoveHelper(Node):
         self.EXEC_ACTION_NAME = "/execute_trajectory"
         self.CART_SERVICE_NAME = "/compute_cartesian_path"
         self.GRIPPER_TOPIC = "/gripper_controller/gripper_cmd"
-        self.GRIPPER_OPEN_POS = 0.05
-        self.GRIPPER_CLOSE_POS = 0.00
+        self.GRIPPER_OPEN_POS = 0.8
+        self.GRIPPER_CLOSE_POS = 0.0
         # ===============================
 
         self.move_ac = ActionClient(self, MoveGroup, self.MOVE_ACTION_NAME)
@@ -601,12 +601,7 @@ class MoveItMoveHelper(Node):
 def main():
     rclpy.init()
     node = MoveItMoveHelper()
-    try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
-    node.destroy_node()
-    rclpy.shutdown()
+    quad=[0.707, -0.707, 0.001, -0.000]
 
 if __name__ == "__main__":
     main()
