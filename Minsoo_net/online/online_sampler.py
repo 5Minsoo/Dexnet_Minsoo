@@ -70,9 +70,9 @@ class OnlineAntipodalSampler:
         edge[:, :l] = 1.0
         edge[:, r:] = 1.0
 
-        # if use_visualize:
-        #     cv2.imshow('edge',edge)
-        #     cv2.waitKey(0)
+        if use_visualize:
+            cv2.imshow('edge',edge)
+            cv2.waitKey(0)
         logger.debug(f'edge image size: {edge.shape}')
         logger.debug(f'edge size {edge.size}')
 

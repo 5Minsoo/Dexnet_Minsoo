@@ -15,7 +15,7 @@ num_poses=10
 max_angle=15
 
 num_camera_points=200
-camera_radius=(0.40,0.60)
+camera_radius=(0.35,0.55)
 camera_tilt=(0,3.14/6)
 
 

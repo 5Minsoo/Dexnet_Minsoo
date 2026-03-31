@@ -55,7 +55,7 @@ CFG = dict(
     drop_rate=0.0,
 
     # ── 라벨 ──
-    metric_thresh=0.002 ,       # label > thresh → positive (1)
+    metric_thresh=0.034 ,       # label > thresh → positive (1)
 
     # ── 로깅 / 저장 ──
     eval_frequency=1,           # epoch 단위

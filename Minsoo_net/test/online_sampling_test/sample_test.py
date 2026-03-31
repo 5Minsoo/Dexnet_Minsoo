@@ -19,7 +19,7 @@ class GraspPlanner:
         self.camera=RealSenseCamera()
 
         self.depth=None
-        self.sampler=OnlineAntipodalSampler(gripper_width_m=0.05,K=self.camera.intrinsic_parameter)
+        self.sampler=OnlineAntipodalSampler(gripper_width_m=0.05,K=self.camera.intrinsic_parameter,image_margin=0.2)
         self.samples=None
         self.visualize=use_visualize
 
