@@ -170,7 +170,7 @@ class GraspPlannerNode(Node):
 def main():
     logging.basicConfig(level=logging.DEBUG)
     rclpy.init()
-    node = GraspPlannerNode('/home/minsoo/Dexnet_Minsoo/output/20260331_12-00/best.pt',use_visualize=True)
+    node = GraspPlannerNode('/home/minsoo/Dexnet_Minsoo/output/20260331_16-13/best.pt',use_visualize=True)
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:

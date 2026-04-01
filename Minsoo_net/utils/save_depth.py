@@ -21,7 +21,7 @@ class DepthSaver:
             # 프레임 업데이트 및 Depth 데이터 가져오기
             self.camera.update_frames()
             depth_obj = self.camera.get_depth_image()
-            raw_depth = depth_obj._data  # 정규화되지 않은 원본 raw array
+            raw_depth = depth_obj._data*1000  # 정규화되지 않은 원본 raw array
             
             # Depth 이미지 띄우기
             # 주의: 16-bit raw 데이터는 값이 작아서 OpenCV로 그냥 띄우면 화면이 거의 까맣게 보일 수 있습니다.
@@ -40,8 +40,7 @@ class DepthSaver:
                 
                 # 2. 16-bit png 파일로 원본 데이터 저장
                 png_path = os.path.join(self.save_dir, f'depth_raw_{save_count}.png')
-                depth_uint16 = raw_depth.astype(np.uint16)
-                cv2.imwrite(png_path, depth_uint16)
+                cv2.imwrite(png_path, raw_depth)
                 
                 logging.info(f"[{save_count}번째 저장 완료] 정규화 없이 원본이 저장되었습니다: {self.save_dir}")
                 
