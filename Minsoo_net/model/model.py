@@ -133,17 +133,14 @@ class DexNet2(nn.Module):
         for i in range(0, im_t.shape[0], 128):
             logits = self(im_t[i:i+128], po_t[i:i+128])
             outs.append(F.softmax(logits, dim=-1))
-        # print("raw pose:", images[:5])
-        # print(f"raw depth range: min={np.nanmin(images):.4f}, max={np.nanmax(images):.4f}")
-        # print(f"raw depth shape: {images.shape}")
-        # print(f"NaN count: {np.isnan(images).sum()} / {images.size} ({np.isnan(images).sum()/images.size*100:.1f}%)")
-        # print(f"Inf count: {np.isinf(images).sum()}")
-        # print(f"Zero count: {(images == 0).sum()} ({(images == 0).sum()/images.size*100:.1f}%)")
-        # print("pose_mean:", self.pose_mean, "pose_std:", self.pose_std) 
-        # print("logits:", logits[:5])  # softmax 전 raw 값 확인
-        # print("probs:", F.softmax(logits, dim=-1)[:5])
-        # print("input range:", im_t.min(), im_t.max())
-        # print("pose range:", po_t.min(), po_t.max())
+        print(f"raw depth range: min={np.nanmin(images):.4f}, max={np.nanmax(images):.4f}")
+        print(f"raw depth shape: {images.shape}")
+        print("pose_mean:", self.pose_mean, "pose_std:", self.pose_std) 
+        print("image_mean: ",self.im_mean,"image_std:",self.im_std)
+        print("input range:", im_t.min(), im_t.max())
+        print("pose range:", po_t.min(), po_t.max())
+        print("logits:", logits[:5])  # softmax 전 raw 값 확인
+        print("probs:", F.softmax(logits, dim=-1)[:5])
         return torch.cat(outs, 0).cpu().numpy()
 
     def predict_success(self, images, poses):

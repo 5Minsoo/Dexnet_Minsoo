@@ -30,7 +30,7 @@ class DepthImage:
             self.visualize=visualize
         self._compute_sobel()
         grad = np.hypot(self._sobel_x, self._sobel_y)
-        logging.debug(f'grad값 {grad}')
+        logging.debug(f'grad값 {np.mean(grad)}')
         # edge = np.copy(self._data)
         edge=np.ones_like(self._data)
         edge[grad > threshold] = 0.0

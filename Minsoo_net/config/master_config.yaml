@@ -32,10 +32,10 @@ mean_matalic: 0.9
 min_matalic :  0.8
 max_matalic : 1.0
 
-mean_roughness : 0.9
-min_roughness : 0.8
-sigma_roughness: 0.05
-max_roughness : 1.0  
+mean_roughness : 0.40
+min_roughness : 0.10
+sigma_roughness: 0.1
+max_roughness : 0.60 
 
 # ---------------------------------------------------------
 # 카메라 파라미터들

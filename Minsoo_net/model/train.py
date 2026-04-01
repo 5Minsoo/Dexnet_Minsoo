@@ -162,7 +162,6 @@ class DexNetZarrDataset(Dataset):
         # ── 이미지 로드 ──
         # 통째로 다 불러오지 말고, zarr에서 필요한 그 1장만 쏙 빼옵니다. (속도 훨씬 빠름)
         image = np.array(group["images"][grasp_idx], dtype=np.float32)
-
         # 리사이즈 (차원이 [H, W]가 되었으므로 shape[0], shape[1]로 검사)
         if image.shape[0] != self.im_height or image.shape[1] != self.im_width:
             image = cv2.resize(image, (self.im_width, self.im_height), interpolation=cv2.INTER_CUBIC)

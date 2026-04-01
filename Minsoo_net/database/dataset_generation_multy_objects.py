@@ -14,12 +14,12 @@ prob_threshold=0.012
 num_poses=10
 max_angle=15
 
-num_camera_points=200
+num_camera_points=500
 camera_radius=(0.35,0.55)
 camera_tilt=(0,3.14/6)
 
 
-zarr_path = "grasp_dataset.zarr"
+zarr_path = "grasp_dataset_r0.4m1.0.zarr"
 output_size = 32
 crop_size=96
 batch_size = 10 

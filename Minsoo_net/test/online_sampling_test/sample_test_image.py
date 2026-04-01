@@ -14,9 +14,12 @@ def force_closure(p1s, p2s, n1s, n2s, mu):
     v = p2s - p1s  # (N, 2)
     v = v / np.linalg.norm(v, axis=1, keepdims=True)
     alpha = np.arctan(mu)
+    print(alpha)
     dot_1 = np.clip(np.sum(n1s * (-v), axis=1), -1, 1)
     dot_2 = np.clip(np.sum(n2s * v, axis=1), -1, 1)
+    print(f'force closure 각도: {np.arccos(dot_1),np.arccos(dot_2)}')
     return (np.arccos(dot_1) < alpha) & (np.arccos(dot_2) < alpha)
+
 
 def camera_coords(depth_image, pixel_points, K_inv):
     """
@@ -55,12 +58,15 @@ class OnlineAntipodalSampler:
         self.visualize=visualize
 
     def sample_grasps(self, depth_image,use_visualize=False):
-        """
+        """ㅈ
         깊이 이미지를 기반으로 N개의 4-DOF 파지 후보군을 배치로 반환합니다.
         반환 형태: (N, 4) 크기의 NumPy 배열 [u(x), v(y), theta, depth]
         """
         edge = depth_image.gradient_threshold(self.grad_threshold,visualize=False)
+        kernel = np.ones((5, 5), np.uint8)
 
+        # 닫기 연산 적용
+        edge = cv2.morphologyEx(edge, cv2.MORPH_OPEN, kernel)
         h, w = edge.shape[:2]
         margin = self.image_margin
         t, b = int(h * margin), int(h * (1 - margin))
@@ -124,14 +130,57 @@ class OnlineAntipodalSampler:
         n0, n1 = n0[valid], n1[valid]
         ############ 0필터링 추가 #########################
 
-        force_closure_mask=force_closure(p0,p1,n0,n1,0.8)
+        force_closure_mask=force_closure(p0,p1,n0,n1,0.6)
         pairs=pairs[force_closure_mask]
         logger.debug(f'force closure pairs: {pairs.shape}')
 
         p0 = pixels[pairs[:, 0]]
         p1 = pixels[pairs[:, 1]]
-
+# 💡 [여기 추가!] n0, n1도 합격한 애들만 남깁니다.
+        n0 = n0[force_closure_mask]
+        n1 = n1[force_closure_mask]
         centers = (p0 + p1) // 2
+        # ================= 디버그 시각화 (p0, p1, 중심점, 연결선, 법선 벡터) =================
+        if use_visualize:
+            # 깊이 이미지를 0~255 범위로 정규화한 뒤, 색상을 입힐 수 있게 BGR로 변환
+            disp_img = cv2.normalize(depth_image._data, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+            disp_img = cv2.cvtColor(disp_img, cv2.COLOR_GRAY2BGR)
+
+            for pt0, pt1, c, norm0, norm1 in zip(p0, p1, centers, n0, n1):
+                # Numpy는 (y, x) 순서, OpenCV는 (x, y) 순서이므로 뒤집어 할당
+                print(f"\n[디버그] 화면 좌표: p0={pt0}, p1={pt1}")
+                print(f"[디버그] 메모리 벡터: norm0={norm0}, norm1={norm1}")
+                x0, y0 = int(pt0[1]), int(pt0[0])
+                x1, y1 = int(pt1[1]), int(pt1[0])
+                cx, cy = int(c[1]), int(c[0])
+
+                # 1. p0 ~ p1 연결선 (초록색)
+                cv2.line(disp_img, (x0, y0), (x1, y1), (0, 255, 0), 1)
+
+                # 2. 중심점 (빨간색)
+                cv2.circle(disp_img, (cx, cy), 2, (0, 0, 255), -1)
+
+                # 3. 파지점 p0, p1 (파란색)
+                cv2.circle(disp_img, (x0, y0), 2, (255, 0, 0), -1)
+                cv2.circle(disp_img, (x1, y1), 2, (255, 0, 0), -1)
+
+                # 4. 법선 벡터 n0, n1 방향 (노란색 화살표)
+                # 방향을 눈으로 쉽게 확인하기 위해 화살표 길이를 15픽셀로 스케일업
+                scale = 15
+                nx0, ny0 = int(x0 + norm0[1] * scale), int(y0 + norm0[0] * scale)
+                nx1, ny1 = int(x1 + norm1[1] * scale), int(y1 + norm1[0] * scale)
+
+                cv2.arrowedLine(disp_img, (x0, y0), (nx0, ny0), (0, 255, 255), 1, tipLength=0.3)
+                cv2.arrowedLine(disp_img, (x1, y1), (nx1, ny1), (0, 255, 255), 1, tipLength=0.3)
+
+            cv2.imshow("Debug: Force Closure & Normals", disp_img)
+            cv2.waitKey(0)
+            cv2.destroyWindow("Debug: Force Closure & Normals")
+        # ===================================================================================
+
+        axes = p1 - p0
+        axes = axes / np.linalg.norm(axes, axis=1, keepdims=True)
+        thetas = np.arctan2(axes[:, 0], axes[:, 1])
         axes = p1 - p0
         axes = axes / np.linalg.norm(axes, axis=1, keepdims=True)
         thetas = np.arctan2(axes[:, 0], axes[:, 1])
@@ -145,6 +194,7 @@ class OnlineAntipodalSampler:
         centers = centers[valid_mask]
         thetas = thetas[valid_mask]
         depths = depths[valid_mask]
+        logging.debug(f'필터링 된 Depth: {depths}')
         offsets = np.array([ -0.01, -0.02, -0.03,-0.04])  # 미터 단위 오프셋
         # 각 grasp마다 offset 개수만큼 복제
         N = len(centers)
@@ -174,7 +224,7 @@ if __name__=="__main__":
     while True:
         # camera.update_frames()
         # depth=camera.get_depth_image()
-        depth=cv2.imread('/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/saved_data/depth_raw_1.png',cv2.IMREAD_GRAYSCALE)
+        depth=cv2.imread('/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/saved_data/depth_raw_3.png',cv2.IMREAD_GRAYSCALE)
         depth=depth*0.001
         depth=DepthImage(depth)
         grasp=np.float16(sampler.sample_grasps(depth,use_visualize=True))
