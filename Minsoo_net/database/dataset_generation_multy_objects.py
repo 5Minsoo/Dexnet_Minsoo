@@ -5,21 +5,24 @@ import zarr, sys
 import cv2
 from pathlib import Path
 import time
+import yaml
 # --- 설정 ---
 use_visual=False
 
-num_grasps=300
-quality_threshold=0.002
-prob_threshold=0.012 
-num_poses=10
-max_angle=15
+with open('/home/minsoo/Dexnet_Minsoo/Minsoo_net/config/master_config.yaml') as f:
+    config=yaml.safe_load(f)
+    num_grasps=config.get("num_grasps",300)
+    quality_threshold=config.get("quality_threshold",0.002)
+    prob_threshold=config.get("stable_pose_prob_threshold",0.012) 
+    num_stable_poses=config.get("num_stable_poses",10)
+    max_angle=config.get("max_angle_deg",15)
+    zarr_path = config.get("zarr_path","grasp_dataset_tilt.zarr")
+    cam_offset_min=config.get("cam_offset_min",0.35)
+    cam_offset_max=config.get("cam_offset_max",0.50)
+    cam_offset_step=config.get("cam_offset_step",10)
 
-num_camera_points=500
-camera_radius=(0.35,0.55)
-camera_tilt=(0,3.14/6)
+camera_offsets=np.linspace(cam_offset_min,cam_offset_max,cam_offset_step)
 
-
-zarr_path = "grasp_dataset_r0.4m1.0.zarr"
 output_size = 32
 crop_size=96
 batch_size = 10 
@@ -29,10 +32,10 @@ mode=input("모드 선택(처음부터: 1번 / 이어하기 2번) 입력 후 Ent
 
 
 if mode=="1":
-    print("기존 데이터를 삭제하고 새로 작업을 시작합니다.")
+    print(f"기존 데이터를 삭제하고 새로 작업을 시작합니다. {zarr_path}")
     store = zarr.open(zarr_path, mode='w')
 elif mode==2:
-    print("기존 데이터에 이어서 작업을 시작합니다.")
+    print(f"기존 데이터에 이어서 작업을 시작합니다. {zarr_path}")
     store = zarr.open(zarr_path, mode='a')
 else:
     sys.exit()
@@ -40,6 +43,7 @@ else:
 mesh_path=Path(__file__).parent.parent.resolve()
 mesh_path=mesh_path/"data"/"object"
 mesh_files = list(mesh_path.glob("*.obj")) + list(mesh_path.glob("*.stl"))
+print(f'해당 물체 진행: {mesh_files}')
 
 
 tmp_imgs, tmp_labels,tmp_z = [], [],[]
@@ -56,15 +60,22 @@ def flush_to_zarr(img_ds,label_ds,z_ds):
     
     tmp_imgs, tmp_labels,tmp_z = [], [],[]
 
+def get_camera_positions(grasp, pose, offsets=[0.2, 0.25, 0.3]):
+    T_world_gripper = pose @ grasp.T_grasp_obj
+    z_axis = T_world_gripper[:3, 2]
+    gripper_pos = T_world_gripper[:3, 3]
+    cam_target = gripper_pos
+
+    cam_positions = [gripper_pos - z_axis * d for d in offsets]
+    return cam_positions, cam_target
 
 for mesh_path in mesh_files:
     object_name=mesh_path.stem
     mesh_path=str(mesh_path)
     print(f'{object_name} 로드중')
 
-    grasp_pipeline=GraspPipeline(mesh_path,quality_threshold=quality_threshold,num_grasps=num_grasps,max_approach_angle_deg=max_angle,num_poses=num_poses)
+    grasp_pipeline=GraspPipeline(mesh_path,quality_threshold=quality_threshold,num_grasps=num_grasps,max_approach_angle_deg=max_angle,num_poses=num_stable_poses)
     renderer=GraspRenderer(mesh_path)
-    points=GraspRenderer.sample_spherical_positions(camera_radius,camera_tilt,(0,3.14),num_points=num_camera_points)
     if use_visual:
         viewer=renderer.scene.create_viewer()
         for _ in range(10):
@@ -97,7 +108,6 @@ for mesh_path in mesh_files:
         start=time.time()
         print(f'Grasp sampling 시간 {int(start-finish)}초')
         renderer.set_stable_pose(pose)
-        metalic,roughness=renderer.sample_material(num_camera_points)
         pose_group=obj_group.require_group(f"pose{start_idx}")
         start_idx+=1
         img_ds = pose_group.create_array("images", shape=(0, output_size, output_size), 
@@ -116,10 +126,11 @@ for mesh_path in mesh_files:
         for grasps, labels in tasks:
             print("이미지 랜더링 시작 (진행중..)")
             for grasp, label in zip(grasps, labels):
+                cam_poses,cam_target=get_camera_positions(grasp,pose,offsets=camera_offsets)
                 metalic,roughness=renderer.sample_material()
-                renderer.set_material(metalic=metalic[0],roughness=roughness[0])
-                for point in points:
-                    depth = renderer.render(camera_pos=point)
+                renderer.set_material(metalic=metalic,roughness=roughness)
+                for cam_pos in cam_poses:
+                    depth = renderer.render(camera_pos=cam_pos,target_pos=cam_target)
                     # 좌표 계산 및 시각화 (기존 로직)
                     origin = [0, 0, 0]
                     center = (pose @ np.append(grasp.center, 1.0))[:3]
@@ -157,7 +168,7 @@ for mesh_path in mesh_files:
                         cv2.imshow('Depth vs Cropped', combined_img)
                         viewer.render()
                         # 디버깅 시 하나씩 확인하려면 waitKey(0), 자동으로 휙휙 넘어가게 하려면 waitKey(1)
-                        cv2.waitKey(1)
+                        cv2.waitKey(0)
                     
                     tmp_imgs.append(cropped)
                     tmp_labels.append(label)

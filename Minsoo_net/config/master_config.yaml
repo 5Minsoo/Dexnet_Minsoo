@@ -1,4 +1,29 @@
 # ---------------------------------------------------------
+# 파지점 계산 파라미터들
+# ---------------------------------------------------------
+sampling_friction_coef: 0.6
+num_cone_faces: 8
+grasp_samples_per_surface_point: 4
+min_num_grasps: 100
+target_num_grasps: 200
+num_grasp_rots: 8
+max_num_surface_points: 100
+grasp_dist_thresh: 0
+gripper_max_width: 0.05
+max_sampling_iteration: 300
+
+# ---------------------------------------------------------
+# 그리퍼 정보
+# ---------------------------------------------------------
+hande:
+  T_mesh_gripper:
+    - [1.0,  0.0,  0.0,  0.0]
+    - [0.0,  0.0,  1.0,  0.056]
+    - [0.0, -1.0,  0.0,  0.0]
+    - [0.0,  0.0,  0.0,  1.0]
+  mesh_path: '/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/gripper/gripper.stl'
+  
+# ---------------------------------------------------------
 # 불확실성(Uncertainty) 모델링을 위한 Gaussian 노이즈 설정값
 # 단위: 미터(m), 라디안(rad), 스케일 비율 등
 # ---------------------------------------------------------
@@ -43,28 +68,21 @@ max_roughness : 0.60
 block_height: 7
 uniqueness_ratio: 40
 
-# ---------------------------------------------------------
-# 파지점 계산 파라미터들
-# ---------------------------------------------------------
-sampling_friction_coef: 0.8
-num_cone_faces: 8
-grasp_samples_per_surface_point: 4
-min_num_grasps: 100
-target_num_grasps: 200
-num_grasp_rots: 8
-max_num_surface_points: 100
-grasp_dist_thresh: 0
-gripper_max_width: 0.05
-max_sampling_iteration: 300
 
 # ---------------------------------------------------------
-# 그리퍼 정보
+# 데이터셋 생성 파라미터들
 # ---------------------------------------------------------
-hande:
-  T_mesh_gripper:
-    - [1.0,  0.0,  0.0,  0.0]
-    - [0.0,  0.0,  1.0,  0.056]
-    - [0.0, -1.0,  0.0,  0.0]
-    - [0.0,  0.0,  0.0,  1.0]
-  mesh_path: '/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/gripper/gripper.stl'
-  
+zarr_path : "grasp_dataset_tilt.zarr"
+num_grasps : 300
+quality_threshold : 0.002
+stable_pose_prob_threshold : 0.012
+num_stable_poses : 10 
+max_angle_deg : 20
+cam_offset_min : 0.35
+cam_offset_max : 0.50
+cam_offset_step : 15
+
+# ---------------------------------------------------------
+# 학습 파라미터
+# ---------------------------------------------------------
+#zarr path, quality threshold = 데이터셋 생성 파라미터와 동일

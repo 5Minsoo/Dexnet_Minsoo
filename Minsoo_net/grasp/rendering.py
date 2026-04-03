@@ -128,16 +128,14 @@ class GraspRenderer:
     # ── 카메라 유틸 ─────────────────────────────────────────
 
     @staticmethod
-    def _look_at(camera_pos: np.ndarray, up: np.ndarray = np.array([0, 0, 1.0])):
-        """원점을 바라보는 카메라 orientation 쿼터니언 [w,x,y,z] 반환."""
-        forward = -camera_pos
+    def _look_at(camera_pos: np.ndarray, target: np.ndarray = np.zeros(3), up: np.ndarray = np.array([0, 0, 1.0])):
+        """target을 바라보는 카메라 orientation 쿼터니언 [w,x,y,z] 반환."""
+        forward = target - camera_pos
         forward /= np.linalg.norm(forward)
-
-        right = np.cross(camera_pos, up)
+        right = np.cross(forward, up)
         if np.linalg.norm(right) < 1e-6:
             right = np.array([0.0, 1.0, 0.0])
         right /= np.linalg.norm(right)
-
         up_corrected = np.cross(forward, right)
         mat = np.column_stack([forward, right, up_corrected])
         q = R.from_matrix(mat).as_quat()  # [x,y,z,w]
@@ -167,9 +165,9 @@ class GraspRenderer:
 
     # ── 렌더링 ──────────────────────────────────────────────
 
-    def _move_sensor(self, camera_pos: np.ndarray):
-        """센서를 camera_pos로 이동시키고, 원점을 바라보게 한다."""
-        q = self._look_at(camera_pos)
+    def _move_sensor(self, camera_pos: np.ndarray, target: np.ndarray = np.zeros(3)):
+        """센서를 camera_pos로 이동시키고, target을 바라보게 한다."""
+        q = self._look_at(camera_pos, target)
         self.sensor.set_local_pose(Pose(camera_pos, q))
 
     def get_extrinsic(self) -> np.ndarray:
@@ -201,14 +199,14 @@ class GraspRenderer:
  
         return pixels[0] if single else pixels
     
-    def render(self, camera_pos: np.ndarray) -> np.ndarray:
+    def render(self, camera_pos: np.ndarray, target_pos: np.ndarray) -> np.ndarray:
         """
         지정 시점에서 depth 이미지를 렌더링한다.
         
         :param camera_pos: (3,) 카메라 월드 좌표
         :return: (H, W) float depth 배열
         """
-        self._move_sensor(camera_pos)
+        self._move_sensor(camera_pos,target_pos)
         self.scene.step()
         self.scene.update_render()
         self.sensor.take_picture()

@@ -25,22 +25,12 @@ LRN_BETA = 0.75
 LRN_BIAS = 1.0
 
 
-def _logger(name="DexNet2"):
-    lg = logging.getLogger(name)
-    if not lg.handlers:
-        h = logging.StreamHandler()
-        h.setFormatter(logging.Formatter("[%(name)s] %(message)s"))
-        lg.addHandler(h)
-    lg.setLevel(logging.INFO)
-    return lg
-
 
 class DexNet2(nn.Module):
     """Dex-Net 2.0 GQ-CNN."""
 
     def __init__(self, im_height=32, im_width=32, im_channels=1, pose_dim=1):
         super().__init__()
-        self.log = _logger()
         self.im_height = im_height
         self.im_width = im_width
         self.im_channels = im_channels
@@ -133,14 +123,15 @@ class DexNet2(nn.Module):
         for i in range(0, im_t.shape[0], 128):
             logits = self(im_t[i:i+128], po_t[i:i+128])
             outs.append(F.softmax(logits, dim=-1))
-        print(f"raw depth range: min={np.nanmin(images):.4f}, max={np.nanmax(images):.4f}")
-        print(f"raw depth shape: {images.shape}")
-        print("pose_mean:", self.pose_mean, "pose_std:", self.pose_std) 
-        print("image_mean: ",self.im_mean,"image_std:",self.im_std)
-        print("input range:", im_t.min(), im_t.max())
-        print("pose range:", po_t.min(), po_t.max())
-        print("logits:", logits[:5])  # softmax 전 raw 값 확인
-        print("probs:", F.softmax(logits, dim=-1)[:5])
+        logging.debug(f"raw depth range: min={np.nanmin(images):.4f}, max={np.nanmax(images):.4f}")
+        logging.debug(f"raw depth shape: {images.shape}")
+        logging.debug(f"pose_mean: {self.pose_mean}, pose_std: {self.pose_std}") 
+        logging.debug(f"image_mean: {self.im_mean}, image_std: {self.im_std}")
+        logging.debug(f"input range: {im_t.min()}, {im_t.max()}")
+        logging.debug(f"pose range: {po_t.min()}, {po_t.max()}")
+        logging.debug(f"logits: {logits[:5]}")  
+        logging.debug(f"probs: {F.softmax(logits, dim=-1)[:5]}")
+
         return torch.cat(outs, 0).cpu().numpy()
 
     def predict_success(self, images, poses):

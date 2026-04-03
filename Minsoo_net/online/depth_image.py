@@ -25,18 +25,13 @@ class DepthImage:
             self._sobel_x = cv2.Sobel(self._data, cv2.CV_32F, 1, 0, ksize=3)
             self._sobel_y = cv2.Sobel(self._data, cv2.CV_32F, 0, 1, ksize=3)
 
-    def gradient_threshold(self, threshold=0.015,visualize=False):
-        if self.visualize is None:
-            self.visualize=visualize
+    def gradient_threshold(self, threshold=0.015):
         self._compute_sobel()
         grad = np.hypot(self._sobel_x, self._sobel_y)
         logging.debug(f'grad값 {np.mean(grad)}')
         # edge = np.copy(self._data)
         edge=np.ones_like(self._data)
         edge[grad > threshold] = 0.0
-        if self.visualize:
-            cv2.imshow('edge',edge)
-            cv2.waitKey(0)
         return edge  # ndarray 리턴 (DepthImage로 감쌀 필요 없음)
 
     def surface_normals(self, edge_image):

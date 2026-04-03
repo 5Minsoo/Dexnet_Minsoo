@@ -27,12 +27,12 @@ def _se3_to_fcl_transform(T):
 class CollisionChecker(object):
     """Wrapper for collision checking with python-fcl"""
 
-    def __init__(self,tolerance=0.1,use_visual=False):
+    def __init__(self,tolerance=0.0,use_visual=False):
         self._geoms = {}
         self._objs = {}
         self._objs_tf = {}
         self._meshes = {}
-        self.tolerance=1-tolerance
+        self.tolerance=1+tolerance
         self.use_visual=use_visual
 
     def remove_object(self, name):

@@ -132,7 +132,7 @@ class GraspVisualizer2D:
         print(f"{'='*60}\n")
 
         # 시각화 (전체)
-        canvas = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+        canvas = cv2.cvtColor(image.astype(np.float32), cv2.COLOR_GRAY2BGR)
         overlay = canvas.copy()
         half = self.line_length
         jaw = int(half * 0.35)

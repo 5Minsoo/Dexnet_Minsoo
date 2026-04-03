@@ -53,10 +53,10 @@ class GraspPipeline:
         collision_free_grasps = []
         collision_grasps = []        
         for grasp in aligned_grasps:
-            _, approach_angle, _ = grasp.grasp_angles_from_stp_z(pose)
+            # _, approach_angle, _ = grasp.grasp_angles_from_stp_z(pose)
             
-            if approach_angle > self.max_approach_angle:
-                continue
+            # if approach_angle > self.max_approach_angle:
+            #     continue
             
             #######################collide along approach로 변경 가능####################
             # if not self.checker.grasp_in_collision(grasp.T_grasp_obj, key=obj_key):
@@ -107,23 +107,41 @@ class GraspPipeline:
             obj_key = f'bin_{idx}'
             self.checker.set_table() 
             self.checker.set_object(obj_key, self.graspable_obj.mesh, T_world_obj=pose)
-            
+            valid_grasps = []
             # 테이블에 맞춰 정렬
-            aligned_grasps = [grasp.perpendicular_table(pose) for grasp in self.initial_grasps]
-            
+            perpendicular_grasps = [grasp.perpendicular_table(pose) for grasp in self.initial_grasps]
+            for grasp in perpendicular_grasps:
+                _, approach_angle, _ = grasp.grasp_angles_from_stp_z(pose)
+                
+                if approach_angle < self.max_approach_angle:
+                    valid_grasps.append(grasp)
+
+            aligned_grasps = [g for grasp in valid_grasps for g in grasp.multi_angle_grasps(pose)]
             # 1. 충돌 검사
             collision_grasps, collision_free_grasps = self.filter_collision_free_grasps(aligned_grasps, pose, obj_key)
             
             print(f"Total grasps: {len(self.initial_grasps)}")
             print(f"Collision-free grasps: {len(collision_free_grasps)}")
             print(f"Collision grasps: {len(collision_grasps)}")
-            # 2. Quality 평가
-            quality_grasps, quality = self.evaluate_grasp_quality(collision_free_grasps)
+            seen={}
+            for grasp in collision_free_grasps:
+                key=grasp.grasp_key()
+                if key not in seen:
+                    seen[key]=grasp
+            unique_grasps = list(seen.values())
             
+            # 2. Quality 평가
+            quality_grasps, quality = self.evaluate_grasp_quality(unique_grasps)
+
+            quality_map = {g.grasp_key(): q for g, q in zip(quality_grasps, quality)}
+
+            quality_grasps = [g for g in collision_free_grasps if g.grasp_key() in quality_map]
+            quality = [quality_map[g.grasp_key()] for g in quality_grasps]
             # 3. Failed Grasps 병합 (충돌 발생 + Quality 미달)
             # evaluate_grasp_quality 구현에 따라 다르겠지만, 일반적인 리스트 필터링 기준입니다.
-            low_quality_grasps = [g for g in collision_free_grasps if g not in quality_grasps]
+            low_quality_grasps = [g for g in collision_free_grasps if g.grasp_key() not in quality_map]
             failed_grasps = collision_grasps + low_quality_grasps
+
             
             self.checker.remove_object(obj_key)
             
@@ -143,11 +161,12 @@ if __name__ == "__main__":
     # 1. 설정 파라미터
     # 실제 환경에 맞춰 경로를 수정하세요.
     OBJ_FILE_PATH = '/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/PVCTT13.stl'
+    OBJ_FILE_PATH='/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/bin.stl'
     
     # --- 테스트 제어 변수 ---
-    START_INDEX = 0      # 0부터 시작하거나, 특정 Pose부터 재개하고 싶을 때 변경
-    NUM_TEST_GRASPS = 30 # 한 Pose당 생성할 Grasp 후보 개수
-    VISUALIZE = True    # 시각화 여부
+    START_INDEX = 1      # 0부터 시작하거나, 특정 Pose부터 재개하고 싶을 때 변경
+    NUM_TEST_GRASPS = 300 # 한 Pose당 생성할 Grasp 후보 개수
+    VISUALIZE = False   # 시각화 여부
     # -----------------------
 
     print(f"\n" + "="*60)
@@ -174,7 +193,7 @@ if __name__ == "__main__":
             current_pose_idx = START_INDEX + i
             
             print(f"\n[결과 리포트 - Pose {current_pose_idx}]")
-            print(f"  - 성공(Quality) Grasp: {len(quality_grasps)}개")
+            print(f"  - 성공(Quality) Grasp: {len(quality_grasps)}개, Quality개수: {len(qualities)}")
             print(f"  - 실패(Collision/Low Quality) Grasp: {len(failed_grasps)}개")
             
             if len(qualities) > 0:

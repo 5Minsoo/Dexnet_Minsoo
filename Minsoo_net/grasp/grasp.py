@@ -5,7 +5,7 @@ import yaml
 from copy import deepcopy
 class ParallelJawGrasp:
     """
-    평행 조 그리퍼 grasp 하나를 표현.
+    평행 조 그리퍼 self 하나를 표현.
     SDF 기반으로 손가락 닫힘 시뮬레이션을 수행한다.
     """
 
@@ -132,9 +132,9 @@ class ParallelJawGrasp:
         )
     
     def grasp_angles_from_stp_z(self, stable_pose):
-        """ Get angles of the the grasp from the table plane:
-        1) the angle between the grasp axis and table normal
-        2) the angle between the grasp approach axis and the table normal
+        """ Get angles of the the self from the table plane:
+        1) the angle between the self axis and table normal
+        2) the angle between the self approach axis and the table normal
         
         Parameters
         ----------
@@ -144,9 +144,9 @@ class ParallelJawGrasp:
         Returns
         -------
         psi : float
-            grasp y axis rotation from z axis in stable pose
+            self y axis rotation from z axis in stable pose
         phi : float
-            grasp x axis rotation from z axis in stable pose
+            self x axis rotation from z axis in stable pose
         """
         T_grasp_obj = self.T_grasp_obj        
         T_stp_obj = stable_pose
@@ -183,7 +183,7 @@ class ParallelJawGrasp:
         
     def perpendicular_table(self, stable_pose):
         """
-        Returns a grasp with approach_angle set to be aligned width the table normal specified in the given stable pose.
+        Returns a self with approach_angle set to be aligned width the table normal specified in the given stable pose.
 
         Parameters
         ----------
@@ -192,7 +192,7 @@ class ParallelJawGrasp:
         Returns
         -------
         :obj:`ParallelJawPtGrasp3D`
-            aligned grasp
+            aligned self
         """
         table_normal = stable_pose.T[:3,2]
         theta = self._angle_aligned_with_table(table_normal)
@@ -208,12 +208,12 @@ class ParallelJawGrasp:
         return new_grasp
 
     def unrotated_full_axis(self):
-        """ Rotation matrix from canonical grasp reference frame to object reference frame. Z axis points out of the gripper palm along the 0-degree approach direction, Y axis points between the jaws, and the X axis is orthogonal.
+        """ Rotation matrix from canonical self reference frame to object reference frame. Z axis points out of the gripper palm along the 0-degree approach direction, Y axis points between the jaws, and the X axis is orthogonal.
 
         Returns
         -------
         :obj:`numpy.ndarray`
-            rotation matrix of grasp
+            rotation matrix of self
         """
         grasp_axis_y = self.axis
         grasp_axis_z = np.array([grasp_axis_y[1], -grasp_axis_y[0], 0])
@@ -234,3 +234,52 @@ class ParallelJawGrasp:
             self.axis = R @ self.axis
             self.axis = self.axis / np.linalg.norm(self.axis) # 정규화
             return self
+    
+    def multi_angle_grasps(
+        self,
+        stable_pose: np.ndarray,
+        angle_offsets_deg: List[float] = np.linspace(-45,45,15),
+        max_approach_angle: float = np.pi / 3,
+    ) -> List['ParallelJawGrasp']:
+        """
+        perpendicular 기준 theta에서 여러 오프셋 각도로 grasp를 복제함.
+        approach angle이 max_approach_angle 이내인 것만 반환.
+
+        Parameters
+        ----------
+        stable_pose : 4x4 SE(3)
+        angle_offsets_deg : 오프셋 각도 리스트 (도 단위)
+        max_approach_angle : 허용 최대 approach angle (라디안)
+
+        Returns
+        -------
+        list of ParallelJawGrasp
+        """
+        table_normal = stable_pose.T[:3, 2]
+        base_theta = self._angle_aligned_with_table(table_normal)
+        gripper_axis = self.unrotated_full_axis()
+
+        results = []
+        for deg in angle_offsets_deg:
+            theta = base_theta + np.radians(deg)
+
+            cos_t = np.cos(theta)
+            sin_t = np.sin(theta)
+            R = np.c_[[cos_t, 0, -sin_t], [0, 1, 0], [sin_t, 0, cos_t]]
+
+            new_grasp = deepcopy(self)
+            new_grasp.approach_angle = theta
+            new_grasp.T_grasp_obj[:3, :3] = gripper_axis @ R
+            new_grasp.T_grasp_obj[:3, 3] = self.center
+
+            # 유효성 검사: approach axis와 table normal 사이 각도
+            _, approach_angle, _ = new_grasp.grasp_angles_from_stp_z(stable_pose)
+            if approach_angle <= max_approach_angle:
+                results.append(new_grasp)
+        return results
+    
+    def grasp_key(self, decimals=6):
+        """center + axis를 반올림해서 튜플 키로 만듦"""
+        c = tuple(np.round(self.center, decimals))
+        a = tuple(np.round(self.axis, decimals))
+        return c + a

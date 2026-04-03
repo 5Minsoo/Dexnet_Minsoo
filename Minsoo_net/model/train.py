@@ -28,6 +28,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 import zarr
+import yaml
 
 from model import DexNet2
 
@@ -35,7 +36,8 @@ logging.basicConfig(
     format="[%(name)s %(levelname)s] %(message)s", level=logging.INFO)
 log = logging.getLogger("train")
 
-
+with open('/home/minsoo/Dexnet_Minsoo/Minsoo_net/config/master_config.yaml') as f:
+    config=yaml.safe_load(f)
 # ══════════════════════════════════════════════════════════════════════
 #  하드코딩된 학습 설정 (원본 YAML 기준)
 # ══════════════════════════════════════════════════════════════════════
@@ -55,7 +57,7 @@ CFG = dict(
     drop_rate=0.0,
 
     # ── 라벨 ──
-    metric_thresh=0.034 ,       # label > thresh → positive (1)
+    metric_thresh=config.get("quality_threshold",0.002) ,       # label > thresh → positive (1)
 
     # ── 로깅 / 저장 ──
     eval_frequency=1,           # epoch 단위
@@ -348,7 +350,7 @@ def train(args):
     if args.batch_size is not None:
         cfg["train_batch_size"] = args.batch_size
         cfg["val_batch_size"] = args.batch_size
-
+    
     # 시드 설정
     np.random.seed(cfg["seed"])
     torch.manual_seed(cfg["seed"])
@@ -522,7 +524,7 @@ def main():
     print(file_name_time)
     
     parser = argparse.ArgumentParser(description="Dex-Net 2.0 GQ-CNN 학습")
-    parser.add_argument("--data", type=str, required=True,
+    parser.add_argument("--data", type=str, default=config.get('zarr_path'),
                         help="zarr 데이터셋 경로")
     parser.add_argument("--output", type=str, default=f"./output/{file_name_time}",
                         help="모델 저장 경로")

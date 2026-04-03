@@ -4,63 +4,87 @@ import logging
 import random
 import matplotlib.pyplot as plt
 
-zarr_path = '/home/minsoo/Dexnet_Minsoo/grasp_dataset.zarr'
+zarr_path = '/home/minsoo/Dexnet_Minsoo/grasp_dataset_tilt.zarr'
 root = zarr.open(str(zarr_path), mode="r")
 
-success = 0  
-total_samples = 0
 threshold = 0.032
-labels_positive = 0
-label_len = 0
 
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger('zarr').setLevel(logging.WARNING)
+logging.getLogger('matplotlib').setLevel(logging.WARNING)
+logging.getLogger('PIL').setLevel(logging.WARNING)
 
 def print_stats(arr):
-    logging.debug(f'  샘플 수: {len(arr)}')
-    logging.debug(f'  max:    {arr.max():.5f}')
-    logging.debug(f'  75%:    {np.percentile(arr, 75):.5f}')
-    logging.debug(f'  median: {np.median(arr):.5f}')
-    logging.debug(f'  25%:    {np.percentile(arr, 25):.5f}')
-    logging.debug(f'  min:    {arr.min():.5f}')
-    logging.debug(f'  mean:   {arr.mean():.5f}')
-    logging.debug(f'  std:    {arr.std():.5f}')
+    logging.debug(f'  유효 샘플 수(>0): {len(arr)}')
+    if len(arr) > 0:
+        logging.debug(f'  max:    {arr.max():.5f}')
+        logging.debug(f'  75%:    {np.percentile(arr, 75):.5f}')
+        logging.debug(f'  median: {np.median(arr):.5f}')
+        logging.debug(f'  25%:    {np.percentile(arr, 25):.5f}')
+        logging.debug(f'  min:    {arr.min():.5f}')
+        logging.debug(f'  mean:   {arr.mean():.5f}')
+        logging.debug(f'  std:    {arr.std():.5f}')
 
 all_labels = []
-
-# 이미지 샘플링을 위한 전체 데이터 인덱스 저장 리스트
-# (obj_key, pose_key, index) 형태로 저장
 dataset_indices = []
+
+# 전체 통계 계산용 변수
+global_total_samples = 0
+global_success_samples = 0
 
 for obj_key in root.keys():
     obj_group = root[obj_key]
-    obj_labels = []
+    
+    # 물체별 통계 계산용 변수
+    obj_labels_list = []
+    obj_total_samples = 0
+    obj_success_samples = 0
     
     for pose_key in obj_group.keys():
         labels = np.array(obj_group[pose_key]["labels"])
         num_samples = len(labels)
-        label_len += num_samples
         
-        # 유효한 label(0 초과) 통계용
+        # 1. 물체별 데이터 개수 누적
+        obj_total_samples += num_samples
+        obj_success_samples += np.sum(labels > threshold)
+        
+        # 2. 통계 출력용 유효 데이터(0 초과) 모으기
         valid_labels = labels[labels > 0]
-        obj_labels.append(valid_labels)
-        labels_positive += np.sum(valid_labels > threshold)
-        
-        # 시각화를 위해 모든 샘플의 위치(인덱스)를 기록
+        if len(valid_labels) > 0:
+            obj_labels_list.append(valid_labels)
+            
+        # 3. 뷰어용 인덱스 저장
         for i in range(num_samples):
             dataset_indices.append((obj_key, pose_key, i))
 
-    if obj_labels:
-        obj_labels_concat = np.concatenate(obj_labels)
-        all_labels.append(obj_labels_concat)
-        logging.debug(f'[{obj_key}]')
-        print_stats(obj_labels_concat)
+    # 전역(Global) 변수에 현재 물체의 통계 누적
+    global_total_samples += obj_total_samples
+    global_success_samples += obj_success_samples
 
-logging.debug('=' * 40)
+    # 물체별 통계 및 정답 비율 출력
+    logging.debug(f'\n[{obj_key}]')
+    if obj_labels_list:
+        obj_labels_concat = np.concatenate(obj_labels_list)
+        all_labels.append(obj_labels_concat)
+        print_stats(obj_labels_concat)
+        
+    if obj_total_samples > 0:
+        obj_success_rate = (obj_success_samples / obj_total_samples) * 100
+        logging.debug(f'  => {obj_key} 정답 비율: {obj_success_samples}/{obj_total_samples} ({obj_success_rate:.2f}%)')
+    else:
+        logging.debug(f'  => {obj_key} 정답 비율: 데이터 없음')
+
+logging.debug('\n' + '=' * 40)
 logging.debug('[전체 통계]')
 if all_labels:
     print_stats(np.concatenate(all_labels))
-logging.debug(f'정답 비율: {labels_positive/label_len*100:.2f}%')
+
+# 총 정답 비율 출력
+if global_total_samples > 0:
+    global_success_rate = (global_success_samples / global_total_samples) * 100
+    logging.debug(f'총 정답 비율: {global_success_samples}/{global_total_samples} ({global_success_rate:.2f}%)')
+else:
+    logging.debug('총 정답 비율: 데이터 없음')
 
 # ==========================================
 # 랜덤 이미지 뷰어 기능 추가 부분
@@ -75,27 +99,22 @@ while True:
         print("시각화할 데이터가 없습니다.")
         break
         
-    # 인덱스 리스트에서 랜덤하게 하나 추출
     obj_key, pose_key, sample_idx = random.choice(dataset_indices)
     
-    # Zarr에서 해당 이미지와 라벨만 로드 (Lazy Loading)
     img = root[obj_key][pose_key]["images"][sample_idx]
     label = root[obj_key][pose_key]["labels"][sample_idx]
     
-    # 채널 차원이 (H, W, 1)일 경우 matplotlib을 위해 (H, W)로 스퀴즈
     img_display = np.squeeze(img)
     
     ax.clear()
-    ax.imshow(img_display, cmap='gray') # Depth 이미지일 경우 흑백 컬러맵 사용
+    ax.imshow(img_display, cmap='gray')
     
-    # 성공 기준(threshold)을 넘었는지 판단하여 타이틀에 표시
     is_success = "SUCCESS" if label > threshold else "FAIL"
     ax.set_title(f"Obj: {obj_key} | Pose: {pose_key} | Idx: {sample_idx}\nLabel: {label:.5f} ({is_success})")
     ax.axis('off')
     
     plt.draw()
     
-    # 키보드 입력을 기다림. 창을 닫으면(False 반환) 루프 탈출
     wait = plt.waitforbuttonpress()
     if wait is None:
         print("뷰어 창이 닫혀 프로그램을 종료합니다.")
