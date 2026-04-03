@@ -207,6 +207,6 @@ if __name__ == '__main__':
         while True:
             camera.update_frames()
             depth=camera.get_depth_image()._data
-            print(depth.shape)
+            print(depth.max())
     finally:
         camera.release()

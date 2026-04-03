@@ -3,7 +3,7 @@ import logging
 
 import numpy as np
 import cv2
-
+from scipy.ndimage import distance_transform_edt
 
 class DepthImage:
     def __init__(self, depth_data=None,visualize=None):
@@ -66,6 +66,12 @@ class DepthImage:
         resized = cv2.resize(self._data, None, fx=scale, fy=scale)
         return DepthImage(resized)
 
+    def inpaint_depth(self):
+        mask = (self._data == 0)
+        distances, indices = distance_transform_edt(mask, return_indices=True)
+        result = np.copy(self._data)
+        result[mask] = self._data[indices[0][mask], indices[1][mask]]
+        return DepthImage(result)
 
 if __name__ == "__main__":
     import Minsoo_net.online.online_camera 
@@ -76,6 +82,9 @@ if __name__ == "__main__":
     camera.update_frames()
     raw=camera.get_depth_image()._data
     di = DepthImage(raw,visualize=True)
+    di=di.inpaint_depth()
+    cv2.imshow('depth inpaint', di._data)
+    cv2.waitKey(0)
 
     # edge 추출
     edge = di.gradient_threshold(threshold=0.015)

@@ -148,8 +148,6 @@ class OnlineAntipodalSampler:
 
             for pt0, pt1, c, norm0, norm1 in zip(p0, p1, centers, n0, n1):
                 # Numpy는 (y, x) 순서, OpenCV는 (x, y) 순서이므로 뒤집어 할당
-                print(f"\n[디버그] 화면 좌표: p0={pt0}, p1={pt1}")
-                print(f"[디버그] 메모리 벡터: norm0={norm0}, norm1={norm1}")
                 x0, y0 = int(pt0[1]), int(pt0[0])
                 x1, y1 = int(pt1[1]), int(pt1[0])
                 cx, cy = int(c[1]), int(c[0])
@@ -219,12 +217,12 @@ class OnlineAntipodalSampler:
 
 if __name__=="__main__":
     logging.basicConfig(level=logging.DEBUG)
-    # camera=RealSenseCamera()
+    camera=RealSenseCamera()
     sampler=OnlineAntipodalSampler(gripper_width_m=0.05,grad_threshold=0.015,max_edge=100)
     while True:
-        # camera.update_frames()
-        # depth=camera.get_depth_image()
-        depth=cv2.imread('/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/saved_data/depth_raw_3.png',cv2.IMREAD_GRAYSCALE)
-        depth=depth*0.001
-        depth=DepthImage(depth)
+        camera.update_frames()
+        depth=camera.get_depth_image()
+        # depth=cv2.imread('/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/saved_data/depth_raw_3.png',cv2.IMREAD_GRAYSCALE)
+        # depth=depth*0.001
+        # depth=DepthImage(depth)
         grasp=np.float16(sampler.sample_grasps(depth,use_visualize=True))

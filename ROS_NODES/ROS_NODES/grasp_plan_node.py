@@ -29,7 +29,7 @@ class GraspPlannerNode(Node):
         self.depth=None
         self.image_size=None
 
-        self.sampler=OnlineAntipodalSampler(gripper_width_m=0.05,K=self.camera.intrinsic_parameter,image_margin=0.0)
+        self.sampler=OnlineAntipodalSampler(gripper_width_m=0.05,K=self.camera.intrinsic_parameter,image_margin=0.2,max_grasps=100)
         self.samples=None
 
         self.helper=MoveItMoveHelper()
@@ -44,52 +44,40 @@ class GraspPlannerNode(Node):
 
     def main_loop(self):
         self.helper.move_to_joint_values(joint_goal={
-            "joint_1": 0.1945,
-            "joint_2": 0.1722,
-            "joint_3": 1.6341,
-            "joint_4": 0.0021,
-            "joint_5": 1.3097,
-            "joint_6": -1.3113
+            "joint_1": 0.2618,
+            "joint_2": -0.0349,
+            "joint_3": 1.8850,
+            "joint_4": -0.0873,
+            "joint_5": 1.0472,
+            "joint_6": -1.2043
         })
-        self.helper.move_to_joint_values(joint_goal={
-            "joint_1": 0.1920,
-            "joint_2": 0.2094,
-            "joint_3": 1.7279,
-            "joint_4": 0.0000,
-            "joint_5": 1.1868,
-            "joint_6": -1.3090
-        })
+        # self.helper.move_to_joint_values(joint_goal={
+        #     "joint_1": 0.1945,
+        #     "joint_2": 0.1722,
+        #     "joint_3": 1.6341,
+        #     "joint_4": 0.0021,
+        #     "joint_5": 1.3097,
+        #     "joint_6": -1.3113
+        # })
+        # self.helper.move_to_joint_values(joint_goal={
+        #     "joint_1": 0.1920,
+        #     "joint_2": 0.2094,
+        #     "joint_3": 1.7279,
+        #     "joint_4": 0.0000,
+        #     "joint_5": 1.1868,
+        #     "joint_6": -1.3090
+        # })
         self.helper.gripper_open()
         time.sleep(1.0)
         self.update_frame()
         self.collect_samples()
         if len(self.samples)>0:
-            pos,quat=self.plan_grasp(self.get_extrinsic())
+            pos,quat,offset_dir=self.plan_grasp(self.get_extrinsic())
             logging.debug(f' 물체 world (TCP 기준) Position: {pos}')
             if pos is not None:
                 self.publish_grasp_tf(pos, quat)  # 추가
-                pos[2]+=0.15
-                logging.debug(f' 다음 이동 Position: {pos}')
-                input1=input('계속하려면 Enter')
-                if input1=='q':
-                    return
-                self.helper.move_cartesian(pos,quat)
-                pos[2]-=0.15
-                logging.debug(f' 다음 이동 Position: {pos}')
-                input('계속하려면 Enter')
-                self.helper.move_cartesian(pos,quat)
-                time.sleep(1.0)
-                self.helper.gripper_close()
-                time.sleep(1.0)
-                pos[2]+=0.15
-                self.helper.move_cartesian(pos,quat)
-                pos[2]-=0.15
-                self.helper.move_cartesian(pos,quat)
-                time.sleep(1.0)
-                self.helper.gripper_open()
-                time.sleep(1.0)
-                
-                
+                self.pick_and_place(pos,quat,offset_dir,0.15)
+
                 
     def update_frame(self):
         self.camera.update_frames()
@@ -123,28 +111,37 @@ class GraspPlannerNode(Node):
         u, v, theta, z = grasp
         K = self.camera.intrinsic_parameter
         cam = np.linalg.inv(K) @ np.array([u, v, 1.0])
-        cam *= z  # depth 스케일링
-        cam=np.append(cam,1.0)
-        
+        cam *= z
+        cam = np.append(cam, 1.0)
         logging.debug(f'카메라 좌표계 좌표: {cam}')
+
+        # ── 물체 월드 좌표 (기존 유지) ──
         world = extrinsic @ cam
-        world[2]-=0.03
-        logging.debug(f'물체의 월드 좌표계 좌표: {world}')
+        # world[2] -= 0.06  
+        obj_pos = world[:3].copy()
+        logging.debug(f'물체의 월드 좌표계 좌표: {obj_pos}')
 
-        # ── theta 변환 ──
-        R = extrinsic[:3, :3]
-        dir_cam = np.array([np.cos(theta), np.sin(theta), 0])
-        dir_world = R @ dir_cam
-        yaw = np.arctan2(dir_world[1], dir_world[0]) +np.pi/2
-
+        # ── 현재 그리퍼 orientation ──
         t = self.tf_buffer.lookup_transform('base_link', 'link_6', rclpy.time.Time())
         r = t.transform.rotation
-        gripper_rpy = Rotation.from_quat([r.x, r.y, r.z, r.w]).as_euler('xyz')
-        roll, pitch = gripper_rpy[0], gripper_rpy[1]
-        quat = Rotation.from_euler('xyz', [roll, pitch, yaw]).as_quat()
-        logging.debug(f'물체 최종 월드 좌표: {world,quat}')
-        return world[:3], quat
-    
+        R_grip = Rotation.from_quat([r.x, r.y, r.z, r.w])
+        grip_z = -R_grip.as_matrix()[:, 2]
+        # ── theta → 월드 yaw (기존 로직) ──
+        R_ext = extrinsic[:3, :3]
+        dir_cam = np.array([np.cos(theta), np.sin(theta), 0])
+        dir_world = R_ext @ dir_cam
+        yaw = np.arctan2(dir_world[1], dir_world[0]) + np.pi / 2
+
+        # ── 그리퍼 z축 기준으로 yaw만 회전 ──
+        grip_yaw = R_grip.as_euler('xyz')[2]
+        delta_yaw = yaw - grip_yaw
+        R_delta = Rotation.from_rotvec(R_grip.as_matrix()[:, 2] * delta_yaw)
+        R_final = R_delta * R_grip
+
+        quat = R_final.as_quat()
+        logging.debug(f'물체 최종 월드 좌표: {obj_pos}, quat: {quat}')
+        return obj_pos, quat,grip_z
+        
     def get_extrinsic(self):
         t = self.tf_buffer.lookup_transform('base_link', 'camera_link', rclpy.time.Time())
         p = t.transform.translation
@@ -167,10 +164,35 @@ class GraspPlannerNode(Node):
     def tf_pub(self):
         self.tf_broadcaster.sendTransform(self.last_tf)
 
+    def pick_and_place(self,pos,quat,offset_dir,offset):
+        pos+=offset*offset_dir
+        logging.debug(f' 다음 이동 Position: {pos}')
+        input1=input('계속하려면 Enter')
+        self.helper.move_cartesian(pos,quat)
+
+        pos-=(offset+0.06)*offset_dir
+        logging.debug(f' 다음 이동 Position: {pos}')
+        input1=input('계속하려면 Enter')
+
+        self.helper.move_cartesian(pos,quat)
+        time.sleep(0.5)
+        self.helper.gripper_close()
+
+        pos+=offset*offset_dir
+        self.helper.move_cartesian(pos,quat)
+        time.sleep(0.5)
+        pos-=offset*offset_dir
+        self.helper.move_cartesian(pos,quat)
+        time.sleep(0.5)
+        self.helper.gripper_open()
+        time.sleep(0.5)
+        pos+=offset*offset_dir
+        self.helper.move_cartesian(pos,quat)    
+                
 def main():
     logging.basicConfig(level=logging.DEBUG)
     rclpy.init()
-    node = GraspPlannerNode('/home/minsoo/Dexnet_Minsoo/output/20260331_16-13/best.pt',use_visualize=True)
+    node = GraspPlannerNode('/home/minsoo/Dexnet_Minsoo/output/20260403_08-15/best.pt',use_visualize=True)
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:

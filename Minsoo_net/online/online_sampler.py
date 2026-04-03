@@ -4,6 +4,7 @@ import numpy as np
 import cv2
 from scipy.spatial import cKDTree
 
+
 from Minsoo_net.online.depth_image import DepthImage
 from Minsoo_net.online.visualize import GraspVisualizer2D
 from Minsoo_net.online.online_camera import RealSenseCamera
@@ -59,8 +60,9 @@ class OnlineAntipodalSampler:
         깊이 이미지를 기반으로 N개의 4-DOF 파지 후보군을 배치로 반환합니다.
         반환 형태: (N, 4) 크기의 NumPy 배열 [u(x), v(y), theta, depth]
         """
+        depth_image=depth_image.inpaint_depth()
         edge = depth_image.gradient_threshold(self.grad_threshold)
-
+        
         h, w = edge.shape[:2]
         margin = self.image_margin
         t, b = int(h * margin), int(h * (1 - margin))
@@ -90,8 +92,8 @@ class OnlineAntipodalSampler:
         pixels = pixels[valid_depths]
         logger.debug(f'valid depth pixels: {pixels.shape}')
 
-        max_reach_m = self.gripper_width_m *2.0
-        min_reach_m=self.gripper_width_m*0.8
+        max_reach_m = self.gripper_width_m *1.5
+        min_reach_m=self.gripper_width_m*0.3
         point_cloud=camera_coords(depth_image._data,pixels,self.K_inv)
         logger.debug(f'Camera coord max {np.max(point_cloud)}')
         logger.debug(f'전체 가능 pair 개수: {int(len(point_cloud)*(len(point_cloud)-1)/2)}')
@@ -141,8 +143,6 @@ class OnlineAntipodalSampler:
 
             for pt0, pt1, c, norm0, norm1 in zip(p0, p1, centers, n0, n1):
                 # Numpy는 (y, x) 순서, OpenCV는 (x, y) 순서이므로 뒤집어 할당
-                print(f"\n[디버그] 화면 좌표: p0={pt0}, p1={pt1}")
-                print(f"[디버그] 메모리 벡터: norm0={norm0}, norm1={norm1}")
                 x0, y0 = int(pt0[1]), int(pt0[0])
                 x1, y1 = int(pt1[1]), int(pt1[0])
                 cx, cy = int(c[1]), int(c[0])
@@ -196,9 +196,9 @@ class OnlineAntipodalSampler:
         grasps = np.column_stack([us, vs, ts, ds])  # (N*K, 4)
 
         # max_grasps 제한
-        # if len(grasps) > self.max_grasps:
-        #     idx = np.random.choice(len(grasps), self.max_grasps, replace=False)
-        #     grasps = grasps[idx]
+        if len(grasps) > self.max_grasps:
+            idx = np.random.choice(len(grasps), self.max_grasps, replace=False)
+            grasps = grasps[idx]
         logger.debug(f'최종 결과 {grasps.shape}')
         if use_visualize:
             viz.visualize_from_grasps(depth_image._data, grasps, title="Antipodal Grasps")
