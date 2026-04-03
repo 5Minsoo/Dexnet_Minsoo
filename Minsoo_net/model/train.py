@@ -29,8 +29,8 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 import zarr
 import yaml
-
 from model import DexNet2
+from focal_loss import FocalLoss
 
 logging.basicConfig(
     format="[%(name)s %(levelname)s] %(message)s", level=logging.INFO)
@@ -53,7 +53,6 @@ CFG = dict(
     momentum=0.9,
     weight_decay=0.0000,        # L2 regularization
     decay_rate=0.95,
-    decay_step_multiplier=0.66, # epoch 단위
     drop_rate=0.0,
 
     # ── 라벨 ──
@@ -62,7 +61,7 @@ CFG = dict(
     # ── 로깅 / 저장 ──
     eval_frequency=1,           # epoch 단위
     save_frequency=1,           # epoch 단위
-    log_frequency=200,           # step 단위
+    log_frequency=1600,           # step 단위
 
     # ── 데이터 증강 ──
     multiplicative_denoising=False,
@@ -79,7 +78,9 @@ CFG = dict(
     num_random_files=10000,     # mean/std 계산 시 사용할 최대 샘플 수
 
     # ── 기타 ──
-    seed=24098
+    seed=24098,
+    alpha=[0.25,0.75],
+    loss="CE"
     )
 
 def init_weights(m):
@@ -102,7 +103,7 @@ class DexNetZarrDataset(Dataset):
     """
 
     def __init__(self, zarr_path, indices=None, im_height=32, im_width=32,
-                 metric_thresh=0.00001, augment=False, cfg=None,
+                 metric_thresh=0.002, augment=False, cfg=None,
                  im_mean=0.0, im_std=1.0, pose_mean=0.0, pose_std=1.0):
         super().__init__()
         self.root = zarr.open(str(zarr_path), mode="r")
@@ -172,9 +173,7 @@ class DexNetZarrDataset(Dataset):
         depth = float(np.array(group["gripper_depth"][grasp_idx]))
         label = float(np.array(group["labels"][grasp_idx]))
 
-        # ── 증강 ──
-        if self.augment:
-            image = self._augment(image)
+        image = self._augment(image)
 
         # ── 정규화 ──
         image = (image - self.im_mean) / (self.im_std + 1e-10)
@@ -194,27 +193,6 @@ class DexNetZarrDataset(Dataset):
     def _augment(self, image):
         """원본 TF 코드와 동일한 증강 파이프라인."""
         h, w = image.shape
-
-        # 1) Multiplicative denoising (gamma noise)
-        if self.cfg["multiplicative_denoising"]:
-            gamma_shape = self.cfg["gamma_shape"]
-            mult = ss.gamma.rvs(gamma_shape, scale=1.0 / gamma_shape)
-            image = image * mult
-
-        # 2) Gaussian process denoising (correlated noise)
-        if self.cfg["gaussian_process_denoising"]:
-            if np.random.rand() < self.cfg["gaussian_process_rate"]:
-                factor = self.cfg["gaussian_process_scaling_factor"]
-                sigma = self.cfg["gaussian_process_sigma"]
-                gp_h = int(h / factor)
-                gp_w = int(w / factor)
-                gp_noise = np.random.normal(0, sigma,
-                                            (gp_h, gp_w)).astype(np.float32)
-                gp_noise = cv2.resize(gp_noise, (w, h),
-                                      interpolation=cv2.INTER_CUBIC)
-                # 0이 아닌 픽셀에만 노이즈 추가
-                mask = image > 0
-                image[mask] += gp_noise[mask]
 
         # 3) Symmetrize (회전 + 반전)
         if self.cfg["symmetrize"]:
@@ -312,8 +290,7 @@ def compute_data_stats(zarr_path, train_indices, im_height, im_width,
 def evaluate(model, loader, device):
     """Validation error rate + loss."""
     model.eval()
-    criterion = nn.CrossEntropyLoss()
-
+    criterion=nn.CrossEntropyLoss()
     total_loss = 0.0
     correct = 0
     total = 0
@@ -350,7 +327,9 @@ def train(args):
     if args.batch_size is not None:
         cfg["train_batch_size"] = args.batch_size
         cfg["val_batch_size"] = args.batch_size
-    
+    cfg["metric_thresh"]=args.thresh
+    cfg["alpha"]=args.alpha
+    cfg["loss"]=args.loss
     # 시드 설정
     np.random.seed(cfg["seed"])
     torch.manual_seed(cfg["seed"])
@@ -414,26 +393,31 @@ def train(args):
     model.apply(init_weights)
     model.to(device)
 
-    # ── Loss / Optimizer / Scheduler ──
-    num_pos = train_ds.success
-    num_neg = train_ds.total_samples - num_pos
-    weight = torch.tensor([1.0, num_neg / num_pos], dtype=torch.float32).to(device)
-    criterion = nn.CrossEntropyLoss(weight=weight)
+    # ── Loss / Optimizer / Scheduler ──    
+    if cfg["loss"]=="FL":
+        criterion = FocalLoss(task_type="multi-class",num_classes=2,alpha=cfg["alpha"])
+    elif cfg['loss']=="CE":
+        num_pos = train_ds.success
+        num_neg = train_ds.total_samples - num_pos
+        weight = torch.tensor([1.0, num_neg / num_pos], dtype=torch.float32).to(device)
+        criterion = nn.CrossEntropyLoss(weight=weight)
+    else:
+        raise ValueError(f"CE or FL 넣어야 함. error: {cfg['loss']}")
 
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=cfg["base_lr"],
         weight_decay=cfg["weight_decay"])
 
-    # lr decay: 매 (decay_step_multiplier * num_train) 샘플마다 decay
-    decay_step_epochs = cfg["decay_step_multiplier"]
     scheduler = torch.optim.lr_scheduler.ExponentialLR(
         optimizer,
         gamma=cfg["decay_rate"])
 
     # ── 출력 디렉토리 ──
     os.makedirs(args.output, exist_ok=True)
-
+    file_handler = logging.FileHandler(os.path.join(args.output, "train.log"))
+    file_handler.setFormatter(logging.Formatter("[%(name)s %(levelname)s] %(message)s"))
+    log.addHandler(file_handler)
     # ── 학습 ──
     log.info("=" * 60)
     log.info("Starting training")
@@ -519,26 +503,24 @@ def train(args):
 #  CLI
 # ══════════════════════════════════════════════════════════════════════
 def main():
-    now=datetime.now()
-    file_name_time = now.strftime("%Y%m%d_%H-%M")
-    print(file_name_time)
-    
     parser = argparse.ArgumentParser(description="Dex-Net 2.0 GQ-CNN 학습")
-    parser.add_argument("--data", type=str, default=config.get('zarr_path'),
-                        help="zarr 데이터셋 경로")
-    parser.add_argument("--output", type=str, default=f"./output/{file_name_time}",
-                        help="모델 저장 경로")
-    parser.add_argument("--im-height", type=int, default=32,
-                        help="이미지 높이 (기본 32)")
-    parser.add_argument("--im-width", type=int, default=32,
-                        help="이미지 너비 (기본 32)")
-    parser.add_argument("--epochs", type=int, default=None,
-                        help="에포크 수 (기본 50)")
-    parser.add_argument("--lr", type=float, default=None,
-                        help="학습률 (기본 0.01)")
-    parser.add_argument("--batch-size", type=int, default=None,
-                        help="배치 크기 (기본 64)")
+    parser.add_argument("--data", type=str, default=config.get('zarr_path'))
+    parser.add_argument("--output", type=str, default=None)
+    parser.add_argument("--im-height", type=int, default=32)
+    parser.add_argument("--im-width", type=int, default=32)
+    parser.add_argument("--epochs", type=int, default=None)
+    parser.add_argument("--lr", type=float, default=None)
+    parser.add_argument("--batch-size", type=int, default=None)
+    parser.add_argument("--thresh", type=float, default=0.002)
+    parser.add_argument("--alpha", type=float, nargs=2, default=[0.5, 0.5])
+    parser.add_argument("--loss", type=str, default="CE")
     args = parser.parse_args()
+
+    if args.output is None:
+        data_name = os.path.splitext(os.path.basename(args.data))[0]
+        alpha_str = f"{args.alpha[0]}_{args.alpha[1]}"
+        args.output = f"./output/{data_name}_{args.loss}_th{args.thresh}_a{alpha_str}"
+
     train(args)
 
 

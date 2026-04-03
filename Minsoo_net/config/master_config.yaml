@@ -72,7 +72,7 @@ uniqueness_ratio: 40
 # ---------------------------------------------------------
 # 데이터셋 생성 파라미터들
 # ---------------------------------------------------------
-zarr_path : "grasp_dataset_tilt.zarr"
+zarr_path : "grasp_dataset_0402.zarr"
 num_grasps : 300
 quality_threshold : 0.002
 stable_pose_prob_threshold : 0.012
@@ -85,4 +85,4 @@ cam_offset_step : 15
 # ---------------------------------------------------------
 # 학습 파라미터
 # ---------------------------------------------------------
-#zarr path, quality threshold = 데이터셋 생성 파라미터와 동일
+#zarr path, quality threshold = 터미널에서 입력받음.

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 zarr_path = '/home/minsoo/Dexnet_Minsoo/grasp_dataset_tilt.zarr'
 root = zarr.open(str(zarr_path), mode="r")
 
-threshold = 0.032
+threshold = 0.034
 
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger('zarr').setLevel(logging.WARNING)

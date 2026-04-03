@@ -8,6 +8,8 @@ from sapien.sensor import StereoDepthSensor, StereoDepthSensorConfig
 from Minsoo_net.grasp.random_variables import ParamsGaussianRV
 from scipy.spatial.transform import Rotation as R
 import yaml,trimesh
+from scipy.ndimage import distance_transform_edt
+
 class GraspRenderer:
     """
     DexNet용 깊이 이미지 렌더러.
@@ -299,28 +301,19 @@ class GraspRenderer:
 if __name__ == "__main__":
     MESH = "/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/bin.stl"
     mesh=trimesh.load(MESH)
+    mesh.apply_scale(0.001)
     trans,_=mesh.compute_stable_poses()
     renderer = GraspRenderer(MESH, mesh_scale=(0.001, 0.001, 0.001))
-
-    # stable pose 예시 (단위 행렬 = 기본 자세)
-    # 실제로는 mesh_stable_pose 등에서 계산된 회전 행렬을 넣으면 됨
-    # renderer.set_stable_pose(stable_rotation_matrix)
 
     # 1) 단일 시점 렌더링
     while True:
         cam_pos = np.array([0.0, 0.0, 0.4])
         renderer.set_material(1.0,0.8)
-        renderer.set_stable_pose(trans[1])
-        depth = renderer.render(cam_pos)
-        print(depth.shape)
-        origin_px = renderer.world_to_pixel(np.array([0, 0, 0]))
-        vis = renderer.visualize_depth(depth, point=origin_px)
-        cv2.imshow("depth", vis)
-        cv2.waitKey(0)
+        renderer.set_stable_pose(trans[0])
+        depth1 = renderer.render(cam_pos,target_pos=[0,0,0])
+        valid_mask = depth1 > 0
 
-    # 2) 구면 좌표 다시점 렌더링 → DexNet 학습 데이터 생성
-    for depth, extrinsic, pos in renderer.render_spherical(num_views=10):
-        # DexNet에서 grasp candidate를 받았다고 가정
-        # grasp_center_px, grasp_axis_px = dexnet.sample(...)
-        # cropped = renderer.crop_grasp_image(depth, grasp_center_px, grasp_axis_px)
-        pass
+        _, indices = distance_transform_edt(~valid_mask, return_indices=True)
+        result = depth1[indices[0], indices[1]]
+        cv2.imshow("depth", result)
+        cv2.waitKey(0)

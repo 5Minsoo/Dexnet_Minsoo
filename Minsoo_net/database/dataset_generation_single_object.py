@@ -20,7 +20,7 @@ camera_radius=(0.4,0.6)
 camera_tilt=(0,3.14/6)
 
 
-zarr_path = "grasp_dataset_new.zarr"
+zarr_path = "grasp_dataset_test.zarr"
 output_size = 32
 batch_size = 10 
 

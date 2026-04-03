@@ -6,7 +6,7 @@ import json
 from sapien.core import Pose
 from sapien.sensor import StereoDepthSensor, StereoDepthSensorConfig
 from scipy.spatial.transform import Rotation as R
-
+from scipy.ndimage import distance_transform_edt
 sapien.set_log_level("error")
 
 # --- 헬퍼 함수들 ---
@@ -189,9 +189,17 @@ while not viewer.closed:
     extrinsic = R_S2O @ np.linalg.inv(sensor.get_pose().to_transformation_matrix())
     world_point = np.array([t[0], t[1], t[2], 1])
     image_point = intrinsic @ extrinsic @ world_point
-    
     depth = sensor.get_depth()
-    depth_normalized = cv2.normalize(depth, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+        
+    # scipy 방식 depth 구멍 채우기
+    valid_mask = depth > 0
+    if valid_mask.any() and (~valid_mask).any():
+        _, indices = distance_transform_edt(~valid_mask, return_indices=True)
+        depth_filled = depth[indices[0], indices[1]]
+    else:
+        depth_filled = depth
+    
+    depth_normalized = cv2.normalize(depth_filled, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
     depth_colored = cv2.applyColorMap(depth_normalized, cv2.COLORMAP_JET)
 
     if image_point[2] > 0:
