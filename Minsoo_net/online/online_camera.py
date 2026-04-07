@@ -154,8 +154,8 @@ class RealSenseCamera:
                 image, 
                 M, 
                 crop_size, 
-                flags=cv2.INTER_NEAREST, 
-                borderMode=cv2.BORDER_CONSTANT, 
+                flags=cv2.INTER_CUBIC, 
+                borderMode=cv2.BORDER_REPLICATE, 
                 borderValue=0
             )
             

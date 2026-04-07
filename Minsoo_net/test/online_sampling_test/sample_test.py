@@ -12,15 +12,20 @@ from Minsoo_net.online.depth_image import DepthImage
 sys.path.append('/home/minsoo/Dexnet_Minsoo/Minsoo_net/online')
 
 class GraspPlanner:
-    def __init__(self, Checkpoint_path, use_visualize=False):
+    def __init__(self, Checkpoint_path, use_visualize=False, camera=False):
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.viz=GraspVisualizer2D()
         self.model=DexNet2.load(path=Checkpoint_path)
         self.model.to(device)
-        self.camera=RealSenseCamera()
+        if camera:
+            self.camera=RealSenseCamera()
+            self.K=self.camera.intrinsic_parameter
+        else:
+            self.camera=None
+            self.K=None
         self.image=None
         self.depth=None
-        self.sampler=OnlineAntipodalSampler(gripper_width_m=0.05,K=self.camera.intrinsic_parameter,image_margin=0.2,max_edge=50)
+        self.sampler=OnlineAntipodalSampler(gripper_width_m=0.05,K=self.K,image_margin=0.2,max_edge=10)
         self.samples=None
         self.visualize=use_visualize
 
@@ -69,7 +74,7 @@ class GraspPlanner:
         return self.best_grasp, self.best_score
 
     def run(self,image=None):
-        if image is None:
+        if image is None and self.K is not None:
             for _ in range(5):
                 self.update_frame()
         else:
@@ -86,9 +91,9 @@ class GraspPlanner:
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
-    planner = GraspPlanner('/home/minsoo/Dexnet_Minsoo/output/20260403_10-34/best.pt',use_visualize=True)
+    planner = GraspPlanner('/home/minsoo/Dexnet_Minsoo/output/grasp_dataset_tilt_CE_th0.002_a0.5_0.5/best.pt',use_visualize=True,camera=False)
     # planner = GraspPlanner('/home/minsoo/Dexnet_Minsoo/output/Best_03-30/best.pt',use_visualize=True)
-    grasp, score = planner.run(image=cv2.imread('/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/saved_data/depth_raw_7.png',cv2.IMREAD_GRAYSCALE)*0.001)
+    grasp, score = planner.run(image=cv2.imread('/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/saved_data/depth_raw_6.png',cv2.IMREAD_GRAYSCALE)*0.001)
     if grasp is not None:
         logging.debug(f'Best grasp (u,v,theta,z): {grasp}, score: {score}')
 

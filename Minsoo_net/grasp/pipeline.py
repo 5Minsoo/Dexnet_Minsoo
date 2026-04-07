@@ -149,7 +149,7 @@ class GraspPipeline:
             print(f'quality grasp 개수: {len(quality_grasps)}')
             
             if use_visual:
-                visualize_grasps(self.graspable_obj, collision_grasps, pose=pose, gripper=self.gripper,title="Collision Grasps")
+                # visualize_grasps(self.graspable_obj, collision_grasps, pose=pose, gripper=self.gripper,title="Collision Grasps")
                 visualize_grasps(self.graspable_obj, collision_free_grasps, pose=pose, gripper=self.gripper,title="Collision free Grasps")
                 visualize_grasps(self.graspable_obj, quality_grasps, pose=pose, gripper=self.gripper,title="Quality Grasps")
             
@@ -165,8 +165,8 @@ if __name__ == "__main__":
     
     # --- 테스트 제어 변수 ---
     START_INDEX = 1      # 0부터 시작하거나, 특정 Pose부터 재개하고 싶을 때 변경
-    NUM_TEST_GRASPS = 300 # 한 Pose당 생성할 Grasp 후보 개수
-    VISUALIZE = False   # 시각화 여부
+    NUM_TEST_GRASPS = 10 # 한 Pose당 생성할 Grasp 후보 개수
+    VISUALIZE = True   # 시각화 여부
     # -----------------------
 
     print(f"\n" + "="*60)

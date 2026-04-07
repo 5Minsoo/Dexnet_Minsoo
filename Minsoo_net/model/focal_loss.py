@@ -78,31 +78,29 @@ class FocalLoss(nn.Module):
         return loss
 
     def multi_class_focal_loss(self, inputs, targets):
-        """ Focal loss for multi-class classification. """
         if self.alpha is not None:
             alpha = self.alpha.to(inputs.device)
 
-        # Convert logits to probabilities with softmax
-        probs = F.softmax(inputs, dim=1)
+        # log_softmax로 수치 안정성 확보
+        log_probs = F.log_softmax(inputs, dim=1)
+        probs = torch.exp(log_probs)
 
-        # One-hot encode the targets
         targets_one_hot = F.one_hot(targets, num_classes=self.num_classes).float()
 
-        # Compute cross-entropy for each class
-        ce_loss = -targets_one_hot * torch.log(probs)
-
-        # Compute focal weight
-        p_t = torch.sum(probs * targets_one_hot, dim=1)  # p_t for each sample
+        # focal weight
+        p_t = torch.sum(probs * targets_one_hot, dim=1)
         focal_weight = (1 - p_t) ** self.gamma
 
-        # Apply alpha if provided (per-class weighting)
+        # CE: log_softmax 결과를 바로 사용
+        ce_loss = -targets_one_hot * log_probs
+
         if self.alpha is not None:
             alpha_t = alpha.gather(0, targets)
             ce_loss = alpha_t.unsqueeze(1) * ce_loss
 
-        # Apply focal loss weight
         loss = focal_weight.unsqueeze(1) * ce_loss
-
+        loss = loss.sum(dim=1)  # (B,) — 각 샘플의 loss
+        
         if self.reduction == 'mean':
             return loss.mean()
         elif self.reduction == 'sum':

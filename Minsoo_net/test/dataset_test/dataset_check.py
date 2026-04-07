@@ -4,16 +4,17 @@ import logging
 import random
 import matplotlib.pyplot as plt
 
-zarr_path = '/home/minsoo/Dexnet_Minsoo/grasp_dataset_tilt.zarr'
+zarr_path = '/home/minsoo/Dexnet_Minsoo/grasp_dataset_f_0.4_tilt.zarr'
 root = zarr.open(str(zarr_path), mode="r")
 
-threshold = 0.034
+threshold = 0.002
 
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger('zarr').setLevel(logging.WARNING)
 logging.getLogger('matplotlib').setLevel(logging.WARNING)
 logging.getLogger('PIL').setLevel(logging.WARNING)
 
+print(f'파라미터: {root.attrs["config"]}')
 def print_stats(arr):
     logging.debug(f'  유효 샘플 수(>0): {len(arr)}')
     if len(arr) > 0:

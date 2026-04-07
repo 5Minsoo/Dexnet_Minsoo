@@ -31,11 +31,13 @@ import zarr
 import yaml
 from model import DexNet2
 from focal_loss import FocalLoss
-
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 logging.basicConfig(
     format="[%(name)s %(levelname)s] %(message)s", level=logging.INFO)
 log = logging.getLogger("train")
-
+import json
 with open('/home/minsoo/Dexnet_Minsoo/Minsoo_net/config/master_config.yaml') as f:
     config=yaml.safe_load(f)
 # ══════════════════════════════════════════════════════════════════════
@@ -425,6 +427,13 @@ def train(args):
 
     global_step = 0
     best_val_error = 1.0
+    loss_graph=[]
+    train_loss_graph=[]
+    val_loss_graph=[]
+
+    with open(os.path.join(args.output, 'config.json'), 'w') as f:
+        json.dump(cfg, f, indent=4)
+    log.info(f"Config: {cfg}")
 
     for epoch in range(1, cfg["num_epochs"] + 1):
         model.train()
@@ -456,17 +465,19 @@ def train(args):
             epoch_total += batch_total
             global_step += 1
 
+            loss_graph.append(loss.item())
             if global_step % cfg["log_frequency"] == 0:
                 lr_now = optimizer.param_groups[0]["lr"]
                 log.info(
                     f"  [epoch {epoch} step {global_step}] "
-                    f"loss={loss.item():.4f}  "
+                    f"loss={loss.item():.4f}"
                     f"batch_acc={batch_correct/batch_total:.3f}  "
                     f"lr={lr_now:.6f}")
         scheduler.step()
 
         # ── Epoch 요약 ──
         train_loss = epoch_loss / max(epoch_total, 1)
+        train_loss_graph.append(train_loss)
         train_error = 1.0 - epoch_correct / max(epoch_total, 1)
         elapsed = time.time() - t0
         log.info(
@@ -477,9 +488,10 @@ def train(args):
         # ── Validation ──
         if epoch % cfg["eval_frequency"] == 0 or epoch == cfg["num_epochs"]:
             val_loss, val_error = evaluate(model, val_loader, device)
+            val_loss_graph.append(val_loss)
             log.info(
                 f"  >> val_loss={val_loss:.4f}  val_error={val_error:.4f}")
-
+            
             if val_error < best_val_error:
                 best_val_error = val_error
                 model.save(os.path.join(args.output, "best.pt"))
@@ -490,6 +502,29 @@ def train(args):
             ckpt_path = os.path.join(args.output, f"epoch_{epoch:03d}.pt")
             model.save(ckpt_path)
             log.info(f"  Checkpoint saved: {ckpt_path}")
+        
+        plt.figure(figsize=(12,4))
+        plt.subplot(1,3,1)
+        plt.plot(train_loss_graph, label='Train Loss')
+        plt.xlabel('Epoch')
+        plt.ylabel('Train_Loss')
+        plt.legend()
+        if val_loss_graph:
+            plt.subplot(1,3,2)
+            plt.plot(val_loss_graph, label='Val Loss')
+            plt.xlabel('Epoch')
+            plt.ylabel('Validation_Loss')
+            plt.legend()
+        plt.subplot(1,3,3)
+        plt.plot(loss_graph,label="loss graph")
+        plt.xlabel('Batch')
+        plt.ylabel('Batch_Loss')
+        plt.yscale('log')
+        plt.legend()
+
+        plt.tight_layout()
+        plt.savefig(os.path.join(args.output, 'training_curve.png'))
+        plt.close() 
 
     # ── 최종 저장 ──
     model.save(os.path.join(args.output, "final.pt"))
@@ -503,6 +538,7 @@ def train(args):
 #  CLI
 # ══════════════════════════════════════════════════════════════════════
 def main():
+    now = datetime.now().strftime("%m-%d") 
     parser = argparse.ArgumentParser(description="Dex-Net 2.0 GQ-CNN 학습")
     parser.add_argument("--data", type=str, default=config.get('zarr_path'))
     parser.add_argument("--output", type=str, default=None)
@@ -519,7 +555,7 @@ def main():
     if args.output is None:
         data_name = os.path.splitext(os.path.basename(args.data))[0]
         alpha_str = f"{args.alpha[0]}_{args.alpha[1]}"
-        args.output = f"./output/{data_name}_{args.loss}_th{args.thresh}_a{alpha_str}"
+        args.output = f"./output/{now}_{data_name}_{args.loss}_th{args.thresh}_a{alpha_str}"
 
     train(args)
 

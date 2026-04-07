@@ -106,7 +106,7 @@ for pose, failed_grasps, quality_grasps, quality_scores in grasp_pipeline.execut
             metalic,roughness=renderer.sample_material()
             renderer.set_material(metalic=metalic[0],roughness=roughness[0])
             for point in points:
-                depth = renderer.render(camera_pos=point)
+                depth = renderer.render(camera_pos=point,target_pos=[0,0,0])
                 # 좌표 계산 및 시각화 (기존 로직)
                 origin = [0, 0, 0]
                 center = (pose @ np.append(grasp.center, 1.0))[:3]
@@ -142,7 +142,7 @@ for pose, failed_grasps, quality_grasps, quality_scores in grasp_pipeline.execut
                     combined_img = cv2.hconcat([depth_debug, cropped_resized])
 
                     # 4. 화면 출력
-                    cv2.imshow('Depth vs Cropped', combined_img)
+                    cv2.imshow('Depth vs Cropped', depth)
                     viewer.render()
                     # 디버깅 시 하나씩 확인하려면 waitKey(0), 자동으로 휙휙 넘어가게 하려면 waitKey(1)
                     cv2.waitKey(0)

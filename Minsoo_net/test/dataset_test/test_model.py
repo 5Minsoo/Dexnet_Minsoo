@@ -21,7 +21,7 @@ logging.basicConfig(
 )
 config_path='/home/minsoo/Dexnet_Minsoo/Minsoo_net/config/master_config.yaml'
 zarr_path='/home/minsoo/Dexnet_Minsoo/grasp_dataset.zarr'
-model_path='/home/minsoo/Dexnet_Minsoo/output/Best_03-30/best.pt'
+model_path='/home/minsoo/Dexnet_Minsoo/output/grasp_dataset_tilt_CE_th0.002_a0.5_0.5/best.pt'
 
 class TestDataset(TestCase):
     def setUp(self):

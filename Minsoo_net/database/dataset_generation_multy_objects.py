@@ -16,7 +16,7 @@ with open('/home/minsoo/Dexnet_Minsoo/Minsoo_net/config/master_config.yaml') as 
     prob_threshold=config.get("stable_pose_prob_threshold",0.012) 
     num_stable_poses=config.get("num_stable_poses",10)
     max_angle=config.get("max_angle_deg",15)
-    zarr_path = config.get("zarr_path","grasp_dataset_tilt.zarr")
+    zarr_path = config.get("zarr_path","grasp_dataset.zarr")
     cam_offset_min=config.get("cam_offset_min",0.35)
     cam_offset_max=config.get("cam_offset_max",0.50)
     cam_offset_step=config.get("cam_offset_step",10)
@@ -27,18 +27,32 @@ output_size = 32
 crop_size=96
 batch_size = 10 
 
-print("다시쓰기 / 이어하기 선택")
+print(f"다시쓰기 / 이어하기 선택 {zarr_path}")
 mode=input("모드 선택(처음부터: 1번 / 이어하기 2번) 입력 후 Enter ")
 
 
 if mode=="1":
     print(f"기존 데이터를 삭제하고 새로 작업을 시작합니다. {zarr_path}")
     store = zarr.open(zarr_path, mode='w')
-elif mode==2:
+elif mode=="2":
     print(f"기존 데이터에 이어서 작업을 시작합니다. {zarr_path}")
     store = zarr.open(zarr_path, mode='a')
 else:
     sys.exit()
+
+store.attrs["config"] = {
+    "num_grasps": int(num_grasps),
+    "quality_threshold": float(quality_threshold),
+    "stable_pose_prob_threshold": float(prob_threshold),
+    "num_stable_poses": int(num_stable_poses),
+    "max_angle_deg": int(max_angle),
+    "cam_offset_min": float(cam_offset_min),
+    "cam_offset_max": float(cam_offset_max),
+    "cam_offset_step": int(cam_offset_step),
+    "crop_size": crop_size,
+    "output_size": output_size,
+    "batch_size": batch_size,
+}
 
 mesh_path=Path(__file__).parent.parent.resolve()
 mesh_path=mesh_path/"data"/"object"

@@ -48,8 +48,8 @@ sigma_gripper_approach_angle: 0.05
 
 # 4. 물리/환경 파라미터 노이즈 (Params RV)
 # 표면 마찰 계수(Friction Coefficient) 노이즈
-sigma_friction: 0.15
-mean_friction: 0.8
+sigma_friction: 0.1
+mean_friction: 0.4
 
 # 5. 시뮬레이션 랜더링 관련 물리값들
 sigma_matalic : 0.1
@@ -72,7 +72,7 @@ uniqueness_ratio: 40
 # ---------------------------------------------------------
 # 데이터셋 생성 파라미터들
 # ---------------------------------------------------------
-zarr_path : "grasp_dataset_0402.zarr"
+zarr_path : "grasp_dataset_f_0.4_tilt.zarr"
 num_grasps : 300
 quality_threshold : 0.002
 stable_pose_prob_threshold : 0.012
@@ -80,7 +80,7 @@ num_stable_poses : 10
 max_angle_deg : 20
 cam_offset_min : 0.35
 cam_offset_max : 0.50
-cam_offset_step : 15
+cam_offset_step : 10
 
 # ---------------------------------------------------------
 # 학습 파라미터
