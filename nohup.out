@@ -1,0 +1,1235 @@
+다시쓰기 / 이어하기 선택
+모드 선택(처음부터: 1번 / 이어하기 2번) 입력 후 Enter 다시쓰기 / 이어하기 선택 grasp_dataset_f_0.4_tilt.zarr
+모드 선택(처음부터: 1번 / 이어하기 2번) 입력 후 Enter qhull precision warning: 
+The initial hull is narrow (cosine of min. angle is 1.0000000000000002).
+Is the input lower dimensional (e.g., on a plane in 3-d)?  Qhull may
+produce a wide facet.  Options 'QbB' (scale to unit box) or 'Qbb' (scale
+last coordinate) may remove this warning.  Use 'Pp' to skip this warning.
+See 'Limitations' in qh-impre.htm.
+QH6114 qhull precision error: initial simplex is not convex. Distance=-5.7e-17
+
+While executing:  | qconvex i Qt
+Options selected for Qhull 2015.2 2016/01/18:
+  run-id 658672525  incidence  Qtriangulate  Qxact_merge  _zero-centrum
+  _max-width 2.1  Error-roundoff 2.9e-15  _one-merge 3.1e-14
+  _near-inside 1.6e-13  Visible-distance 1.7e-14  U-coplanar-distance 1.7e-14
+  Width-outside 3.4e-14  _wide-facet 1e-13  _narrow-hull -2.2e-16
+
+precision problems (corrected unless 'Q0' or an error)
+      1 flipped facets
+      2 nearly singular or axis-parallel hyperplanes
+
+The input to qhull appears to be less than 5 dimensional, or a
+computation has overflowed.
+
+Qhull could not construct a clearly convex simplex from points:
+- p11(v5):  0.94 -0.28  0.43 -0.09 0.073
+- p15(v4):     1 -0.083 -0.41 0.046 -0.059
+- p6(v3): -0.88 -0.53  0.21 -0.0051 -0.11
+- p9(v2):  0.88 -0.59 -0.096 0.068 0.081
+- p13(v1):   1.1  0.22  0.12 -0.11 -0.067
+- p2(v0):  -1.1  0.17 -0.19 -0.047  0.11
+
+The center point is coplanar with a facet, or a vertex is coplanar
+with a neighboring facet.  The maximum round off error for
+computing distances is 2.9e-15.  The center point, facets and distances
+to the center point are as follows:
+
+center point   0.3293  -0.1829 0.009848 -0.02344 0.004092
+
+facet p15 p6 p9 p13 p2 distance= -1.7e-17
+facet p11 p6 p9 p13 p2 distance= -1.3e-17
+facet p11 p15 p9 p13 p2 distance= -0.02
+facet p11 p15 p6 p13 p2 distance= -9.5e-19
+facet p11 p15 p6 p9 p2 distance= -3.3e-18
+facet p11 p15 p6 p9 p13 distance= -0.069
+
+These points either have a maximum or minimum x-coordinate, or
+they maximize the determinant for k coordinates.  Trial points
+are first selected from points that maximize a coordinate.
+
+The min and max coordinates for each dimension are:
+  0:    -1.053     1.071  difference= 2.124
+  1:   -0.5888    0.2228  difference= 0.8116
+  2:   -0.4143    0.4347  difference= 0.849
+  3:    -0.134   0.08989  difference= 0.2239
+  4:   -0.1105    0.1061  difference= 0.2166
+
+If the input should be full dimensional, you have several options that
+may determine an initial simplex:
+  - use 'QJ'  to joggle the input and make it full dimensional
+  - use 'QbB' to scale the points to the unit cube
+  - use 'QR0' to randomly rotate the input for different maximum points
+  - use 'Qs'  to search all points for the initial simplex
+  - use 'En'  to specify a maximum roundoff error less than 2.9e-15.
+  - trace execution with 'T3' to see the determinant for each point.
+
+If the input is lower dimensional:
+  - use 'QJ' to joggle the input and make it full dimensional
+  - use 'Qbk:0Bk:0' to delete coordinate k from the input.  You should
+    pick the coordinate with the least range.  The hull will have the
+    correct topology.
+  - determine the flat containing the points, rotate the points
+    into a coordinate plane, and delete the other coordinates.
+  - add one or more points to make the input full dimensional.
+기존 데이터를 삭제하고 새로 작업을 시작합니다. grasp_dataset_f_0.4_tilt.zarr
+해당 물체 진행: [PosixPath('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/PVCTT13.stl'), PosixPath('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/FKT38-A50-P25.stl'), PosixPath('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/bin.stl'), PosixPath('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/RDOC40-35.stl')]
+PVCTT13 로드중
+4/300 grasps after iter 1
+12/300 grasps after iter 2
+17/300 grasps after iter 3
+23/300 grasps after iter 4
+27/300 grasps after iter 5
+29/300 grasps after iter 6
+41/300 grasps after iter 7
+49/300 grasps after iter 8
+61/300 grasps after iter 9
+70/300 grasps after iter 10
+76/300 grasps after iter 11
+81/300 grasps after iter 12
+89/300 grasps after iter 13
+96/300 grasps after iter 14
+101/300 grasps after iter 15
+107/300 grasps after iter 16
+119/300 grasps after iter 17
+126/300 grasps after iter 18
+131/300 grasps after iter 19
+139/300 grasps after iter 20
+146/300 grasps after iter 21
+152/300 grasps after iter 22
+156/300 grasps after iter 23
+165/300 grasps after iter 24
+173/300 grasps after iter 25
+178/300 grasps after iter 26
+187/300 grasps after iter 27
+196/300 grasps after iter 28
+207/300 grasps after iter 29
+213/300 grasps after iter 30
+217/300 grasps after iter 31
+224/300 grasps after iter 32
+229/300 grasps after iter 33
+232/300 grasps after iter 34
+241/300 grasps after iter 35
+248/300 grasps after iter 36
+253/300 grasps after iter 37
+260/300 grasps after iter 38
+270/300 grasps after iter 39
+274/300 grasps after iter 40
+280/300 grasps after iter 41
+282/300 grasps after iter 42
+290/300 grasps after iter 43
+291/300 grasps after iter 44
+302/300 grasps after iter 45
+Final: 300 grasps
+
+>>> [RUN] 원본 stable_poses[0] -> 현재 계산 중 (yielded_count: 0)
+Total grasps: 300
+Collision-free grasps: 200
+Collision grasps: 1720
+0.002 이하 grasp 폐기 
+Grasp 1: Quality = 0.0000
+Grasp 2: Quality = 0.0011
+Grasp 3: Quality = 0.0028
+Grasp 4: Quality = 0.0076
+Grasp 5: Quality = 0.0004
+Grasp 6: Quality = 0.0000
+Grasp 7: Quality = 0.0001
+Grasp 8: Quality = 0.0034
+Grasp 9: Quality = 0.0001
+Grasp 10: Quality = 0.0045
+Grasp 11: Quality = 0.0000
+Grasp 12: Quality = 0.0031
+Grasp 13: Quality = 0.0000
+Grasp 14: Quality = 0.0041
+Grasp 15: Quality = 0.0008
+Grasp 16: Quality = 0.0019
+Grasp 17: Quality = 0.0000
+Grasp 18: Quality = 0.0016
+Grasp 19: Quality = 0.0004
+Grasp 20: Quality = 0.0000
+Grasp 21: Quality = 0.0042
+Grasp 22: Quality = 0.0014
+Grasp 23: Quality = 0.0000
+failed grasp 개수: 1839
+quality grasp 개수: 81
+Grasp sampling 시간 210초
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 종료 Pose0 걸린시간: 2021초
+
+>>> [RUN] 원본 stable_poses[1] -> 현재 계산 중 (yielded_count: 1)
+Total grasps: 300
+Collision-free grasps: 166
+Collision grasps: 1754
+0.002 이하 grasp 폐기 
+Grasp 1: Quality = 0.0000
+Grasp 2: Quality = 0.0017
+Grasp 3: Quality = 0.0004
+Grasp 4: Quality = 0.0026
+Grasp 5: Quality = 0.0041
+Grasp 6: Quality = 0.0003
+Grasp 7: Quality = 0.0000
+Grasp 8: Quality = 0.0025
+Grasp 9: Quality = 0.0001
+Grasp 10: Quality = 0.0052
+Grasp 11: Quality = 0.0000
+Grasp 12: Quality = 0.0049
+Grasp 13: Quality = 0.0000
+Grasp 14: Quality = 0.0008
+Grasp 15: Quality = 0.0026
+Grasp 16: Quality = 0.0000
+Grasp 17: Quality = 0.0016
+Grasp 18: Quality = 0.0042
+Grasp 19: Quality = 0.0000
+failed grasp 개수: 1847
+quality grasp 개수: 73
+Grasp sampling 시간 173초
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 종료 Pose1 걸린시간: 2049초
+
+>>> [RUN] 원본 stable_poses[2] -> 현재 계산 중 (yielded_count: 2)
+Total grasps: 300
+Collision-free grasps: 821
+Collision grasps: 1249
+0.002 이하 grasp 폐기 
+Grasp 1: Quality = 0.0004
+Grasp 2: Quality = 0.0004
+Grasp 3: Quality = 0.0000
+Grasp 4: Quality = 0.0009
+Grasp 5: Quality = 0.0001
+Grasp 6: Quality = 0.0013
+Grasp 7: Quality = 0.0081
+Grasp 8: Quality = 0.0035
+Grasp 9: Quality = 0.0011
+Grasp 10: Quality = 0.0026
+Grasp 11: Quality = 0.0058
+Grasp 12: Quality = 0.0000
+Grasp 13: Quality = 0.0023
+Grasp 14: Quality = 0.0037
+Grasp 15: Quality = 0.0002
+Grasp 16: Quality = 0.0090
+Grasp 17: Quality = 0.0000
+Grasp 18: Quality = 0.0035
+Grasp 19: Quality = 0.0027
+Grasp 20: Quality = 0.0091
+Grasp 21: Quality = 0.0057
+Grasp 22: Quality = 0.0056
+Grasp 23: Quality = 0.0000
+Grasp 24: Quality = 0.0044
+Grasp 25: Quality = 0.0001
+Grasp 26: Quality = 0.0003
+Grasp 27: Quality = 0.0077
+Grasp 28: Quality = 0.0037
+Grasp 29: Quality = 0.0000
+Grasp 30: Quality = 0.0033
+Grasp 31: Quality = 0.0007
+Grasp 32: Quality = 0.0000
+Grasp 33: Quality = 0.0002
+Grasp 34: Quality = 0.0188
+Grasp 35: Quality = 0.0012
+Grasp 36: Quality = 0.0095
+Grasp 37: Quality = 0.0092
+Grasp 38: Quality = 0.0048
+Grasp 39: Quality = 0.0013
+Grasp 40: Quality = 0.0145
+Grasp 41: Quality = 0.0000
+Grasp 42: Quality = 0.0000
+Grasp 43: Quality = 0.0015
+Grasp 44: Quality = 0.0006
+Grasp 45: Quality = 0.0004
+Grasp 46: Quality = 0.0002
+Grasp 47: Quality = 0.0000
+Grasp 48: Quality = 0.0039
+Grasp 49: Quality = 0.0019
+Grasp 50: Quality = 0.0000
+Grasp 51: Quality = 0.0033
+Grasp 52: Quality = 0.0000
+Grasp 53: Quality = 0.0011
+Grasp 54: Quality = 0.0000
+Grasp 55: Quality = 0.0064
+Grasp 56: Quality = 0.0011
+Grasp 57: Quality = 0.0000
+Grasp 58: Quality = 0.0023
+Grasp 59: Quality = 0.0007
+failed grasp 개수: 1719
+quality grasp 개수: 351
+Grasp sampling 시간 542초
+Traceback (most recent call last):
+  File "/home/minsoo/Dexnet_Minsoo/Minsoo_net/database/dataset_generation_multy_objects.py", line 127, in <module>
+    img_ds = pose_group.create_array("images", shape=(0, output_size, output_size), 
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/minsoo/.local/lib/python3.12/site-packages/zarr/core/group.py", line 2715, in create_array
+    self._sync(
+  File "/home/minsoo/.local/lib/python3.12/site-packages/zarr/core/sync.py", line 204, in _sync
+    return sync(
+           ^^^^^
+  File "/home/minsoo/.local/lib/python3.12/site-packages/zarr/core/sync.py", line 159, in sync
+    raise return_result
+  File "/home/minsoo/.local/lib/python3.12/site-packages/zarr/core/sync.py", line 119, in _runner
+    return await coro
+           ^^^^^^^^^^
+  File "/home/minsoo/.local/lib/python3.12/site-packages/zarr/core/group.py", line 1142, in create_array
+    return await create_array(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/minsoo/.local/lib/python3.12/site-packages/zarr/core/array.py", line 4941, in create_array
+    return await init_array(
+           ^^^^^^^^^^^^^^^^^
+  File "/home/minsoo/.local/lib/python3.12/site-packages/zarr/core/array.py", line 4672, in init_array
+    await store_path.delete_dir()
+  File "/home/minsoo/.local/lib/python3.12/site-packages/zarr/storage/_common.py", line 196, in delete_dir
+    await self.store.delete_dir(self.path)
+  File "/home/minsoo/.local/lib/python3.12/site-packages/zarr/storage/_local.py", line 271, in delete_dir
+    shutil.rmtree(path)
+  File "/usr/lib/python3.12/shutil.py", line 785, in rmtree
+    _rmtree_safe_fd(fd, path, onexc)
+  File "/usr/lib/python3.12/shutil.py", line 697, in _rmtree_safe_fd
+    onexc(os.rmdir, fullname, err)
+  File "/usr/lib/python3.12/shutil.py", line 695, in _rmtree_safe_fd
+    os.rmdir(entry.name, dir_fd=topfd)
+OSError: [Errno 39] Directory not empty: 'c'
+기존 데이터를 삭제하고 새로 작업을 시작합니다. grasp_dataset_f_0.4_tilt.zarr
+해당 물체 진행: [PosixPath('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/PVCTT13.stl'), PosixPath('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/FKT38-A50-P25.stl'), PosixPath('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/bin.stl'), PosixPath('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/RDOC40-35.stl')]
+PVCTT13 로드중
+9/300 grasps after iter 1
+17/300 grasps after iter 2
+28/300 grasps after iter 3
+37/300 grasps after iter 4
+50/300 grasps after iter 5
+59/300 grasps after iter 6
+72/300 grasps after iter 7
+84/300 grasps after iter 8
+88/300 grasps after iter 9
+94/300 grasps after iter 10
+101/300 grasps after iter 11
+108/300 grasps after iter 12
+119/300 grasps after iter 13
+123/300 grasps after iter 14
+131/300 grasps after iter 15
+136/300 grasps after iter 16
+147/300 grasps after iter 17
+159/300 grasps after iter 18
+168/300 grasps after iter 19
+171/300 grasps after iter 20
+173/300 grasps after iter 21
+176/300 grasps after iter 22
+184/300 grasps after iter 23
+196/300 grasps after iter 24
+200/300 grasps after iter 25
+209/300 grasps after iter 26
+216/300 grasps after iter 27
+224/300 grasps after iter 28
+231/300 grasps after iter 29
+237/300 grasps after iter 30
+247/300 grasps after iter 31
+257/300 grasps after iter 32
+263/300 grasps after iter 33
+269/300 grasps after iter 34
+277/300 grasps after iter 35
+288/300 grasps after iter 36
+297/300 grasps after iter 37
+308/300 grasps after iter 38
+Final: 300 grasps
+
+>>> [RUN] 원본 stable_poses[0] -> 현재 계산 중 (yielded_count: 0)
+Total grasps: 300
+Collision-free grasps: 239
+Collision grasps: 1861
+0.002 이하 grasp 폐기 
+Grasp 1: Quality = 0.0000
+Grasp 2: Quality = 0.0013
+Grasp 3: Quality = 0.0059
+Grasp 4: Quality = 0.0000
+Grasp 5: Quality = 0.0038
+Grasp 6: Quality = 0.0026
+Grasp 7: Quality = 0.0000
+Grasp 8: Quality = 0.0004
+Grasp 9: Quality = 0.0002
+Grasp 10: Quality = 0.0000
+Grasp 11: Quality = 0.0012
+Grasp 12: Quality = 0.0025
+Grasp 13: Quality = 0.0000
+Grasp 14: Quality = 0.0004
+Grasp 15: Quality = 0.0001
+Grasp 16: Quality = 0.0011
+Grasp 17: Quality = 0.0025
+Grasp 18: Quality = 0.0025
+Grasp 19: Quality = 0.0003
+Grasp 20: Quality = 0.0010
+Grasp 21: Quality = 0.0011
+Grasp 22: Quality = 0.0000
+Grasp 23: Quality = 0.0009
+Grasp 24: Quality = 0.0026
+Grasp 25: Quality = 0.0033
+Grasp 26: Quality = 0.0000
+failed grasp 개수: 2001
+quality grasp 개수: 99
+Grasp sampling 시간 230초
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 종료 Pose0 걸린시간: 1908초
+
+>>> [RUN] 원본 stable_poses[1] -> 현재 계산 중 (yielded_count: 1)
+Total grasps: 300
+Collision-free grasps: 259
+Collision grasps: 1841
+0.002 이하 grasp 폐기 
+Grasp 1: Quality = 0.0031
+Grasp 2: Quality = 0.0050
+Grasp 3: Quality = 0.0001
+Grasp 4: Quality = 0.0014
+Grasp 5: Quality = 0.0000
+Grasp 6: Quality = 0.0085
+Grasp 7: Quality = 0.0002
+Grasp 8: Quality = 0.0006
+Grasp 9: Quality = 0.0000
+Grasp 10: Quality = 0.0012
+Grasp 11: Quality = 0.0000
+Grasp 12: Quality = 0.0009
+Grasp 13: Quality = 0.0000
+Grasp 14: Quality = 0.0008
+Grasp 15: Quality = 0.0000
+Grasp 16: Quality = 0.0000
+Grasp 17: Quality = 0.0029
+Grasp 18: Quality = 0.0021
+Grasp 19: Quality = 0.0062
+Grasp 20: Quality = 0.0025
+Grasp 21: Quality = 0.0000
+Grasp 22: Quality = 0.0025
+Grasp 23: Quality = 0.0000
+Grasp 24: Quality = 0.0012
+Grasp 25: Quality = 0.0030
+Grasp 26: Quality = 0.0004
+Grasp 27: Quality = 0.0036
+failed grasp 개수: 1977
+quality grasp 개수: 123
+Grasp sampling 시간 225초
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 종료 Pose1 걸린시간: 2193초
+
+>>> [RUN] 원본 stable_poses[2] -> 현재 계산 중 (yielded_count: 2)
+Total grasps: 300
+Collision-free grasps: 670
+Collision grasps: 1220
+0.002 이하 grasp 폐기 
+Grasp 1: Quality = 0.0060
+Grasp 2: Quality = 0.0012
+Grasp 3: Quality = 0.0000
+Grasp 4: Quality = 0.0084
+Grasp 5: Quality = 0.0040
+Grasp 6: Quality = 0.0089
+Grasp 7: Quality = 0.0021
+Grasp 8: Quality = 0.0045
+Grasp 9: Quality = 0.0039
+Grasp 10: Quality = 0.0048
+Grasp 11: Quality = 0.0024
+Grasp 12: Quality = 0.0000
+Grasp 13: Quality = 0.0002
+Grasp 14: Quality = 0.0000
+Grasp 15: Quality = 0.0018
+Grasp 16: Quality = 0.0038
+Grasp 17: Quality = 0.0042
+Grasp 18: Quality = 0.0013
+Grasp 19: Quality = 0.0000
+Grasp 20: Quality = 0.0092
+Grasp 21: Quality = 0.0000
+Grasp 22: Quality = 0.0008
+Grasp 23: Quality = 0.0003
+Grasp 24: Quality = 0.0000
+Grasp 25: Quality = 0.0110
+Grasp 26: Quality = 0.0045
+Grasp 27: Quality = 0.0076
+Grasp 28: Quality = 0.0034
+Grasp 29: Quality = 0.0016
+Grasp 30: Quality = 0.0096
+Grasp 31: Quality = 0.0152
+Grasp 32: Quality = 0.0044
+Grasp 33: Quality = 0.0098
+Grasp 34: Quality = 0.0006
+Grasp 35: Quality = 0.0078
+Grasp 36: Quality = 0.0000
+Grasp 37: Quality = 0.0002
+Grasp 38: Quality = 0.0000
+Grasp 39: Quality = 0.0007
+Grasp 40: Quality = 0.0000
+Grasp 41: Quality = 0.0019
+Grasp 42: Quality = 0.0191
+Grasp 43: Quality = 0.0011
+Grasp 44: Quality = 0.0011
+Grasp 45: Quality = 0.0000
+Grasp 46: Quality = 0.0038
+Grasp 47: Quality = 0.0028
+failed grasp 개수: 1535
+quality grasp 개수: 355
+Grasp sampling 시간 455초
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 종료 Pose2 걸린시간: 1161초
+
+>>> [RUN] 원본 stable_poses[3] -> 현재 계산 중 (yielded_count: 3)
+Total grasps: 300
+Collision-free grasps: 1083
+Collision grasps: 1242
+0.002 이하 grasp 폐기 
+Grasp 1: Quality = 0.0013
+Grasp 2: Quality = 0.0070
+Grasp 3: Quality = 0.0000
+Grasp 4: Quality = 0.0029
+Grasp 5: Quality = 0.0004
+Grasp 6: Quality = 0.0000
+Grasp 7: Quality = 0.0062
+Grasp 8: Quality = 0.0008
+Grasp 9: Quality = 0.0109
+Grasp 10: Quality = 0.0001
+Grasp 11: Quality = 0.0000
+Grasp 12: Quality = 0.0000
+Grasp 13: Quality = 0.0052
+Grasp 14: Quality = 0.0004
+Grasp 15: Quality = 0.0045
+Grasp 16: Quality = 0.0025
+Grasp 17: Quality = 0.0033
+Grasp 18: Quality = 0.0048
+Grasp 19: Quality = 0.0041
+Grasp 20: Quality = 0.0000
+Grasp 21: Quality = 0.0003
+Grasp 22: Quality = 0.0001
+Grasp 23: Quality = 0.0061
+Grasp 24: Quality = 0.0009
+Grasp 25: Quality = 0.0045
+Grasp 26: Quality = 0.0000
+Grasp 27: Quality = 0.0002
+Grasp 28: Quality = 0.0000
+Grasp 29: Quality = 0.0037
+Grasp 30: Quality = 0.0025
+Grasp 31: Quality = 0.0021
+Grasp 32: Quality = 0.0033
+Grasp 33: Quality = 0.0000
+Grasp 34: Quality = 0.0012
+Grasp 35: Quality = 0.0155
+Grasp 36: Quality = 0.0003
+Grasp 37: Quality = 0.0002
+Grasp 38: Quality = 0.0000
+Grasp 39: Quality = 0.0000
+Grasp 40: Quality = 0.0099
+Grasp 41: Quality = 0.0031
+Grasp 42: Quality = 0.0003
+Grasp 43: Quality = 0.0005
+Grasp 44: Quality = 0.0062
+Grasp 45: Quality = 0.0071
+Grasp 46: Quality = 0.0001
+Grasp 47: Quality = 0.0105
+Grasp 48: Quality = 0.0000
+Grasp 49: Quality = 0.0027
+Grasp 50: Quality = 0.0000
+Grasp 51: Quality = 0.0062
+Grasp 52: Quality = 0.0002
+Grasp 53: Quality = 0.0002
+Grasp 54: Quality = 0.0025
+Grasp 55: Quality = 0.0123
+Grasp 56: Quality = 0.0003
+Grasp 57: Quality = 0.0000
+Grasp 58: Quality = 0.0028
+Grasp 59: Quality = 0.0033
+Grasp 60: Quality = 0.0083
+Grasp 61: Quality = 0.0081
+Grasp 62: Quality = 0.0034
+Grasp 63: Quality = 0.0001
+Grasp 64: Quality = 0.0000
+Grasp 65: Quality = 0.0061
+Grasp 66: Quality = 0.0085
+Grasp 67: Quality = 0.0021
+Grasp 68: Quality = 0.0052
+Grasp 69: Quality = 0.0013
+Grasp 70: Quality = 0.0013
+Grasp 71: Quality = 0.0016
+Grasp 72: Quality = 0.0063
+Grasp 73: Quality = 0.0006
+Grasp 74: Quality = 0.0000
+Grasp 75: Quality = 0.0003
+Grasp 76: Quality = 0.0045
+Grasp 77: Quality = 0.0003
+Grasp 78: Quality = 0.0050
+Grasp 79: Quality = 0.0035
+Grasp 80: Quality = 0.0192
+Grasp 81: Quality = 0.0064
+Grasp 82: Quality = 0.0006
+Grasp 83: Quality = 0.0035
+Grasp 84: Quality = 0.0000
+Grasp 85: Quality = 0.0057
+Grasp 86: Quality = 0.0030
+failed grasp 개수: 1732
+quality grasp 개수: 593
+Grasp sampling 시간 663초
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 종료 Pose3 걸린시간: 1854초
+
+>>> [RUN] 원본 stable_poses[4] -> 현재 계산 중 (yielded_count: 4)
+Total grasps: 300
+Collision-free grasps: 1071
+Collision grasps: 1254
+0.002 이하 grasp 폐기 
+Grasp 1: Quality = 0.0043
+Grasp 2: Quality = 0.0035
+Grasp 3: Quality = 0.0058
+Grasp 4: Quality = 0.0003
+Grasp 5: Quality = 0.0061
+Grasp 6: Quality = 0.0018
+Grasp 7: Quality = 0.0044
+Grasp 8: Quality = 0.0089
+Grasp 9: Quality = 0.0000
+Grasp 10: Quality = 0.0012
+Grasp 11: Quality = 0.0043
+Grasp 12: Quality = 0.0087
+Grasp 13: Quality = 0.0002
+Grasp 14: Quality = 0.0016
+Grasp 15: Quality = 0.0000
+Grasp 16: Quality = 0.0034
+Grasp 17: Quality = 0.0027
+Grasp 18: Quality = 0.0003
+Grasp 19: Quality = 0.0000
+Grasp 20: Quality = 0.0000
+Grasp 21: Quality = 0.0008
+Grasp 22: Quality = 0.0052
+Grasp 23: Quality = 0.0000
+Grasp 24: Quality = 0.0011
+Grasp 25: Quality = 0.0009
+Grasp 26: Quality = 0.0024
+Grasp 27: Quality = 0.0005
+Grasp 28: Quality = 0.0005
+Grasp 29: Quality = 0.0008
+Grasp 30: Quality = 0.0019
+Grasp 31: Quality = 0.0000
+Grasp 32: Quality = 0.0000
+Grasp 33: Quality = 0.0124
+Grasp 34: Quality = 0.0034
+Grasp 35: Quality = 0.0073
+Grasp 36: Quality = 0.0000
+Grasp 37: Quality = 0.0029
+Grasp 38: Quality = 0.0000
+Grasp 39: Quality = 0.0001
+Grasp 40: Quality = 0.0098
+Grasp 41: Quality = 0.0000
+Grasp 42: Quality = 0.0084
+Grasp 43: Quality = 0.0014
+Grasp 44: Quality = 0.0059
+Grasp 45: Quality = 0.0049
+Grasp 46: Quality = 0.0006
+Grasp 47: Quality = 0.0001
+Grasp 48: Quality = 0.0000
+Grasp 49: Quality = 0.0000
+Grasp 50: Quality = 0.0040
+Grasp 51: Quality = 0.0081
+Grasp 52: Quality = 0.0000
+Grasp 53: Quality = 0.0120
+Grasp 54: Quality = 0.0008
+Grasp 55: Quality = 0.0003
+Grasp 56: Quality = 0.0062
+Grasp 57: Quality = 0.0079
+Grasp 58: Quality = 0.0039
+Grasp 59: Quality = 0.0013
+Grasp 60: Quality = 0.0006
+Grasp 61: Quality = 0.0088
+Grasp 62: Quality = 0.0088
+Grasp 63: Quality = 0.0039
+Grasp 64: Quality = 0.0000
+Grasp 65: Quality = 0.0011
+Grasp 66: Quality = 0.0037
+Grasp 67: Quality = 0.0050
+Grasp 68: Quality = 0.0049
+Grasp 69: Quality = 0.0000
+Grasp 70: Quality = 0.0039
+Grasp 71: Quality = 0.0036
+Grasp 72: Quality = 0.0004
+Grasp 73: Quality = 0.0011
+Grasp 74: Quality = 0.0032
+Grasp 75: Quality = 0.0057
+Grasp 76: Quality = 0.0249
+Grasp 77: Quality = 0.0028
+Grasp 78: Quality = 0.0015
+Grasp 79: Quality = 0.0000
+Grasp 80: Quality = 0.0063
+Grasp 81: Quality = 0.0002
+failed grasp 개수: 1792
+quality grasp 개수: 533
+Grasp sampling 시간 822초
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 종료 Pose4 걸린시간: 1801초
+FKT38-A50-P25 로드중
+12/300 grasps after iter 1
+42/300 grasps after iter 2
+55/300 grasps after iter 3
+72/300 grasps after iter 4
+80/300 grasps after iter 5
+100/300 grasps after iter 6
+129/300 grasps after iter 7
+162/300 grasps after iter 8
+192/300 grasps after iter 9
+216/300 grasps after iter 10
+232/300 grasps after iter 11
+265/300 grasps after iter 12
+283/300 grasps after iter 13
+295/300 grasps after iter 14
+309/300 grasps after iter 15
+Final: 300 grasps
+
+>>> [RUN] 원본 stable_poses[0] -> 현재 계산 중 (yielded_count: 0)
+Total grasps: 300
+Collision-free grasps: 318
+Collision grasps: 4182
+0.002 이하 grasp 폐기 
+Grasp 1: Quality = 0.0897
+Grasp 2: Quality = 0.0206
+Grasp 3: Quality = 0.0289
+Grasp 4: Quality = 0.0820
+Grasp 5: Quality = 0.0495
+Grasp 6: Quality = 0.0202
+Grasp 7: Quality = 0.0802
+Grasp 8: Quality = 0.0019
+Grasp 9: Quality = 0.0798
+Grasp 10: Quality = 0.0689
+Grasp 11: Quality = 0.0480
+Grasp 12: Quality = 0.0197
+Grasp 13: Quality = 0.0140
+Grasp 14: Quality = 0.0449
+Grasp 15: Quality = 0.0915
+Grasp 16: Quality = 0.1082
+Grasp 17: Quality = 0.0336
+Grasp 18: Quality = 0.0513
+Grasp 19: Quality = 0.0933
+Grasp 20: Quality = 0.0760
+Grasp 21: Quality = 0.0753
+Grasp 22: Quality = 0.0439
+Grasp 23: Quality = 0.0466
+Grasp 24: Quality = 0.0886
+Grasp 25: Quality = 0.0314
+Grasp 26: Quality = 0.0211
+Grasp 27: Quality = 0.0869
+Grasp 28: Quality = 0.0700
+Grasp 29: Quality = 0.0793
+Grasp 30: Quality = 0.0552
+Grasp 31: Quality = 0.0771
+Grasp 32: Quality = 0.0801
+Grasp 33: Quality = 0.0913
+Grasp 34: Quality = 0.0293
+Grasp 35: Quality = 0.0529
+Grasp 36: Quality = 0.0437
+Grasp 37: Quality = 0.0574
+Grasp 38: Quality = 0.0841
+Grasp 39: Quality = 0.0258
+Grasp 40: Quality = 0.1039
+Grasp 41: Quality = 0.0009
+Grasp 42: Quality = 0.1044
+Grasp 43: Quality = 0.0732
+Grasp 44: Quality = 0.0041
+Grasp 45: Quality = 0.0750
+Grasp 46: Quality = 0.0001
+Grasp 47: Quality = 0.1096
+Grasp 48: Quality = 0.0890
+Grasp 49: Quality = 0.0806
+Grasp 50: Quality = 0.0479
+Grasp 51: Quality = 0.1111
+failed grasp 개수: 4206
+quality grasp 개수: 294
+Grasp sampling 시간 386초
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 종료 Pose0 걸린시간: 2149초
+
+>>> [RUN] 원본 stable_poses[1] -> 현재 계산 중 (yielded_count: 1)
+Total grasps: 300
+Collision-free grasps: 283
+Collision grasps: 4217
+0.002 이하 grasp 폐기 
+Grasp 1: Quality = 0.0802
+Grasp 2: Quality = 0.0993
+Grasp 3: Quality = 0.0242
+Grasp 4: Quality = 0.0889
+Grasp 5: Quality = 0.0949
+Grasp 6: Quality = 0.1215
+Grasp 7: Quality = 0.0819
+Grasp 8: Quality = 0.0050
+Grasp 9: Quality = 0.0832
+Grasp 10: Quality = 0.0555
+Grasp 11: Quality = 0.0121
+Grasp 12: Quality = 0.0325
+Grasp 13: Quality = 0.0376
+Grasp 14: Quality = 0.0456
+Grasp 15: Quality = 0.0688
+Grasp 16: Quality = 0.0194
+Grasp 17: Quality = 0.0524
+Grasp 18: Quality = 0.0690
+Grasp 19: Quality = 0.0814
+Grasp 20: Quality = 0.0829
+Grasp 21: Quality = 0.0251
+Grasp 22: Quality = 0.0856
+Grasp 23: Quality = 0.0536
+Grasp 24: Quality = 0.0406
+Grasp 25: Quality = 0.0861
+Grasp 26: Quality = 0.0654
+Grasp 27: Quality = 0.0909
+Grasp 28: Quality = 0.0704
+Grasp 29: Quality = 0.0671
+Grasp 30: Quality = 0.0661
+Grasp 31: Quality = 0.0695
+Grasp 32: Quality = 0.0909
+Grasp 33: Quality = 0.0786
+Grasp 34: Quality = 0.0625
+Grasp 35: Quality = 0.0306
+Grasp 36: Quality = 0.0385
+Grasp 37: Quality = 0.0517
+Grasp 38: Quality = 0.0901
+Grasp 39: Quality = 0.0618
+Grasp 40: Quality = 0.0819
+Grasp 41: Quality = 0.0710
+Grasp 42: Quality = 0.0532
+Grasp 43: Quality = 0.0211
+Grasp 44: Quality = 0.1030
+Grasp 45: Quality = 0.0907
+Grasp 46: Quality = 0.0836
+Grasp 47: Quality = 0.0787
+Grasp 48: Quality = 0.0888
+Grasp 49: Quality = 0.0723
+Grasp 50: Quality = 0.1133
+Grasp 51: Quality = 0.0338
+Grasp 52: Quality = 0.0671
+Grasp 53: Quality = 0.0624
+Grasp 54: Quality = 0.0543
+Grasp 55: Quality = 0.0838
+Grasp 56: Quality = 0.0368
+Grasp 57: Quality = 0.0964
+Grasp 58: Quality = 0.0230
+Grasp 59: Quality = 0.0473
+failed grasp 개수: 4217
+quality grasp 개수: 283
+Grasp sampling 시간 407초
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 종료 Pose1 걸린시간: 2132초
+
+>>> [RUN] 원본 stable_poses[2] -> 현재 계산 중 (yielded_count: 2)
+Total grasps: 300
+Collision-free grasps: 0
+Collision grasps: 2040
+0.002 이하 grasp 폐기 
+failed grasp 개수: 2040
+quality grasp 개수: 0
+Grasp sampling 시간 77초
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 종료 Pose2 걸린시간: 1140초
+
+>>> [RUN] 원본 stable_poses[3] -> 현재 계산 중 (yielded_count: 3)
+Total grasps: 300
+Collision-free grasps: 0
+Collision grasps: 2040
+0.002 이하 grasp 폐기 
+failed grasp 개수: 2040
+quality grasp 개수: 0
+Grasp sampling 시간 78초
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 종료 Pose3 걸린시간: 1168초
+
+>>> [RUN] 원본 stable_poses[4] -> 현재 계산 중 (yielded_count: 4)
+Total grasps: 300
+Collision-free grasps: 1297
+Collision grasps: 953
+0.002 이하 grasp 폐기 
+Grasp 1: Quality = 0.0913
+Grasp 2: Quality = 0.1035
+Grasp 3: Quality = 0.0341
+Grasp 4: Quality = 0.0184
+Grasp 5: Quality = 0.0859
+Grasp 6: Quality = 0.0875
+Grasp 7: Quality = 0.0476
+Grasp 8: Quality = 0.1123
+Grasp 9: Quality = 0.0391
+Grasp 10: Quality = 0.0821
+Grasp 11: Quality = 0.0024
+Grasp 12: Quality = 0.0875
+Grasp 13: Quality = 0.0534
+Grasp 14: Quality = 0.0145
+Grasp 15: Quality = 0.0404
+Grasp 16: Quality = 0.0771
+Grasp 17: Quality = 0.0695
+Grasp 18: Quality = 0.0116
+Grasp 19: Quality = 0.0121
+Grasp 20: Quality = 0.0297
+Grasp 21: Quality = 0.0526
+Grasp 22: Quality = 0.0132
+Grasp 23: Quality = 0.0734
+Grasp 24: Quality = 0.0161
+Grasp 25: Quality = 0.0536
+Grasp 26: Quality = 0.0428
+Grasp 27: Quality = 0.0517
+Grasp 28: Quality = 0.0998
+Grasp 29: Quality = 0.0875
+Grasp 30: Quality = 0.0990
+Grasp 31: Quality = 0.0479
+Grasp 32: Quality = 0.0438
+Grasp 33: Quality = 0.0910
+Grasp 34: Quality = 0.0702
+Grasp 35: Quality = 0.0112
+Grasp 36: Quality = 0.0440
+Grasp 37: Quality = 0.0799
+Grasp 38: Quality = 0.0418
+Grasp 39: Quality = 0.0226
+Grasp 40: Quality = 0.0341
+Grasp 41: Quality = 0.0558
+Grasp 42: Quality = 0.0287
+Grasp 43: Quality = 0.0462
+Grasp 44: Quality = 0.0374
+Grasp 45: Quality = 0.0874
+Grasp 46: Quality = 0.0345
+Grasp 47: Quality = 0.0354
+Grasp 48: Quality = 0.0124
+Grasp 49: Quality = 0.0971
+Grasp 50: Quality = 0.0770
+Grasp 51: Quality = 0.0662
+Grasp 52: Quality = 0.0740
+Grasp 53: Quality = 0.0619
+Grasp 54: Quality = 0.0633
+Grasp 55: Quality = 0.0143
+Grasp 56: Quality = 0.0700
+Grasp 57: Quality = 0.0395
+Grasp 58: Quality = 0.0172
+Grasp 59: Quality = 0.0839
+Grasp 60: Quality = 0.0591
+Grasp 61: Quality = 0.0375
+Grasp 62: Quality = 0.0306
+Grasp 63: Quality = 0.0548
+Grasp 64: Quality = 0.0383
+Grasp 65: Quality = 0.0395
+Grasp 66: Quality = 0.0364
+Grasp 67: Quality = 0.0354
+Grasp 68: Quality = 0.0311
+Grasp 69: Quality = 0.0849
+Grasp 70: Quality = 0.0555
+Grasp 71: Quality = 0.0469
+Grasp 72: Quality = 0.0582
+Grasp 73: Quality = 0.0233
+Grasp 74: Quality = 0.1123
+Grasp 75: Quality = 0.0899
+Grasp 76: Quality = 0.0001
+Grasp 77: Quality = 0.0853
+Grasp 78: Quality = 0.0828
+Grasp 79: Quality = 0.0940
+Grasp 80: Quality = 0.0893
+Grasp 81: Quality = 0.0717
+Grasp 82: Quality = 0.0435
+Grasp 83: Quality = 0.0551
+Grasp 84: Quality = 0.0228
+Grasp 85: Quality = 0.0724
+Grasp 86: Quality = 0.1033
+Grasp 87: Quality = 0.0369
+Grasp 88: Quality = 0.1055
+Grasp 89: Quality = 0.0282
+Grasp 90: Quality = 0.1104
+Grasp 91: Quality = 0.0902
+Grasp 92: Quality = 0.0530
+Grasp 93: Quality = 0.0453
+failed grasp 개수: 961
+quality grasp 개수: 1289
+Grasp sampling 시간 834초
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 종료 Pose4 걸린시간: 836초
+
+>>> [RUN] 원본 stable_poses[5] -> 현재 계산 중 (yielded_count: 5)
+Total grasps: 300
+Collision-free grasps: 1319
+Collision grasps: 931
+0.002 이하 grasp 폐기 
+Grasp 1: Quality = 0.0760
+Grasp 2: Quality = 0.0011
+Grasp 3: Quality = 0.0912
+Grasp 4: Quality = 0.0169
+Grasp 5: Quality = 0.0275
+Grasp 6: Quality = 0.0227
+Grasp 7: Quality = 0.1142
+Grasp 8: Quality = 0.0889
+Grasp 9: Quality = 0.0308
+Grasp 10: Quality = 0.0841
+Grasp 11: Quality = 0.1032
+Grasp 12: Quality = 0.0230
+Grasp 13: Quality = 0.0274
+Grasp 14: Quality = 0.0800
+Grasp 15: Quality = 0.0476
+Grasp 16: Quality = 0.0080
+Grasp 17: Quality = 0.0566
+Grasp 18: Quality = 0.0828
+Grasp 19: Quality = 0.0634
+Grasp 20: Quality = 0.0569
+Grasp 21: Quality = 0.0772
+Grasp 22: Quality = 0.0044
+Grasp 23: Quality = 0.0400
+Grasp 24: Quality = 0.0540
+Grasp 25: Quality = 0.0224
+Grasp 26: Quality = 0.0430
+Grasp 27: Quality = 0.0685
+Grasp 28: Quality = 0.0619
+Grasp 29: Quality = 0.1027
+Grasp 30: Quality = 0.0242
+Grasp 31: Quality = 0.0526
+Grasp 32: Quality = 0.0987
+Grasp 33: Quality = 0.0893
+Grasp 34: Quality = 0.0774
+Grasp 35: Quality = 0.0297
+Grasp 36: Quality = 0.0387
+Grasp 37: Quality = 0.0585
+Grasp 38: Quality = 0.0834
+Grasp 39: Quality = 0.0699
+Grasp 40: Quality = 0.0303
+Grasp 41: Quality = 0.0458
+Grasp 42: Quality = 0.0901
+Grasp 43: Quality = 0.0164
+Grasp 44: Quality = 0.0329
+Grasp 45: Quality = 0.0773
+Grasp 46: Quality = 0.0898
+Grasp 47: Quality = 0.0402
+Grasp 48: Quality = 0.0371
+Grasp 49: Quality = 0.0426
+Grasp 50: Quality = 0.0145
+Grasp 51: Quality = 0.0131
+Grasp 52: Quality = 0.0179
+Grasp 53: Quality = 0.0763
+Grasp 54: Quality = 0.0632
+Grasp 55: Quality = 0.0719
+Grasp 56: Quality = 0.0755
+Grasp 57: Quality = 0.0513
+Grasp 58: Quality = 0.0329
+Grasp 59: Quality = 0.0980
+Grasp 60: Quality = 0.0603
+Grasp 61: Quality = 0.0790
+Grasp 62: Quality = 0.0595
+Grasp 63: Quality = 0.0340
+Grasp 64: Quality = 0.0141
+Grasp 65: Quality = 0.0452
+Grasp 66: Quality = 0.0515
+Grasp 67: Quality = 0.0580
+Grasp 68: Quality = 0.0878
+Grasp 69: Quality = 0.0846
+Grasp 70: Quality = 0.0705
+Grasp 71: Quality = 0.0856
+Grasp 72: Quality = 0.1133
+Grasp 73: Quality = 0.0829
+Grasp 74: Quality = 0.0462
+Grasp 75: Quality = 0.0150
+Grasp 76: Quality = 0.1037
+Grasp 77: Quality = 0.0981
+Grasp 78: Quality = 0.0021
+Grasp 79: Quality = 0.0801
+Grasp 80: Quality = 0.0805
+Grasp 81: Quality = 0.0810
+Grasp 82: Quality = 0.0293
+Grasp 83: Quality = 0.0328
+Grasp 84: Quality = 0.1007
+Grasp 85: Quality = 0.0399
+Grasp 86: Quality = 0.0529
+Grasp 87: Quality = 0.0274
+Grasp 88: Quality = 0.0541
+Grasp 89: Quality = 0.0965
+Grasp 90: Quality = 0.0448
+Grasp 91: Quality = 0.0122
+Grasp 92: Quality = 0.0992
+Grasp 93: Quality = 0.0822
+Grasp 94: Quality = 0.0950
+Grasp 95: Quality = 0.0306
+failed grasp 개수: 946
+quality grasp 개수: 1304
+Grasp sampling 시간 852초
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 시작 (진행중..)
+이미지 랜더링 종료 Pose5 걸린시간: 870초
+bin 로드중
+69/300 grasps after iter 1
+113/300 grasps after iter 2
+171/300 grasps after iter 3
+228/300 grasps after iter 4
+284/300 grasps after iter 5
+346/300 grasps after iter 6
+Final: 300 grasps
+
+>>> [RUN] 원본 stable_poses[0] -> 현재 계산 중 (yielded_count: 0)
+Total grasps: 300
+Collision-free grasps: 2500
+Collision grasps: 1430
+0.002 이하 grasp 폐기 
+Grasp 1: Quality = 0.0114
+Grasp 2: Quality = 0.0149
+Grasp 3: Quality = 0.0199
+Grasp 4: Quality = 0.0133
+Grasp 5: Quality = 0.0119
+Grasp 6: Quality = 0.0065
+Grasp 7: Quality = 0.0200
+Grasp 8: Quality = 0.0253
+Grasp 9: Quality = 0.0058
+Grasp 10: Quality = 0.0200
+Grasp 11: Quality = 0.0056
+Grasp 12: Quality = 0.0067
+Grasp 13: Quality = 0.0044
+Grasp 14: Quality = 0.0197
+Grasp 15: Quality = 0.0087
+Grasp 16: Quality = 0.0195
+Grasp 17: Quality = 0.0086
+Grasp 18: Quality = 0.0142
+Grasp 19: Quality = 0.0121
+Grasp 20: Quality = 0.0200
+Grasp 21: Quality = 0.0159
+Grasp 22: Quality = 0.0184
+Grasp 23: Quality = 0.0212
+Grasp 24: Quality = 0.0108
+Grasp 25: Quality = 0.0133
+Grasp 26: Quality = 0.0166
+Grasp 27: Quality = 0.0223
+Grasp 28: Quality = 0.0026
+Grasp 29: Quality = 0.0095
+Grasp 30: Quality = 0.0182
+Grasp 31: Quality = 0.0063
+Grasp 32: Quality = 0.0090
+Grasp 33: Quality = 0.0032
+Grasp 34: Quality = 0.0096
+Grasp 35: Quality = 0.0072
+Grasp 36: Quality = 0.0295
+Grasp 37: Quality = 0.0121
+Grasp 38: Quality = 0.0193
+Grasp 39: Quality = 0.0057
+Grasp 40: Quality = 0.0045
+Grasp 41: Quality = 0.0206
+Grasp 42: Quality = 0.0034
+Grasp 43: Quality = 0.0132
+Grasp 44: Quality = 0.0029
+Grasp 45: Quality = 0.0140
+Grasp 46: Quality = 0.0042
+Grasp 47: Quality = 0.0150
+Grasp 48: Quality = 0.0038
+Grasp 49: Quality = 0.0191
+Grasp 50: Quality = 0.0200
+Grasp 51: Quality = 0.0156
+Grasp 52: Quality = 0.0023
+Grasp 53: Quality = 0.0241
+Grasp 54: Quality = 0.0231
+Grasp 55: Quality = 0.0187
+Grasp 56: Quality = 0.0187
+Grasp 57: Quality = 0.0069
+Grasp 58: Quality = 0.0197
+Grasp 59: Quality = 0.0133
+Grasp 60: Quality = 0.0019
+Grasp 61: Quality = 0.0219
+Grasp 62: Quality = 0.0035
+Grasp 63: Quality = 0.0146
+Grasp 64: Quality = 0.0141
+Grasp 65: Quality = 0.0081
+Grasp 66: Quality = 0.0241
+Grasp 67: Quality = 0.0210
+Grasp 68: Quality = 0.0115
+Grasp 69: Quality = 0.0233
+Grasp 70: Quality = 0.0113
+Grasp 71: Quality = 0.0162
+Grasp 72: Quality = 0.0108
+Grasp 73: Quality = 0.0052
+Grasp 74: Quality = 0.0072
+Grasp 75: Quality = 0.0056
+Grasp 76: Quality = 0.0241
+Grasp 77: Quality = 0.0267
+Grasp 78: Quality = 0.0211
+Grasp 79: Quality = 0.0192
+Grasp 80: Quality = 0.0150
+Grasp 81: Quality = 0.0072
+Grasp 82: Quality = 0.0030
+Grasp 83: Quality = 0.0234
+Grasp 84: Quality = 0.0056
+Grasp 85: Quality = 0.0101
+Grasp 86: Quality = 0.0115
+Grasp 87: Quality = 0.0155
+Grasp 88: Quality = 0.0267
+Grasp 89: Quality = 0.0070
+Grasp 90: Quality = 0.0021
+Grasp 91: Quality = 0.0145
+Grasp 92: Quality = 0.0122
+Grasp 93: Quality = 0.0156
+Grasp 94: Quality = 0.0221
+Grasp 95: Quality = 0.0042
+Grasp 96: Quality = 0.0193
+Grasp 97: Quality = 0.0083
+Grasp 98: Quality = 0.0093
+Grasp 99: Quality = 0.0020
+Grasp 100: Quality = 0.0095
+Grasp 101: Quality = 0.0121
+Grasp 102: Quality = 0.0122qhull precision warning: 
+The initial hull is narrow (cosine of min. angle is 1.0000000000000000).
+Is the input lower dimensional (e.g., on a plane in 3-d)?  Qhull may
+produce a wide facet.  Options 'QbB' (scale to unit box) or 'Qbb' (scale
+last coordinate) may remove this warning.  Use 'Pp' to skip this warning.
+See 'Limitations' in qh-impre.htm.
+QH6114 qhull precision error: initial simplex is not convex. Distance=-1e-16
+
+While executing:  | qconvex i Qt
+Options selected for Qhull 2015.2 2016/01/18:
+  run-id 972123075  incidence  Qtriangulate  Qxact_merge  _zero-centrum
+  _max-width 2.1  Error-roundoff 2.8e-15  _one-merge 3.1e-14
+  _near-inside 1.6e-13  Visible-distance 1.7e-14  U-coplanar-distance 1.7e-14
+  Width-outside 3.4e-14  _wide-facet 1e-13  _narrow-hull  0
+
+precision problems (corrected unless 'Q0' or an error)
+      1 flipped facets
+      2 nearly singular or axis-parallel hyperplanes
+      1 zero divisors during back substitute
+      2 zero divisors during gaussian elimination
+
+The input to qhull appears to be less than 5 dimensional, or a
+computation has overflowed.
+
+Qhull could not construct a clearly convex simplex from points:
+- p4(v5):  0.98  0.17  -0.5 -0.24 0.088
+- p13(v4): -0.91  0.48 -0.33 0.042  -0.2
+- p0(v3):  0.97  0.12   0.5  0.12 -0.07
+- p2(v2):  0.91  0.63 0.0079 0.067  0.19
+- p6(v1):     1 -0.34 -0.0072 -0.18 -0.17
+- p10(v0):    -1 -0.33 -0.011 -0.021  0.19
+
+The center point is coplanar with a facet, or a vertex is coplanar
+with a neighboring facet.  The maximum round off error for
+computing distances is 2.8e-15.  The center point, facets and distances
+to the center point are as follows:
+
+center point   0.3271   0.1218 -0.05622 -0.03332 0.004172
+
+facet p13 p0 p2 p6 p10 distance= -2.1e-17
+facet p4 p0 p2 p6 p10 distance= -7.4e-05
+facet p4 p13 p2 p6 p10 distance= -3.8e-17
+facet p4 p13 p0 p6 p10 distance= -2.5e-17
+facet p4 p13 p0 p2 p10 distance= -6.4e-18
+facet p4 p13 p0 p2 p6 distance= -0.11
+
+These points either have a maximum or minimum x-coordinate, or
+they maximize the determinant for k coordinates.  Trial points
+are first selected from points that maximize a coordinate.
+
+The min and max coordinates for each dimension are:
+  0:    -1.022     1.038  difference= 2.06
+  1:   -0.3409    0.6302  difference= 0.9711
+  2:   -0.4975    0.4983  difference= 0.9958
+  3:   -0.2693    0.1586  difference= 0.4279
+  4:   -0.2018    0.1943  difference= 0.3961
+
+If the input should be full dimensional, you have several options that
+may determine an initial simplex:
+  - use 'QJ'  to joggle the input and make it full dimensional
+  - use 'QbB' to scale the points to the unit cube
+  - use 'QR0' to randomly rotate the input for different maximum points
+  - use 'Qs'  to search all points for the initial simplex
+  - use 'En'  to specify a maximum roundoff error less than 2.8e-15.
+  - trace execution with 'T3' to see the determinant for each point.
+
+If the input is lower dimensional:
+  - use 'QJ' to joggle the input and make it full dimensional
+  - use 'Qbk:0Bk:0' to delete coordinate k from the input.  You should
+    pick the coordinate with the least range.  The hull will have the
+    correct topology.
+  - determine the flat containing the points, rotate the points
+    into a coordinate plane, and delete the other coordinates.
+  - add one or more points to make the input full dimensional.

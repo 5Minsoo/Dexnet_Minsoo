@@ -238,7 +238,7 @@ class ParallelJawGrasp:
     def multi_angle_grasps(
         self,
         stable_pose: np.ndarray,
-        angle_offsets_deg: List[float] = np.linspace(-45,45,5),
+        angle_offsets_deg: List[float] = np.linspace(-45,45,15),
         max_approach_angle: float = np.pi / 3,
     ) -> List['ParallelJawGrasp']:
         """

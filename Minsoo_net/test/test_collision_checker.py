@@ -17,7 +17,7 @@ yaml_path = '/home/minsoo/Dexnet_Minsoo/Minsoo_net/config/master_config.yaml'
 obj_path = '/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/bin.stl'
 
 gripper = RobotGripper('hande', yaml_path)
-checker = GraspCollisionChecker(gripper,use_visual=True)
+checker = GraspCollisionChecker(gripper,use_visual=False)
 sampler = AntipodalGraspSampler(yaml_path)
 obj = GraspableObject3D(obj_path)
 stable_poses, probs = obj.stable_poses()
@@ -44,7 +44,7 @@ class TestCollisionProb(TestCase):
     def test_collision_prob_debug(self):
         print()
         for i, grasp in enumerate(vertical_grasp,1):
-            prob = checker.collision_prob(obj, grasp, key=self.key, num=5)
+            prob = checker.collision_prob(obj, grasp, key=self.key, num=2)
             print(f'{i}번째 grasp 충돌확률: {prob}')
 
     def test_object_approach_angle_in_range(self):

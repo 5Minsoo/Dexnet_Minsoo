@@ -164,7 +164,7 @@ if __name__ == "__main__":
     OBJ_FILE_PATH='/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/bin.stl'
     
     # --- 테스트 제어 변수 ---
-    START_INDEX = 2      # 0부터 시작하거나, 특정 Pose부터 재개하고 싶을 때 변경
+    START_INDEX = 1      # 0부터 시작하거나, 특정 Pose부터 재개하고 싶을 때 변경
     NUM_TEST_GRASPS = 10 # 한 Pose당 생성할 Grasp 후보 개수
     VISUALIZE = True   # 시각화 여부
     # -----------------------

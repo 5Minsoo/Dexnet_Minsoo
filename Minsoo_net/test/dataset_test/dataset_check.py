@@ -4,10 +4,10 @@ import logging
 import random
 import matplotlib.pyplot as plt
 
-zarr_path = '/home/minsoo/Dexnet_Minsoo/grasp_dataset_0408.zarr'
+zarr_path = '/home/minsoo/Dexnet_Minsoo/grasp_dataset_f_0.4_tilt.zarr'
 root = zarr.open(str(zarr_path), mode="r")
 
-threshold = 0.014
+threshold = 0.002
 
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger('zarr').setLevel(logging.WARNING)
@@ -99,8 +99,9 @@ while True:
     if not dataset_indices:
         print("시각화할 데이터가 없습니다.")
         break
-    dataset_indices = [x for x in dataset_indices if x[0] == 'bin']
+        
     obj_key, pose_key, sample_idx = random.choice(dataset_indices)
+    
     img = root[obj_key][pose_key]["images"][sample_idx]
     label = root[obj_key][pose_key]["labels"][sample_idx]
     
@@ -110,7 +111,7 @@ while True:
     ax.imshow(img_display, cmap='gray')
     
     is_success = "SUCCESS" if label > threshold else "FAIL"
-    ax.set_title(f"Obj: {obj_key} | Pose: {pose_key} | Idx: {sample_idx}\nLabel: {label:.6f} ({is_success})")
+    ax.set_title(f"Obj: {obj_key} | Pose: {pose_key} | Idx: {sample_idx}\nLabel: {label:.5f} ({is_success})")
     ax.axis('off')
     
     plt.draw()

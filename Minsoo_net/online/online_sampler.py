@@ -60,7 +60,7 @@ class OnlineAntipodalSampler:
         깊이 이미지를 기반으로 N개의 4-DOF 파지 후보군을 배치로 반환합니다.
         반환 형태: (N, 4) 크기의 NumPy 배열 [u(x), v(y), theta, depth]
         """
-        # depth_image=depth_image.inpaint_depth()
+        depth_image=depth_image.inpaint_depth()
         edge = depth_image.gradient_threshold(self.grad_threshold)
         
         h, w = edge.shape[:2]
@@ -92,8 +92,8 @@ class OnlineAntipodalSampler:
         pixels = pixels[valid_depths]
         logger.debug(f'valid depth pixels: {pixels.shape}')
 
-        max_reach_m = self.gripper_width_m *2.0
-        min_reach_m=self.gripper_width_m*0.0
+        max_reach_m = self.gripper_width_m *1.5
+        min_reach_m=self.gripper_width_m*0.3
         point_cloud=camera_coords(depth_image._data,pixels,self.K_inv)
         logger.debug(f'Camera coord max {np.max(point_cloud)}')
         logger.debug(f'전체 가능 pair 개수: {int(len(point_cloud)*(len(point_cloud)-1)/2)}')
@@ -126,7 +126,7 @@ class OnlineAntipodalSampler:
         n0, n1 = n0[valid], n1[valid]
         ############ 0필터링 추가 #########################
 
-        force_closure_mask=force_closure(p0,p1,n0,n1,0.4)
+        force_closure_mask=force_closure(p0,p1,n0,n1,0.8)
         pairs=pairs[force_closure_mask]
         logger.debug(f'force closure pairs: {pairs.shape}')
 
@@ -214,5 +214,5 @@ if __name__=="__main__":
         # depth=camera.get_depth_image()
         depth=cv2.imread('/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/saved_data/depth_raw_1.png',cv2.IMREAD_GRAYSCALE)
         depth=depth*0.001
-        depth=DepthImage(depth,visualize=True)
+        depth=DepthImage(depth)
         grasp=np.float16(sampler.sample_grasps(depth,use_visualize=True))

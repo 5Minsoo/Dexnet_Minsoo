@@ -69,6 +69,13 @@ CFG = dict(
     multiplicative_denoising=False,
     gamma_shape=1000.0,
 
+    gaussian_process_denoising=False,
+    gaussian_process_rate=0.5,
+    gaussian_process_sigma=0.005,
+    gaussian_process_scaling_factor=4.0,
+
+    symmetrize=True,
+
     # ── 전처리 ──
     num_random_files=10000,     # mean/std 계산 시 사용할 최대 샘플 수
 
@@ -98,13 +105,14 @@ class DexNetZarrDataset(Dataset):
     """
 
     def __init__(self, zarr_path, indices=None, im_height=32, im_width=32,
-                 metric_thresh=0.002, cfg=None,
+                 metric_thresh=0.002, augment=False, cfg=None,
                  im_mean=0.0, im_std=1.0, pose_mean=0.0, pose_std=1.0):
         super().__init__()
         self.root = zarr.open(str(zarr_path), mode="r")
         self.im_height = im_height
         self.im_width = im_width
         self.metric_thresh = metric_thresh ##어차피 특정 확률 필터링은 데이터 생성때 함. 이진화는 그냥 확률이 0이 아니기만 하면 다 1로 처리.
+        self.augment = augment
         self.cfg = cfg or CFG
 
         self.im_mean = im_mean
@@ -167,6 +175,7 @@ class DexNetZarrDataset(Dataset):
         depth = float(np.array(group["gripper_depth"][grasp_idx]))
         label = float(np.array(group["labels"][grasp_idx]))
 
+        image = self._augment(image)
 
         # ── 정규화 ──
         image = (image - self.im_mean) / (self.im_std + 1e-10)
@@ -181,6 +190,28 @@ class DexNetZarrDataset(Dataset):
         label_t = torch.tensor(binary_label, dtype=torch.long)
 
         return image_t, depth_t, label_t
+
+    # ── 데이터 증강 ──────────────────────────────────────────────────
+    def _augment(self, image):
+        """원본 TF 코드와 동일한 증강 파이프라인."""
+        h, w = image.shape
+
+        # 3) Symmetrize (회전 + 반전)
+        if self.cfg["symmetrize"]:
+            # 180도 회전 (50%)
+            if np.random.rand() < 0.5:
+                center = (w / 2, h / 2)
+                rot_mat = cv2.getRotationMatrix2D(center, 180.0, 1.0)
+                image = cv2.warpAffine(image, rot_mat, (w, h),
+                                       flags=cv2.INTER_NEAREST)
+            # 좌우 반전 (50%)
+            if np.random.rand() < 0.5:
+                image = np.fliplr(image).copy()
+            # 상하 반전 (50%)
+            if np.random.rand() < 0.5:
+                image = np.flipud(image).copy()
+
+        return image
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -336,14 +367,14 @@ def train(args):
     train_ds = DexNetZarrDataset(
         args.data, indices=train_indices,
         im_height=args.im_height, im_width=args.im_width,
-        metric_thresh=cfg["metric_thresh"], cfg=cfg,
+        metric_thresh=cfg["metric_thresh"], augment=True, cfg=cfg,
         im_mean=im_mean, im_std=im_std,
         pose_mean=pose_mean, pose_std=pose_std)
 
     val_ds = DexNetZarrDataset(
         args.data, indices=val_indices,
         im_height=args.im_height, im_width=args.im_width,
-        metric_thresh=cfg["metric_thresh"], cfg=cfg,
+        metric_thresh=cfg["metric_thresh"], augment=False, cfg=cfg,
         im_mean=im_mean, im_std=im_std,
         pose_mean=pose_mean, pose_std=pose_std)
 

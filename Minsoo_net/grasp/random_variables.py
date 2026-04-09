@@ -101,7 +101,6 @@ class GraspableObjectPoseGaussianRV(RandomVariables):
                     R=Rotation.from_rotvec(r).as_matrix()
                     c = self.com_rv_.rvs(size=1)
                     t = self.t_rv_.rvs(size=1)
-                    t[2]=t[2]*0.1
                     T= np.eye(4)
                     T[:3,3]=t.T
                     T[:3,:3]=R
@@ -143,8 +142,8 @@ class ParallelJawGraspPoseGaussianRV(RandomVariables):
         if config_yaml is not None:
             with open(config_yaml) as f:
                 config=yaml.safe_load(f)
-            self.sigma_trans_= config['sigma_gripper_translation']
-            self.sigma_rot_=config['sigma_gripper_rotation']
+            self.sigma_trans_= config['sigma_translation']
+            self.sigma_rot_=config['sigma_rotation']
             self.sigma_approach_=config['sigma_gripper_approach_angle']
 
     def sample(self, size=1):
@@ -154,7 +153,6 @@ class ParallelJawGraspPoseGaussianRV(RandomVariables):
             r = self.r_rv_.rvs(size=1)
             R=Rotation.from_rotvec(r).as_matrix()
             t =self.t_rv_.rvs(size=1).T
-            t[2]=t[2]*0.1
             sample_grasp=copy.deepcopy(self.grasp_)
             sample_grasp.center+=t
             sample_grasp.axis=R@sample_grasp.axis

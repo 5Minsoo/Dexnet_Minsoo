@@ -142,7 +142,7 @@ for pose, failed_grasps, quality_grasps, quality_scores in grasp_pipeline.execut
                     combined_img = cv2.hconcat([depth_debug, cropped_resized])
 
                     # 4. 화면 출력
-                    cv2.imshow('Depth vs Cropped', combined_img )
+                    cv2.imshow('Depth vs Cropped', depth)
                     viewer.render()
                     # 디버깅 시 하나씩 확인하려면 waitKey(0), 자동으로 휙휙 넘어가게 하려면 waitKey(1)
                     cv2.waitKey(0)
