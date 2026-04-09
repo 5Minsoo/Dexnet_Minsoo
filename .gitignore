@@ -1,0 +1,25 @@
+*.zarr
+install/
+build/
+log/
+
+# .pt (best.pt 제외)
+*.pt
+!**/best.pt
+
+# IDE
+.vscode/
+
+# Python
+__pycache__/
+*.egg-info/
+*.egg
+
+# 기타
+.eggs/
+gqcnn/
+dexnet/
+.shdex-net/
+.pytest_cache
+
+dex-net
