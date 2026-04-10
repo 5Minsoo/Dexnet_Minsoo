@@ -29,7 +29,7 @@ class GraspPlannerNode(Node):
         self.depth=None
         self.image_size=None
 
-        self.sampler=OnlineAntipodalSampler(gripper_width_m=0.05,K=self.camera.intrinsic_parameter,image_margin=0.2,max_grasps=100)
+        self.sampler=OnlineAntipodalSampler(gripper_width_m=0.05,K=self.camera.intrinsic_parameter,image_margin=0.2,max_edge=100,max_grasps=1000)
         self.samples=None
 
         self.helper=MoveItMoveHelper()
@@ -43,22 +43,22 @@ class GraspPlannerNode(Node):
         self.visualize=use_visualize
 
     def main_loop(self):
-        self.helper.move_to_joint_values(joint_goal={
-            "joint_1": 0.2618,
-            "joint_2": -0.0349,
-            "joint_3": 1.8850,
-            "joint_4": -0.0873,
-            "joint_5": 1.0472,
-            "joint_6": -1.2043
-        })
         # self.helper.move_to_joint_values(joint_goal={
-        #     "joint_1": 0.1945,
-        #     "joint_2": 0.1722,
-        #     "joint_3": 1.6341,
-        #     "joint_4": 0.0021,
-        #     "joint_5": 1.3097,
-        #     "joint_6": -1.3113
+        #     "joint_1": 0.2618,
+        #     "joint_2": -0.0349,
+        #     "joint_3": 1.8850,
+        #     "joint_4": -0.0873,
+        #     "joint_5": 1.0472,
+        #     "joint_6": -1.2043
         # })
+        self.helper.move_to_joint_values(joint_goal={
+            "joint_1": 0.1945,
+            "joint_2": 0.1722,
+            "joint_3": 1.6341,
+            "joint_4": 0.0021,
+            "joint_5": 1.3097,
+            "joint_6": -1.3113
+        })
         # self.helper.move_to_joint_values(joint_goal={
         #     "joint_1": 0.1920,
         #     "joint_2": 0.2094,
@@ -98,8 +98,8 @@ class GraspPlannerNode(Node):
         cropped_input = np.expand_dims(cropped, axis=-1)
         poses_input = all_samples[:, 3].reshape(-1, 1)
 
-        success_probs = self.model.predict_success(cropped_input, poses_input)
-
+        success_probs,logits = self.model.predict(cropped_input, poses_input)
+        success_probs=success_probs[:,1]
         best_idx = np.argmax(success_probs)
         self.best_grasp = all_samples[best_idx]
         self.best_score = success_probs[best_idx]
@@ -170,7 +170,7 @@ class GraspPlannerNode(Node):
         input1=input('계속하려면 Enter')
         self.helper.move_cartesian(pos,quat)
 
-        pos-=(offset+0.06)*offset_dir
+        pos-=(offset+0.03)*offset_dir
         logging.debug(f' 다음 이동 Position: {pos}')
         input1=input('계속하려면 Enter')
 
@@ -192,7 +192,7 @@ class GraspPlannerNode(Node):
 def main():
     logging.basicConfig(level=logging.DEBUG)
     rclpy.init()
-    node = GraspPlannerNode('/home/minsoo/Dexnet_Minsoo/output/20260403_08-15/best.pt',use_visualize=True)
+    node = GraspPlannerNode('/home/minsoo/Dexnet_Minsoo/output/04-10_15-49_grasp_dataset_0408_CE_th0.002_a0.5_0.5/best.pt',use_visualize=True)
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:

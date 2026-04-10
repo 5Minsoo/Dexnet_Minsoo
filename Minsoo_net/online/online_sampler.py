@@ -60,7 +60,7 @@ class OnlineAntipodalSampler:
         깊이 이미지를 기반으로 N개의 4-DOF 파지 후보군을 배치로 반환합니다.
         반환 형태: (N, 4) 크기의 NumPy 배열 [u(x), v(y), theta, depth]
         """
-        depth_image=depth_image.inpaint_depth()
+        # depth_image=depth_image.inpaint_depth()
         edge = depth_image.gradient_threshold(self.grad_threshold)
         
         h, w = edge.shape[:2]
@@ -183,7 +183,7 @@ class OnlineAntipodalSampler:
         centers = centers[valid_mask]
         thetas = thetas[valid_mask]
         depths = depths[valid_mask]
-        offsets = np.linspace(-0.04,0.04,9)  # 미터 단위 오프셋
+        offsets = np.linspace(0.0,0.1,10)  # 미터 단위 오프셋
         # 각 grasp마다 offset 개수만큼 복제
         N = len(centers)
         K = len(offsets)
