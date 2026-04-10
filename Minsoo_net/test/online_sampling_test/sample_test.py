@@ -51,8 +51,8 @@ class GraspPlanner:
         cropped_input = np.expand_dims(cropped, axis=-1)
         poses_input = all_samples[:, 3].reshape(-1, 1)
 
-        success_probs = self.model.predict_success(cropped_input, poses_input)
-
+        success_probs,logits = self.model.predict(cropped_input, poses_input)
+        success_probs=logits[:,1]
         best_idx = np.argmax(success_probs)
         self.best_grasp = all_samples[best_idx]
         self.best_score = success_probs[best_idx]
@@ -93,7 +93,7 @@ def main():
     logging.basicConfig(level=logging.DEBUG)
     planner = GraspPlanner('/home/minsoo/Dexnet_Minsoo/output/04-10_grasp_dataset_0408_CE_th0.002_a0.5_0.5/best.pt',use_visualize=True,camera=False)
     # planner = GraspPlanner('/home/minsoo/Dexnet_Minsoo/output/Best_03-30/best.pt',use_visualize=True)
-    grasp, score = planner.run(image=cv2.imread('/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/saved_data/depth_raw_4.png',cv2.IMREAD_GRAYSCALE)*0.001)
+    grasp, score = planner.run(image=cv2.imread('/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/saved_data/depth_raw_2.png',cv2.IMREAD_GRAYSCALE)*0.001)
     if grasp is not None:
         logging.debug(f'Best grasp (u,v,theta,z): {grasp}, score: {score}')
 

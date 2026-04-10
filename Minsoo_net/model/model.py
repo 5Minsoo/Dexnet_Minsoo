@@ -108,20 +108,19 @@ class DexNet2(nn.Module):
         """
         images : (N, H, W, 1) raw depth (NHWC)
         poses  : (N, 1) raw gripper depth
-        Returns (N, 2) [P(fail), P(success)]
+        Returns probs (N, 2), logits (N, 2)
         """
         self.eval()
         dev = next(self.parameters()).device
-
         im_n = (images - self.im_mean) / self.im_std
         po_n = (poses - self.pose_mean) / self.pose_std
-
         im_t = torch.from_numpy(im_n.transpose(0, 3, 1, 2).astype(np.float32)).to(dev)
         po_t = torch.from_numpy(po_n.astype(np.float32)).to(dev)
-
+        logit_list = []
         outs = []
         for i in range(0, im_t.shape[0], 128):
             logits = self(im_t[i:i+128], po_t[i:i+128])
+            logit_list.append(logits)
             outs.append(F.softmax(logits, dim=-1))
         logging.debug(f"raw depth range: min={np.nanmin(images):.4f}, max={np.nanmax(images):.4f}")
         logging.debug(f"raw depth shape: {images.shape}")
@@ -131,11 +130,10 @@ class DexNet2(nn.Module):
         logging.debug(f"pose range: {po_t.min()}, {po_t.max()}")
         logging.debug(f"logits: {logits[:5]}")  
         logging.debug(f"probs: {F.softmax(logits, dim=-1)[:5]}")
-
-        return torch.cat(outs, 0).cpu().numpy()
+        return torch.cat(outs, 0).cpu().numpy(), torch.cat(logit_list, 0).cpu().numpy()
 
     def predict_success(self, images, poses):
-        return self.predict(images, poses)[:, 1]
+        return self.predict(images, poses)[0][:, 1]
 
     def save(self, path):
         torch.save({

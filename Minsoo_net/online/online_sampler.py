@@ -183,7 +183,7 @@ class OnlineAntipodalSampler:
         centers = centers[valid_mask]
         thetas = thetas[valid_mask]
         depths = depths[valid_mask]
-        offsets = np.array([ -0.01, -0.02, -0.03,-0.04])  # 미터 단위 오프셋
+        offsets = np.linspace(-0.04,0.04,9)  # 미터 단위 오프셋
         # 각 grasp마다 offset 개수만큼 복제
         N = len(centers)
         K = len(offsets)
