@@ -4,10 +4,10 @@ import logging
 import random
 import matplotlib.pyplot as plt
 
-zarr_path = '/home/minsoo/Dexnet_Minsoo/grasp_dataset_f_0.4_tilt.zarr'
+zarr_path = '/home/minsoo/Dexnet_Minsoo/grasp_dataset_0408.zarr'
 root = zarr.open(str(zarr_path), mode="r")
 
-threshold = 0.002
+threshold = 0.001
 
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger('zarr').setLevel(logging.WARNING)

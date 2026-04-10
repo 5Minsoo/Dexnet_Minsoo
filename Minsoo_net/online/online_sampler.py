@@ -126,7 +126,7 @@ class OnlineAntipodalSampler:
         n0, n1 = n0[valid], n1[valid]
         ############ 0필터링 추가 #########################
 
-        force_closure_mask=force_closure(p0,p1,n0,n1,0.8)
+        force_closure_mask=force_closure(p0,p1,n0,n1,0.4)
         pairs=pairs[force_closure_mask]
         logger.debug(f'force closure pairs: {pairs.shape}')
 

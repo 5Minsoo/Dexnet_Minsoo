@@ -25,7 +25,7 @@ class GraspPlanner:
             self.K=None
         self.image=None
         self.depth=None
-        self.sampler=OnlineAntipodalSampler(gripper_width_m=0.05,K=self.K,image_margin=0.2,max_edge=10)
+        self.sampler=OnlineAntipodalSampler(gripper_width_m=0.05,K=self.K,image_margin=0.2,max_edge=100)
         self.samples=None
         self.visualize=use_visualize
 
@@ -91,9 +91,9 @@ class GraspPlanner:
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
-    planner = GraspPlanner('/home/minsoo/Dexnet_Minsoo/output/grasp_dataset_tilt_CE_th0.002_a0.5_0.5/best.pt',use_visualize=True,camera=False)
+    planner = GraspPlanner('/home/minsoo/Dexnet_Minsoo/output/04-10_grasp_dataset_0408_CE_th0.002_a0.5_0.5/best.pt',use_visualize=True,camera=False)
     # planner = GraspPlanner('/home/minsoo/Dexnet_Minsoo/output/Best_03-30/best.pt',use_visualize=True)
-    grasp, score = planner.run(image=cv2.imread('/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/saved_data/depth_raw_6.png',cv2.IMREAD_GRAYSCALE)*0.001)
+    grasp, score = planner.run(image=cv2.imread('/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/saved_data/depth_raw_4.png',cv2.IMREAD_GRAYSCALE)*0.001)
     if grasp is not None:
         logging.debug(f'Best grasp (u,v,theta,z): {grasp}, score: {score}')
 
