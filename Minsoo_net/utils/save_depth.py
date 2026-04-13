@@ -10,7 +10,7 @@ sys.path.append('/home/minsoo/Dexnet_Minsoo/Minsoo_net/online')
 class DepthSaver:
     def __init__(self):
         self.camera = RealSenseCamera()
-        self.save_dir = '/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/saved_data'
+        self.save_dir = '/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/saved_data2'
         os.makedirs(self.save_dir, exist_ok=True)
 
     def run(self):

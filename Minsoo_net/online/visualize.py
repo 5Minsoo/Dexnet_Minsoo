@@ -185,7 +185,6 @@ class GraspVisualizer2D:
 
         cv2.imshow("Debug Grasps", canvas)
         cv2.waitKey(0)
-        cv2.destroyAllWindows()
         return canvas
     
 # ── 사용 예시 ──

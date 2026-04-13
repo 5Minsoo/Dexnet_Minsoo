@@ -16,7 +16,7 @@
 [train INFO]   >> val_loss=0.2690  val_error=0.1177
 [train INFO]   >> New best model saved (val_error=0.1177)
 [train INFO]   Checkpoint saved: ./output/04-11_01-11_grasp_dataset_0410_CE_th0.002_a0.5_0.5/epoch_002.pt
-[train INFO]   [epoch 3 step 11200] loss=0.1496 batch_acc=0.938  lr=0.000902
+[train INFO]   [epoch 3 step 11202] loss=0.1496 batch_acc=0.938  lr=0.000902
 [train INFO]   [epoch 3 step 12800] loss=0.2589 batch_acc=0.844  lr=0.000902
 [train INFO]   [epoch 3 step 14400] loss=0.1987 batch_acc=0.953  lr=0.000902
 [train INFO] Epoch 3/40  train_loss=0.2286  train_error=0.1025  time=96.6s

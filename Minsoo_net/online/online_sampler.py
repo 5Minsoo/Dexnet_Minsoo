@@ -168,7 +168,6 @@ class OnlineAntipodalSampler:
 
             cv2.imshow("Debug: Force Closure & Normals", disp_img)
             cv2.waitKey(0)
-            cv2.destroyWindow("Debug: Force Closure & Normals")
 
         axes = p1 - p0
         axes = axes / np.linalg.norm(axes, axis=1, keepdims=True)

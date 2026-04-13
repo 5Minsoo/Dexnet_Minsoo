@@ -138,7 +138,7 @@ class RealSenseCamera:
             
             # 1. 각도 계산 (Sampler의 theta는 라디안이므로 도(Degree)로 변환)
             angle_deg = math.degrees(theta)
-            rotation_angle = angle_deg + 90 
+            rotation_angle = angle_deg  
             
             # 2. 중심점 기준 회전 행렬 생성
             M = cv2.getRotationMatrix2D((cx, cy), rotation_angle, 1.0)
