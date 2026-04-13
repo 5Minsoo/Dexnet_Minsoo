@@ -16,16 +16,17 @@ class DepthImage:
 
     def _compute_sobel(self):
         if self._sobel_x is None:
-            # # depth=0 영역을 주변값으로 채워서 가짜 gradient 방지
-            # mask = (self._data == 0).astype(np.uint8)
-            # self._data = cv2.inpaint(self._data, mask, inpaintRadius=3, flags=cv2.INPAINT_NS)
             if self.visualize:
                 cv2.imshow('raw',self._data)
                 cv2.waitKey(0)
+            # # depth=0 영역을 주변값으로 채워서 가짜 gradient 방지
+            # mask = (self._data == 0).astype(np.uint8)
+            # self._data = cv2.inpaint(self._data, mask, inpaintRadius=3, flags=cv2.INPAINT_NS)
             self._sobel_x = cv2.Sobel(self._data, cv2.CV_32F, 1, 0, ksize=3)
             self._sobel_y = cv2.Sobel(self._data, cv2.CV_32F, 0, 1, ksize=3)
 
-    def gradient_threshold(self, threshold=0.015):
+    def gradient_threshold(self, threshold=0.015,use_visualize=False):
+        self.visualize=use_visualize
         self._compute_sobel()
         grad = np.hypot(self._sobel_x, self._sobel_y)
         logging.debug(f'grad값 {np.mean(grad)}')

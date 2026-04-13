@@ -12,7 +12,7 @@ from geometry_msgs.msg import TransformStamped
 
 from Minsoo_net.online.online_camera import RealSenseCamera
 from Minsoo_net.model.model import DexNet2
-from Minsoo_net.online.online_sampler import OnlineAntipodalSampler
+from Minsoo_net.online.online_sampler import OnlineAntipodalSampler,CrossEntropyRobustGraspingPolicy
 from Minsoo_net.online.visualize import GraspVisualizer2D
 from moveit_helper_functions import MoveItMoveHelper
 sys.path.append('/home/minsoo/Dexnet_Minsoo/Minsoo_net/online')
@@ -20,18 +20,13 @@ sys.path.append('/home/minsoo/Dexnet_Minsoo/Minsoo_net/online')
 class GraspPlannerNode(Node):
     def __init__(self, Checkpoint_path,use_visualize=False):
         super().__init__('Grasp_planning_node')
-        device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.viz=GraspVisualizer2D()
-        self.model=DexNet2.load(path=Checkpoint_path)
-        self.model.to(device)
         self.camera=RealSenseCamera()
         
         self.depth=None
         self.image_size=None
-
-        self.sampler=OnlineAntipodalSampler(gripper_width_m=0.05,K=self.camera.intrinsic_parameter,image_margin=0.2,max_edge=100,max_grasps=1000)
         self.samples=None
-
+        self.policy=CrossEntropyRobustGraspingPolicy(Checkpoint_path,OnlineAntipodalSampler)
         self.helper=MoveItMoveHelper()
         self.timer=self.create_timer(0.1,self.main_loop)
         self.timer=self.create_timer(0.1,self.tf_pub)
@@ -88,23 +83,7 @@ class GraspPlannerNode(Node):
         self.samples=samples
 
     def plan_grasp(self,extrinsic):
-        all_samples = self.samples
-        cropped = RealSenseCamera.crop_and_rotate_batch(
-        self.depth._data, all_samples, crop_size=(96, 96))
-        cropped = np.array([
-            cv2.resize(img, (32, 32), interpolation=cv2.INTER_CUBIC)
-            for img in cropped
-        ])
-        cropped_input = np.expand_dims(cropped, axis=-1)
-        poses_input = all_samples[:, 3].reshape(-1, 1)
-
-        success_probs,logits = self.model.predict(cropped_input, poses_input)
-        success_probs=success_probs[:,1]
-        best_idx = np.argmax(success_probs)
-        self.best_grasp = all_samples[best_idx]
-        self.best_score = success_probs[best_idx]
-        if self.visualize:
-            self.viz.visualize_debug(self.depth._data,all_samples,success_probs)
+        self.best_grasp,_=self.policy.cem_best(self.depth)
         return self._pixel_to_world_coordinate(self.best_grasp,extrinsic)
 
     def _pixel_to_world_coordinate(self, grasp, extrinsic):

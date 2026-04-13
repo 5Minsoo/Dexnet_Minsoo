@@ -6,17 +6,14 @@ import torch
 
 from Minsoo_net.online.online_camera import RealSenseCamera
 from Minsoo_net.model.model import DexNet2
-from Minsoo_net.online.online_sampler import OnlineAntipodalSampler
+from Minsoo_net.online.online_sampler import OnlineAntipodalSampler, CrossEntropyRobustGraspingPolicy
 from Minsoo_net.online.visualize import GraspVisualizer2D
 from Minsoo_net.online.depth_image import DepthImage
 sys.path.append('/home/minsoo/Dexnet_Minsoo/Minsoo_net/online')
 
 class GraspPlanner:
     def __init__(self, Checkpoint_path, use_visualize=False, camera=False):
-        device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.viz=GraspVisualizer2D()
-        self.model=DexNet2.load(path=Checkpoint_path)
-        self.model.to(device)
         if camera:
             self.camera=RealSenseCamera()
             self.K=self.camera.intrinsic_parameter
@@ -25,53 +22,16 @@ class GraspPlanner:
             self.K=None
         self.image=None
         self.depth=None
-        self.sampler=OnlineAntipodalSampler(gripper_width_m=0.05,K=self.K,image_margin=0.2,max_edge=300)
         self.samples=None
         self.visualize=use_visualize
+        self.policy=CrossEntropyRobustGraspingPolicy(model_path=Checkpoint_path,sampler=OnlineAntipodalSampler,camera=False,use_visualize=use_visualize)
 
     def update_frame(self):
         self.camera.update_frames()
         self.depth = self.camera.get_depth_image()
 
-    def collect_samples(self):
-        samples=self.sampler.sample_grasps(self.depth,use_visualize=self.visualize)
-        self.samples=samples
-
     def plan_grasp(self):
-        all_samples = self.samples
-        cropped = RealSenseCamera.crop_and_rotate_batch(
-            self.depth._data, all_samples, crop_size=(96, 96))
-        cropped = np.array([
-            cv2.resize(self.depth._data, (32, 32), interpolation=cv2.INTER_CUBIC)
-            for self.depth._data in cropped
-        ])
-        # cv2.imshow(f'cropped', cropped[0])
-        # cv2.waitKey(0)
-        
-        cropped_input = np.expand_dims(cropped, axis=-1)
-        poses_input = all_samples[:, 3].reshape(-1, 1)
-
-        success_probs,logits = self.model.predict(cropped_input, poses_input)
-        success_probs=logits[:,1]
-        best_idx = np.argmax(success_probs)
-        self.best_grasp = all_samples[best_idx]
-        self.best_score = success_probs[best_idx]
-        if self.visualize:
-            self.viz.visualize_debug(self.image,all_samples,success_probs)
-
-        save_dir = '/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/saved_data2'
-        os.makedirs(save_dir, exist_ok=True)
-        np.savez(os.path.join(save_dir, 'grasp_data.npz'),
-                 depth=self.depth._data,
-                 cropped=cropped_input,
-                 poses=poses_input,
-                 samples=all_samples,
-                 success_probs=success_probs)
-        # depth_uint16 = self.depth._data.astype(np.uint16)
-        cv2.imwrite(os.path.join(save_dir, 'depth_raw.png'), self.depth._data*1000)
-        logging.debug(f'saved to {save_dir}')
-
-        return self.best_grasp, self.best_score
+        return self.policy.cem_best(self.depth,num_iters=10)
 
     def run(self,image=None):
         if image is None and self.K is not None:
@@ -82,20 +42,19 @@ class GraspPlanner:
             self.image=image
         logging.debug(f'self.depth._data shape{self.depth._data.shape}')
         logging.debug(f'입력 이미지 mean: {np.mean(a=self.depth._data)} std: {np.std(a=self.depth._data)}')
-        self.collect_samples()
-        if len(self.samples)>0:
-            grasp, score = self.plan_grasp()
-            logging.debug(f'best grasp: {grasp}, score: {score}')
-            return grasp, score
-        return None, None
+        grasp, score = self.plan_grasp()
+        logging.debug(f'best grasp: {grasp}, score: {score}')
+        return grasp, score
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
-    planner = GraspPlanner('/home/minsoo/Dexnet_Minsoo/output/04-11_01-11_grasp_dataset_0410_CE_th0.002_a0.5_0.5/best.pt',use_visualize=True,camera=False)
+    planner = GraspPlanner('/home/minsoo/Dexnet_Minsoo/output/04-11_01-11_grasp_dataset_0410_CE_th0.002_a0.5_0.5/best.pt',use_visualize=False,camera=False)
     # planner = GraspPlanner('/home/minsoo/Dexnet_Minsoo/output/Best_03-30/best.pt',use_visualize=True)
-    grasp, score = planner.run(image=cv2.imread('/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/saved_data/depth_raw_2.png',cv2.IMREAD_GRAYSCALE)*0.001)
-    if grasp is not None:
-        logging.debug(f'Best grasp (u,v,theta,z): {grasp}, score: {score}')
+    for i in range(8,10):
+        grasp, score = planner.run(
+            image=cv2.imread(f'/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/saved_data2/depth_raw_{i}.png', cv2.IMREAD_GRAYSCALE) * 0.001)
+        if grasp is not None:
+            logging.debug(f'Best grasp (u,v,theta,z): {grasp}, score: {score}')
 
 if __name__ == '__main__':
     main()

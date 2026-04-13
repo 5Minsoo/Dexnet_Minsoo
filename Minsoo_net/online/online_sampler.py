@@ -1,14 +1,17 @@
 import logging
+import time
+
 
 import numpy as np
 import cv2
 from scipy.spatial import cKDTree
-
+import torch
+from sklearn.mixture import GaussianMixture
 
 from Minsoo_net.online.depth_image import DepthImage
 from Minsoo_net.online.visualize import GraspVisualizer2D
 from Minsoo_net.online.online_camera import RealSenseCamera
-
+from Minsoo_net.model.model import DexNet2
 logger = logging.getLogger(__name__)
 
 def force_closure(p1s, p2s, n1s, n2s, mu):
@@ -61,7 +64,7 @@ class OnlineAntipodalSampler:
         반환 형태: (N, 4) 크기의 NumPy 배열 [u(x), v(y), theta, depth]
         """
         # depth_image=depth_image.inpaint_depth()
-        edge = depth_image.gradient_threshold(self.grad_threshold)
+        edge = depth_image.gradient_threshold(self.grad_threshold,use_visualize=use_visualize)
         
         h, w = edge.shape[:2]
         margin = self.image_margin
@@ -204,6 +207,78 @@ class OnlineAntipodalSampler:
         return grasps.astype(np.float32)
 
 
+class CrossEntropyRobustGraspingPolicy:
+    def __init__(self,model_path,sampler,camera=False, use_visualize=False):
+        device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.viz=GraspVisualizer2D()
+        self.model=DexNet2.load(path=model_path)
+        self.model.to(device)
+        self.vis=GraspVisualizer2D()
+        self.visualize=use_visualize
+        if camera:
+            self.camera=RealSenseCamera()
+            self.K=self.camera.intrinsic_parameter
+        else:
+            self.camera=None
+            self.K=None
+        self.sampler=sampler(gripper_width_m=0.05,K=self.K,image_margin=0.2,max_edge=100,max_grasps=1000)
+        
+    def cem_best(self, depth_image, elite_percentage=0.2, num_iters=3, gmm_component_frac=0.3, reg_covar=1e-3):
+        # 1. 초기 샘플링
+        samples = self.sampler.sample_grasps(depth_image,use_visualize=self.visualize)
+        start_time=time.time()
+        for i in range(num_iters):
+            # 2. 평가
+            cropped = RealSenseCamera.crop_and_rotate_batch(
+                depth_image._data, samples, crop_size=(96, 96))
+            cropped = np.array([
+                cv2.resize(img, (32, 32), interpolation=cv2.INTER_CUBIC)
+                for img in cropped
+            ])
+            cropped_input = np.expand_dims(cropped, axis=-1)
+            poses_input = samples[:, 3].reshape(-1, 1)
+            q_values = self.model.predict_success(cropped_input, poses_input)
+
+            if self.visualize:
+                self.viz.visualize_debug(depth_image._data, samples, q_values)
+
+            # 3. elite 선택
+            num_elite = max(int(len(samples) * elite_percentage), 1)
+            elite_idx = np.argsort(q_values)[-num_elite:]
+            elite_samples = samples[elite_idx]
+
+            # 4. 정규화
+            mean = np.mean(elite_samples, axis=0)
+            std = np.std(elite_samples, axis=0)
+            std[std == 0] = 1e-6
+            elite_norm = (elite_samples - mean) / std
+
+            # 5. GMM 피팅 + 리샘플링
+            n_components = max(int(gmm_component_frac * num_elite), 1)
+            gmm = GaussianMixture(n_components=n_components, reg_covar=reg_covar)
+            gmm.fit(elite_norm)
+
+            new_samples, _ = gmm.sample(n_samples=len(samples))
+            samples = std * new_samples + mean  # 역정규화
+
+        # 6. 최종 평가 + best 반환
+        cropped = RealSenseCamera.crop_and_rotate_batch(
+            depth_image._data, samples, crop_size=(96, 96))
+        cropped = np.array([
+            cv2.resize(img, (32, 32), interpolation=cv2.INTER_CUBIC)
+            for img in cropped
+        ])
+        cropped_input = np.expand_dims(cropped, axis=-1)
+        poses_input = samples[:, 3].reshape(-1, 1)
+        q_values = self.model.predict_success(cropped_input, poses_input)
+        end_time=time.time()
+        logging.debug(f'모델 계산 시간{(end_time-start_time):.2f}')
+
+        best_idx = np.argmax(q_values)
+        return samples[best_idx], q_values[best_idx]
+
+
+
 if __name__=="__main__":
     logging.basicConfig(level=logging.DEBUG)
     # camera=RealSenseCamera()
@@ -214,4 +289,4 @@ if __name__=="__main__":
         depth=cv2.imread('/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/saved_data/depth_raw_1.png',cv2.IMREAD_GRAYSCALE)
         depth=depth*0.001
         depth=DepthImage(depth)
-        grasp=np.float16(sampler.sample_grasps(depth,use_visualize=True))
+        grasp=np.float16(sampler.sample_grasps(depth,use_visualize=False))

@@ -31,6 +31,7 @@ import zarr
 import yaml
 from model import DexNet2
 from focal_loss import FocalLoss
+from torch.utils.data import WeightedRandomSampler
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -114,24 +115,35 @@ class DexNetZarrDataset(Dataset):
         self.success = 0  
         self.total_samples = 0 # 전체 샘플 수를 저장할 변수 추가
 
+        # ── 물체별 정답 비율 역수 가중치 ──
+        obj_success_rates = {}
         for obj_key in self.root.keys():
             obj_group = self.root[obj_key]
+            obj_total = 0
+            obj_success = 0
             for pose_key in obj_group.keys():
-                # 1. 이 포즈의 데이터 개수 확인
                 labels = np.array(obj_group[pose_key]["labels"])
-                num_grasps = labels.shape[0]
-                images = np.array(obj_group[pose_key]["images"])
-                if np.isnan(images).any():
-                    raise ValueError(f"데이터셋에 Nan 이미지가 있음.")
-                # 2. 전체 샘플 수 누적
-                self.total_samples += num_grasps
-
-                # 3. 성공 데이터 누적
-                self.success += np.sum(labels > metric_thresh)
-                
-                # 4. 경로 저장
+                obj_total += len(labels)
+                obj_success += np.sum(labels > metric_thresh)
+                num_grasps=len(labels)
                 for grasp_idx in range(num_grasps):
                     self.paths.append((obj_key, pose_key, grasp_idx))
+
+            rate = obj_success / obj_total if obj_total > 0 else 1e-6
+            obj_success_rates[obj_key] = max(rate, 1e-6)
+            self.total_samples+=obj_total
+            self.success+=obj_success
+
+        raw_weights = {k: 1.0 / v for k, v in obj_success_rates.items()}
+        w_sum = sum(raw_weights.values())
+        n_obj = len(raw_weights)
+        self.obj_weights = {k: v / w_sum * n_obj for k, v in raw_weights.items()}
+
+        # 샘플별 가중치 배열
+        self.sample_weights = np.array([self.obj_weights[p[0]] for p in self.paths], dtype=np.float32)
+
+        for k in sorted(self.obj_weights.keys()):
+            log.info(f"  {k}: 정답비율={obj_success_rates[k]*100:.2f}%, 가중치={self.obj_weights[k]:.4f}")
 
 
         # 5. 최종 결과 출력 (전체 샘플 수에서 성공을 뺌)
@@ -141,9 +153,6 @@ class DexNetZarrDataset(Dataset):
         print(f"성공 Data : {self.success}개 ({(self.success/self.total_samples)*100:.1f}%)")
         print(f"실패 Data : {self.total_samples - self.success}개")
         print("-" * 30)
-        # 인덱스 필터링 (train/val split)
-        if indices is not None:
-            self.paths = [self.paths[i] for i in indices]
 
     def __len__(self):
         return len(self.paths)
@@ -343,9 +352,16 @@ def train(args):
         im_mean=im_mean, im_std=im_std,
         pose_mean=pose_mean, pose_std=pose_std)
 
+    sampler = WeightedRandomSampler(
+        weights=train_ds.sample_weights,
+        num_samples=len(train_ds),
+        replacement=True
+    )
+
     train_loader = DataLoader(
         train_ds, batch_size=cfg["train_batch_size"],
-        shuffle=True, num_workers=12, pin_memory=True, drop_last=True)
+        sampler=sampler,  # shuffle 대신 sampler 사용
+        num_workers=12, pin_memory=True, drop_last=True)
 
     val_loader = DataLoader(
         val_ds, batch_size=cfg["val_batch_size"],

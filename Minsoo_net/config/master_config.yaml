@@ -8,7 +8,7 @@ min_num_grasps: 100
 target_num_grasps: 200
 num_grasp_rots: 8
 max_num_surface_points: 100
-grasp_dist_thresh: 0.002
+grasp_dist_thresh: 0.0005
 gripper_max_width: 0.05
 max_sampling_iteration: 1000
 
