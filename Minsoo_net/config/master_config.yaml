@@ -8,9 +8,9 @@ min_num_grasps: 100
 target_num_grasps: 200
 num_grasp_rots: 8
 max_num_surface_points: 100
-grasp_dist_thresh: 0
+grasp_dist_thresh: 0.002
 gripper_max_width: 0.05
-max_sampling_iteration: 300
+max_sampling_iteration: 1000
 
 # ---------------------------------------------------------
 # 그리퍼 정보
@@ -77,7 +77,7 @@ uniqueness_ratio: 50
 # ---------------------------------------------------------
 # 데이터셋 생성 파라미터들
 # ---------------------------------------------------------
-zarr_path : "grasp_dataset_0408.zarr"
+zarr_path : "grasp_dataset_0410.zarr"
 num_grasps : 300
 quality_threshold : 0.002
 stable_pose_prob_threshold : 0.012
