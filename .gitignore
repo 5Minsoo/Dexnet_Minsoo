@@ -21,5 +21,6 @@ gqcnn/
 dexnet/
 .shdex-net/
 .pytest_cache
+.sh
 
 dex-net

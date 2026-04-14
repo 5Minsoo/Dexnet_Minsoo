@@ -1,0 +1,229 @@
+[train INFO] ============================================================
+[train INFO] Starting training
+[train INFO] ============================================================
+[train INFO] Config: {'train_batch_size': 64, 'val_batch_size': 64, 'num_epochs': 40, 'train_pct': 0.8, 'base_lr': 0.001, 'momentum': 0.9, 'weight_decay': 0.0005, 'decay_rate': 0.95, 'drop_rate': 0.0, 'metric_thresh': 0.002, 'eval_frequency': 1, 'save_frequency': 1, 'log_frequency': 1600, 'num_random_files': 10000, 'seed': 24098, 'alpha': [0.5, 0.5], 'loss': 'CE'}
+[train INFO]   [epoch 1 step 1600] loss=0.1091 batch_acc=0.969  lr=0.001000
+[train INFO]   [epoch 1 step 3200] loss=0.1143 batch_acc=0.969  lr=0.001000
+[train INFO] Epoch 1/40  train_loss=0.1860  train_error=0.0649  time=59.1s
+[train INFO]   >> val_loss=0.2623  val_error=0.1095
+[train INFO]   >> New best model saved (val_error=0.1095)
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_001.pt
+[train INFO]   [epoch 2 step 4800] loss=0.1813 batch_acc=0.922  lr=0.000950
+[train INFO]   [epoch 2 step 6400] loss=0.1530 batch_acc=0.953  lr=0.000950
+[train INFO] Epoch 2/40  train_loss=0.1644  train_error=0.0616  time=59.4s
+[train INFO]   >> val_loss=0.2457  val_error=0.1021
+[train INFO]   >> New best model saved (val_error=0.1021)
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_002.pt
+[train INFO]   [epoch 3 step 8000] loss=0.1627 batch_acc=0.953  lr=0.000902
+[train INFO]   [epoch 3 step 9600] loss=0.1837 batch_acc=0.953  lr=0.000902
+[train INFO] Epoch 3/40  train_loss=0.1559  train_error=0.0592  time=58.3s
+[train INFO]   >> val_loss=0.2330  val_error=0.0976
+[train INFO]   >> New best model saved (val_error=0.0976)
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_003.pt
+[train INFO]   [epoch 4 step 11200] loss=0.1842 batch_acc=0.922  lr=0.000857
+[train INFO]   [epoch 4 step 12800] loss=0.1395 batch_acc=0.938  lr=0.000857
+[train INFO] Epoch 4/40  train_loss=0.1512  train_error=0.0589  time=58.2s
+[train INFO]   >> val_loss=0.2113  val_error=0.0905
+[train INFO]   >> New best model saved (val_error=0.0905)
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_004.pt
+[train INFO]   [epoch 5 step 14400] loss=0.2314 batch_acc=0.922  lr=0.000815
+[train INFO]   [epoch 5 step 16000] loss=0.0849 batch_acc=0.984  lr=0.000815
+[train INFO] Epoch 5/40  train_loss=0.1453  train_error=0.0575  time=60.2s
+[train INFO]   >> val_loss=0.2060  val_error=0.0869
+[train INFO]   >> New best model saved (val_error=0.0869)
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_005.pt
+[train INFO]   [epoch 6 step 17600] loss=0.1244 batch_acc=0.953  lr=0.000774
+[train INFO]   [epoch 6 step 19200] loss=0.1346 batch_acc=0.906  lr=0.000774
+[train INFO] Epoch 6/40  train_loss=0.1425  train_error=0.0567  time=60.5s
+[train INFO]   >> val_loss=0.2092  val_error=0.0909
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_006.pt
+[train INFO]   [epoch 7 step 20800] loss=0.3435 batch_acc=0.875  lr=0.000735
+[train INFO]   [epoch 7 step 22400] loss=0.3022 batch_acc=0.875  lr=0.000735
+[train INFO] Epoch 7/40  train_loss=0.1379  train_error=0.0556  time=59.0s
+[train INFO]   >> val_loss=0.2035  val_error=0.0894
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_007.pt
+[train INFO]   [epoch 8 step 24000] loss=0.0637 batch_acc=0.984  lr=0.000698
+[train INFO]   [epoch 8 step 25600] loss=0.1044 batch_acc=0.969  lr=0.000698
+[train INFO] Epoch 8/40  train_loss=0.1345  train_error=0.0543  time=59.7s
+[train INFO]   >> val_loss=0.1870  val_error=0.0799
+[train INFO]   >> New best model saved (val_error=0.0799)
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_008.pt
+[train INFO]   [epoch 9 step 27200] loss=0.0831 batch_acc=0.969  lr=0.000663
+[train INFO]   [epoch 9 step 28800] loss=0.1981 batch_acc=0.922  lr=0.000663
+[train INFO] Epoch 9/40  train_loss=0.1323  train_error=0.0534  time=60.4s
+[train INFO]   >> val_loss=0.1824  val_error=0.0777
+[train INFO]   >> New best model saved (val_error=0.0777)
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_009.pt
+[train INFO]   [epoch 10 step 30400] loss=0.0311 batch_acc=1.000  lr=0.000630
+[train INFO]   [epoch 10 step 32000] loss=0.0805 batch_acc=0.984  lr=0.000630
+[train INFO] Epoch 10/40  train_loss=0.1307  train_error=0.0532  time=59.4s
+[train INFO]   >> val_loss=0.2451  val_error=0.1070
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_010.pt
+[train INFO]   [epoch 11 step 33600] loss=0.0760 batch_acc=0.969  lr=0.000599
+[train INFO]   [epoch 11 step 35200] loss=0.1433 batch_acc=0.906  lr=0.000599
+[train INFO] Epoch 11/40  train_loss=0.1269  train_error=0.0520  time=59.8s
+[train INFO]   >> val_loss=0.1772  val_error=0.0767
+[train INFO]   >> New best model saved (val_error=0.0767)
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_011.pt
+[train INFO]   [epoch 12 step 36800] loss=0.1091 batch_acc=0.938  lr=0.000569
+[train INFO]   [epoch 12 step 38400] loss=0.1156 batch_acc=0.953  lr=0.000569
+[train INFO] Epoch 12/40  train_loss=0.1265  train_error=0.0522  time=59.6s
+[train INFO]   >> val_loss=0.1746  val_error=0.0736
+[train INFO]   >> New best model saved (val_error=0.0736)
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_012.pt
+[train INFO]   [epoch 13 step 40000] loss=0.1591 batch_acc=0.922  lr=0.000540
+[train INFO]   [epoch 13 step 41600] loss=0.1219 batch_acc=0.938  lr=0.000540
+[train INFO] Epoch 13/40  train_loss=0.1224  train_error=0.0506  time=59.1s
+[train INFO]   >> val_loss=0.1677  val_error=0.0722
+[train INFO]   >> New best model saved (val_error=0.0722)
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_013.pt
+[train INFO]   [epoch 14 step 43200] loss=0.1075 batch_acc=0.969  lr=0.000513
+[train INFO]   [epoch 14 step 44800] loss=0.0612 batch_acc=0.984  lr=0.000513
+[train INFO] Epoch 14/40  train_loss=0.1225  train_error=0.0510  time=60.0s
+[train INFO]   >> val_loss=0.1682  val_error=0.0727
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_014.pt
+[train INFO]   [epoch 15 step 46400] loss=0.0736 batch_acc=0.984  lr=0.000488
+[train INFO]   [epoch 15 step 48000] loss=0.1127 batch_acc=0.969  lr=0.000488
+[train INFO] Epoch 15/40  train_loss=0.1190  train_error=0.0496  time=60.5s
+[train INFO]   >> val_loss=0.1729  val_error=0.0748
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_015.pt
+[train INFO]   [epoch 16 step 49600] loss=0.0817 batch_acc=0.953  lr=0.000463
+[train INFO]   [epoch 16 step 51200] loss=0.1352 batch_acc=0.938  lr=0.000463
+[train INFO] Epoch 16/40  train_loss=0.1179  train_error=0.0491  time=59.7s
+[train INFO]   >> val_loss=0.1577  val_error=0.0671
+[train INFO]   >> New best model saved (val_error=0.0671)
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_016.pt
+[train INFO]   [epoch 17 step 52800] loss=0.1239 batch_acc=0.969  lr=0.000440
+[train INFO]   [epoch 17 step 54400] loss=0.0916 batch_acc=0.969  lr=0.000440
+[train INFO] Epoch 17/40  train_loss=0.1159  train_error=0.0485  time=59.6s
+[train INFO]   >> val_loss=0.1576  val_error=0.0669
+[train INFO]   >> New best model saved (val_error=0.0669)
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_017.pt
+[train INFO]   [epoch 18 step 56000] loss=0.1515 batch_acc=0.922  lr=0.000418
+[train INFO]   [epoch 18 step 57600] loss=0.1347 batch_acc=0.953  lr=0.000418
+[train INFO] Epoch 18/40  train_loss=0.1142  train_error=0.0478  time=59.1s
+[train INFO]   >> val_loss=0.1702  val_error=0.0690
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_018.pt
+[train INFO]   [epoch 19 step 59200] loss=0.1061 batch_acc=0.953  lr=0.000397
+[train INFO]   [epoch 19 step 60800] loss=0.2466 batch_acc=0.891  lr=0.000397
+[train INFO] Epoch 19/40  train_loss=0.1128  train_error=0.0474  time=59.9s
+[train INFO]   >> val_loss=0.1616  val_error=0.0703
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_019.pt
+[train INFO]   [epoch 20 step 62400] loss=0.1519 batch_acc=0.938  lr=0.000377
+[train INFO]   [epoch 20 step 64000] loss=0.1628 batch_acc=0.938  lr=0.000377
+[train INFO] Epoch 20/40  train_loss=0.1104  train_error=0.0466  time=59.8s
+[train INFO]   >> val_loss=0.1500  val_error=0.0651
+[train INFO]   >> New best model saved (val_error=0.0651)
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_020.pt
+[train INFO]   [epoch 21 step 65600] loss=0.0425 batch_acc=1.000  lr=0.000358
+[train INFO]   [epoch 21 step 67200] loss=0.0762 batch_acc=0.984  lr=0.000358
+[train INFO] Epoch 21/40  train_loss=0.1107  train_error=0.0467  time=59.9s
+[train INFO]   >> val_loss=0.1494  val_error=0.0644
+[train INFO]   >> New best model saved (val_error=0.0644)
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_021.pt
+[train INFO]   [epoch 22 step 68800] loss=0.0921 batch_acc=0.969  lr=0.000341
+[train INFO]   [epoch 22 step 70400] loss=0.1350 batch_acc=0.938  lr=0.000341
+[train INFO] Epoch 22/40  train_loss=0.1074  train_error=0.0453  time=60.1s
+[train INFO]   >> val_loss=0.1488  val_error=0.0650
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_022.pt
+[train INFO]   [epoch 23 step 72000] loss=0.1461 batch_acc=0.922  lr=0.000324
+[train INFO]   [epoch 23 step 73600] loss=0.0714 batch_acc=0.984  lr=0.000324
+[train INFO] Epoch 23/40  train_loss=0.1067  train_error=0.0451  time=59.8s
+[train INFO]   >> val_loss=0.1434  val_error=0.0610
+[train INFO]   >> New best model saved (val_error=0.0610)
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_023.pt
+[train INFO]   [epoch 24 step 75200] loss=0.0291 batch_acc=1.000  lr=0.000307
+[train INFO]   [epoch 24 step 76800] loss=0.0937 batch_acc=0.984  lr=0.000307
+[train INFO] Epoch 24/40  train_loss=0.1074  train_error=0.0456  time=60.2s
+[train INFO]   >> val_loss=0.1416  val_error=0.0609
+[train INFO]   >> New best model saved (val_error=0.0609)
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_024.pt
+[train INFO]   [epoch 25 step 78400] loss=0.1238 batch_acc=0.953  lr=0.000292
+[train INFO]   [epoch 25 step 80000] loss=0.1415 batch_acc=0.938  lr=0.000292
+[train INFO] Epoch 25/40  train_loss=0.1044  train_error=0.0442  time=58.8s
+[train INFO]   >> val_loss=0.1398  val_error=0.0601
+[train INFO]   >> New best model saved (val_error=0.0601)
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_025.pt
+[train INFO]   [epoch 26 step 81600] loss=0.1625 batch_acc=0.922  lr=0.000277
+[train INFO]   [epoch 26 step 83200] loss=0.1014 batch_acc=0.953  lr=0.000277
+[train INFO] Epoch 26/40  train_loss=0.1034  train_error=0.0436  time=58.8s
+[train INFO]   >> val_loss=0.1501  val_error=0.0665
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_026.pt
+[train INFO]   [epoch 27 step 84800] loss=0.0894 batch_acc=0.953  lr=0.000264
+[train INFO]   [epoch 27 step 86400] loss=0.0851 batch_acc=0.953  lr=0.000264
+[train INFO] Epoch 27/40  train_loss=0.1017  train_error=0.0431  time=60.4s
+[train INFO]   >> val_loss=0.1382  val_error=0.0565
+[train INFO]   >> New best model saved (val_error=0.0565)
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_027.pt
+[train INFO]   [epoch 28 step 88000] loss=0.0645 batch_acc=0.969  lr=0.000250
+[train INFO]   [epoch 28 step 89600] loss=0.0997 batch_acc=0.969  lr=0.000250
+[train INFO] Epoch 28/40  train_loss=0.0996  train_error=0.0422  time=60.0s
+[train INFO]   >> val_loss=0.1401  val_error=0.0621
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_028.pt
+[train INFO]   [epoch 29 step 91200] loss=0.1158 batch_acc=0.953  lr=0.000238
+[train INFO]   [epoch 29 step 92800] loss=0.0472 batch_acc=1.000  lr=0.000238
+[train INFO] Epoch 29/40  train_loss=0.0999  train_error=0.0424  time=60.5s
+[train INFO]   >> val_loss=0.1336  val_error=0.0580
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_029.pt
+[train INFO]   [epoch 30 step 94400] loss=0.0888 batch_acc=0.984  lr=0.000226
+[train INFO]   [epoch 30 step 96000] loss=0.1432 batch_acc=0.938  lr=0.000226
+[train INFO] Epoch 30/40  train_loss=0.0996  train_error=0.0421  time=59.5s
+[train INFO]   >> val_loss=0.1374  val_error=0.0586
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_030.pt
+[train INFO]   [epoch 31 step 97600] loss=0.1481 batch_acc=0.969  lr=0.000215
+[train INFO]   [epoch 31 step 99200] loss=0.0944 batch_acc=0.953  lr=0.000215
+[train INFO] Epoch 31/40  train_loss=0.0976  train_error=0.0407  time=60.5s
+[train INFO]   >> val_loss=0.1397  val_error=0.0619
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_031.pt
+[train INFO]   [epoch 32 step 100800] loss=0.1561 batch_acc=0.906  lr=0.000204
+[train INFO]   [epoch 32 step 102400] loss=0.1152 batch_acc=0.922  lr=0.000204
+[train INFO] Epoch 32/40  train_loss=0.0969  train_error=0.0410  time=60.8s
+[train INFO]   >> val_loss=0.1310  val_error=0.0568
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_032.pt
+[train INFO]   [epoch 33 step 104000] loss=0.0831 batch_acc=1.000  lr=0.000194
+[train INFO]   [epoch 33 step 105600] loss=0.1212 batch_acc=0.953  lr=0.000194
+[train INFO] Epoch 33/40  train_loss=0.0967  train_error=0.0409  time=60.6s
+[train INFO]   >> val_loss=0.1325  val_error=0.0581
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_033.pt
+[train INFO]   [epoch 34 step 107200] loss=0.0476 batch_acc=1.000  lr=0.000184
+[train INFO]   [epoch 34 step 108800] loss=0.1062 batch_acc=0.953  lr=0.000184
+[train INFO] Epoch 34/40  train_loss=0.0946  train_error=0.0397  time=59.6s
+[train INFO]   >> val_loss=0.1297  val_error=0.0573
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_034.pt
+[train INFO]   [epoch 35 step 110400] loss=0.0853 batch_acc=0.953  lr=0.000175
+[train INFO]   [epoch 35 step 112000] loss=0.0708 batch_acc=1.000  lr=0.000175
+[train INFO] Epoch 35/40  train_loss=0.0930  train_error=0.0391  time=59.8s
+[train INFO]   >> val_loss=0.1361  val_error=0.0540
+[train INFO]   >> New best model saved (val_error=0.0540)
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_035.pt
+[train INFO]   [epoch 36 step 113600] loss=0.0429 batch_acc=0.984  lr=0.000166
+[train INFO]   [epoch 36 step 115200] loss=0.0898 batch_acc=0.984  lr=0.000166
+[train INFO] Epoch 36/40  train_loss=0.0942  train_error=0.0394  time=60.5s
+[train INFO]   >> val_loss=0.1274  val_error=0.0510
+[train INFO]   >> New best model saved (val_error=0.0510)
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_036.pt
+[train INFO]   [epoch 37 step 116800] loss=0.0605 batch_acc=0.969  lr=0.000158
+[train INFO]   [epoch 37 step 118400] loss=0.0774 batch_acc=0.969  lr=0.000158
+[train INFO] Epoch 37/40  train_loss=0.0931  train_error=0.0392  time=59.9s
+[train INFO]   >> val_loss=0.1282  val_error=0.0567
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_037.pt
+[train INFO]   [epoch 38 step 120000] loss=0.0773 batch_acc=0.953  lr=0.000150
+[train INFO]   [epoch 38 step 121600] loss=0.0947 batch_acc=0.953  lr=0.000150
+[train INFO] Epoch 38/40  train_loss=0.0905  train_error=0.0376  time=60.4s
+[train INFO]   >> val_loss=0.1250  val_error=0.0500
+[train INFO]   >> New best model saved (val_error=0.0500)
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_038.pt
+[train INFO]   [epoch 39 step 123200] loss=0.1119 batch_acc=0.938  lr=0.000142
+[train INFO]   [epoch 39 step 124800] loss=0.0983 batch_acc=0.953  lr=0.000142
+[train INFO] Epoch 39/40  train_loss=0.0913  train_error=0.0385  time=59.2s
+[train INFO]   >> val_loss=0.1237  val_error=0.0540
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_039.pt
+[train INFO]   [epoch 40 step 126400] loss=0.1054 batch_acc=0.922  lr=0.000135
+[train INFO]   [epoch 40 step 128000] loss=0.1057 batch_acc=0.953  lr=0.000135
+[train INFO] Epoch 40/40  train_loss=0.0890  train_error=0.0374  time=58.9s
+[train INFO]   >> val_loss=0.1264  val_error=0.0523
+[train INFO]   Checkpoint saved: ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/epoch_040.pt
+[train INFO] ============================================================
+[train INFO] Training complete. Best val_error=0.0500
+[train INFO] Model saved to ./output/04-14_09-08_grasp_dataset_0408_CE_th0.002_a0.5_0.5/
+[train INFO] ============================================================

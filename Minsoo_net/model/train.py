@@ -380,10 +380,11 @@ def train(args):
     if cfg["loss"]=="FL":
         criterion = FocalLoss(task_type="multi-class",num_classes=2,alpha=cfg["alpha"])
     elif cfg['loss']=="CE":
-        num_pos = train_ds.success
-        num_neg = train_ds.total_samples - num_pos
-        weight = torch.tensor([1.0, num_neg / num_pos], dtype=torch.float32).to(device)
-        criterion = nn.CrossEntropyLoss(weight=weight)
+        # num_pos = train_ds.success
+        # num_neg = train_ds.total_samples - num_pos
+        # weight = torch.tensor([1.0, num_neg / num_pos], dtype=torch.float32).to(device)
+        # criterion = nn.CrossEntropyLoss(weight=weight)
+        criterion = nn.CrossEntropyLoss()
     else:
         raise ValueError(f"CE or FL 넣어야 함. error: {cfg['loss']}")
 
