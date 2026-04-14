@@ -21,8 +21,9 @@ def look_at(camera_pos, target_point=None, up_vector=np.array([0.0,0.0,1.0])):
     rot = R.from_matrix(se).as_quat()
     return [rot[3],rot[0],rot[1],rot[2]]
 
+path='/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/FKT38-A50-P25.stl'
 # --- 환경 설정 및 객체 로드 ---
-mesh = trimesh.load('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/bin.stl')
+mesh = trimesh.load(path)
 stable_poses, stable_probs = mesh.compute_stable_poses()
 num_stable = len(stable_poses)
 print(f"\n총 {num_stable}개의 stable pose 발견")
@@ -53,7 +54,7 @@ material.set_metallic(1.0)
 material.set_roughness(0.6)
 
 builder = scene.create_actor_builder()
-builder.add_visual_from_file('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/bin.stl', scale=(0.001,0.001,0.001), material=material)
+builder.add_visual_from_file(path, scale=(0.001,0.001,0.001), material=material)
 bin_obj = builder.build_kinematic(name="bin")
 bin_obj.set_pose(sapien.Pose(p=t, q=r_quat))
 

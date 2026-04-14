@@ -213,7 +213,7 @@ class ParallelJawGrasp:
         Returns
         -------
         :obj:`numpy.ndarray`
-            rotation matrix of self
+            rotation matrix of self (SO(3))
         """
         grasp_axis_y = self.axis
         grasp_axis_z = np.array([grasp_axis_y[1], -grasp_axis_y[0], 0])
@@ -238,8 +238,8 @@ class ParallelJawGrasp:
     def multi_angle_grasps(
         self,
         stable_pose: np.ndarray,
-        angle_offsets_deg: List[float] = np.linspace(-45,45,15),
-        max_approach_angle: float = np.pi / 3,
+        angle_offsets_deg: List[float] = np.linspace(-5,5,3),
+        max_approach_angle: float = np.pi/6,
     ) -> List['ParallelJawGrasp']:
         """
         perpendicular 기준 theta에서 여러 오프셋 각도로 grasp를 복제함.

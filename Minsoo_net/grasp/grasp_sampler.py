@@ -33,6 +33,7 @@ class AntipodalGraspSampler:
             config=yaml.safe_load(f)
 
         # --- config ---
+        self.alpha=0.003  
         self.max_width = config['gripper_max_width']
         self.friction_coef = config['sampling_friction_coef']
         self.num_cone_faces = config['num_cone_faces']
@@ -75,7 +76,8 @@ class AntipodalGraspSampler:
             pruned = []
             for g in new_grasps:
                 min_dist = min(
-                    (np.linalg.norm(eg.center - g.center) for eg in (*grasps, *pruned)),
+                    (np.linalg.norm(eg.center - g.center) + 
+                    self.alpha * (2.0 / np.pi) * np.arccos(np.clip(np.abs(eg.axis.dot(g.axis)), -1, 1)) for eg in (*grasps, *pruned)),
                     default=np.inf,
                 )
                 if min_dist >= self.grasp_dist_thresh:

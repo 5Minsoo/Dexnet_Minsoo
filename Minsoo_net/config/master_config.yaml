@@ -5,9 +5,9 @@ sampling_friction_coef: 0.4
 num_cone_faces: 8
 grasp_samples_per_surface_point: 4
 min_num_grasps: 100
-target_num_grasps: 200
+target_num_grasps: 300
 num_grasp_rots: 8
-max_num_surface_points: 100
+max_num_surface_points: 200
 grasp_dist_thresh: 0.0005
 gripper_max_width: 0.05
 max_sampling_iteration: 1000
@@ -77,8 +77,8 @@ uniqueness_ratio: 50
 # ---------------------------------------------------------
 # 데이터셋 생성 파라미터들
 # ---------------------------------------------------------
-zarr_path : "grasp_dataset_0410.zarr"
-num_grasps : 300
+zarr_path : "grasp_dataset_0414.zarr"
+num_grasps : 500
 quality_threshold : 0.002
 stable_pose_prob_threshold : 0.012
 num_stable_poses : 6 
