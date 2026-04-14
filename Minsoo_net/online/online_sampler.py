@@ -221,7 +221,7 @@ class CrossEntropyRobustGraspingPolicy:
         else:
             self.camera=None
             self.K=None
-        self.sampler=sampler(gripper_width_m=0.05,K=self.K,image_margin=0.2,max_edge=100,max_grasps=1000)
+        self.sampler=sampler(gripper_width_m=0.05,K=self.K,image_margin=0.2,max_edge=100,max_grasps=100)
         
     def cem_best(self, depth_image, elite_percentage=0.2, num_iters=3, gmm_component_frac=0.3, reg_covar=1e-3):
         # 1. 초기 샘플링

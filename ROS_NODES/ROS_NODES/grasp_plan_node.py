@@ -26,7 +26,7 @@ class GraspPlannerNode(Node):
         self.depth=None
         self.image_size=None
         self.samples=None
-        self.policy=CrossEntropyRobustGraspingPolicy(Checkpoint_path,OnlineAntipodalSampler)
+        self.policy=CrossEntropyRobustGraspingPolicy(Checkpoint_path,OnlineAntipodalSampler,use_visualize=use_visualize)
         self.helper=MoveItMoveHelper()
         self.timer=self.create_timer(0.1,self.main_loop)
         self.timer=self.create_timer(0.1,self.tf_pub)
@@ -38,22 +38,22 @@ class GraspPlannerNode(Node):
         self.visualize=use_visualize
 
     def main_loop(self):
-        # self.helper.move_to_joint_values(joint_goal={
-        #     "joint_1": 0.2618,
-        #     "joint_2": -0.0349,
-        #     "joint_3": 1.8850,
-        #     "joint_4": -0.0873,
-        #     "joint_5": 1.0472,
-        #     "joint_6": -1.2043
-        # })
         self.helper.move_to_joint_values(joint_goal={
-            "joint_1": 0.1945,
-            "joint_2": 0.1722,
-            "joint_3": 1.6341,
-            "joint_4": 0.0021,
-            "joint_5": 1.3097,
-            "joint_6": -1.3113
+            "joint_1": 0.2618,
+            "joint_2": -0.0349,
+            "joint_3": 1.8850,
+            "joint_4": -0.0873,
+            "joint_5": 1.0472,
+            "joint_6": -1.2043
         })
+        # self.helper.move_to_joint_values(joint_goal={
+        #     "joint_1": 0.1945,
+        #     "joint_2": 0.1722,
+        #     "joint_3": 1.6341,
+        #     "joint_4": 0.0021,
+        #     "joint_5": 1.3097,
+        #     "joint_6": -1.3113
+        # })
         # self.helper.move_to_joint_values(joint_goal={
         #     "joint_1": 0.1920,
         #     "joint_2": 0.2094,
@@ -65,25 +65,19 @@ class GraspPlannerNode(Node):
         self.helper.gripper_open()
         time.sleep(1.0)
         self.update_frame()
-        self.collect_samples()
-        if len(self.samples)>0:
-            pos,quat,offset_dir=self.plan_grasp(self.get_extrinsic())
-            logging.debug(f' 물체 world (TCP 기준) Position: {pos}')
-            if pos is not None:
-                self.publish_grasp_tf(pos, quat)  # 추가
-                self.pick_and_place(pos,quat,offset_dir,0.15)
+        pos,quat,offset_dir=self.plan_grasp(self.get_extrinsic())
+        logging.debug(f' 물체 world (TCP 기준) Position: {pos}')
+        if pos is not None:
+            self.publish_grasp_tf(pos, quat)  # 추가
+            self.pick_and_place(pos,quat,offset_dir,0.15)
 
                 
     def update_frame(self):
         self.camera.update_frames()
         self.depth = self.camera.get_depth_image()
 
-    def collect_samples(self):
-        samples=self.sampler.sample_grasps(self.depth,use_visualize=self.visualize)
-        self.samples=samples
-
     def plan_grasp(self,extrinsic):
-        self.best_grasp,_=self.policy.cem_best(self.depth)
+        self.best_grasp,_=self.policy.cem_best(self.depth,num_iters=5)
         return self._pixel_to_world_coordinate(self.best_grasp,extrinsic)
 
     def _pixel_to_world_coordinate(self, grasp, extrinsic):
@@ -96,7 +90,6 @@ class GraspPlannerNode(Node):
 
         # ── 물체 월드 좌표 (기존 유지) ──
         world = extrinsic @ cam
-        # world[2] -= 0.06  
         obj_pos = world[:3].copy()
         logging.debug(f'물체의 월드 좌표계 좌표: {obj_pos}')
 
@@ -104,21 +97,22 @@ class GraspPlannerNode(Node):
         t = self.tf_buffer.lookup_transform('base_link', 'link_6', rclpy.time.Time())
         r = t.transform.rotation
         R_grip = Rotation.from_quat([r.x, r.y, r.z, r.w])
-        grip_z = -R_grip.as_matrix()[:, 2]
-        # ── theta → 월드 yaw (기존 로직) ──
-        R_ext = extrinsic[:3, :3]
-        dir_cam = np.array([np.cos(theta), np.sin(theta), 0])
-        dir_world = R_ext @ dir_cam
-        yaw = np.arctan2(dir_world[1], dir_world[0]) + np.pi / 2
+        grip_z = -R_grip.as_matrix()[:3, 2]
+
 
         # ── 그리퍼 z축 기준으로 yaw만 회전 ──
-        grip_yaw = R_grip.as_euler('xyz')[2]
-        delta_yaw = yaw - grip_yaw
-        R_delta = Rotation.from_rotvec(R_grip.as_matrix()[:, 2] * delta_yaw)
-        R_final = R_delta * R_grip
+        t = self.tf_buffer.lookup_transform('link_6', 'camera_link', rclpy.time.Time())
+        r = t.transform.rotation
+        dir_cam = np.array([np.cos(theta), np.sin(theta), 0])
+        R_cam2grip = Rotation.from_quat([r.x, r.y, r.z, r.w]).as_matrix()
+        dir_grip = R_cam2grip @ dir_cam
+        yaw = np.arctan2(dir_grip[1], dir_grip[0]) + np.pi / 2
 
-        quat = R_final.as_quat()
+        yaw_rot = Rotation.from_euler('z', yaw)
+        new_R = R_grip * yaw_rot
+        quat = new_R.as_quat()
         logging.debug(f'물체 최종 월드 좌표: {obj_pos}, quat: {quat}')
+
         return obj_pos, quat,grip_z
         
     def get_extrinsic(self):
@@ -171,7 +165,7 @@ class GraspPlannerNode(Node):
 def main():
     logging.basicConfig(level=logging.DEBUG)
     rclpy.init()
-    node = GraspPlannerNode('/home/minsoo/Dexnet_Minsoo/output/04-11_01-11_grasp_dataset_0410_CE_th0.002_a0.5_0.5/best.pt',use_visualize=True)
+    node = GraspPlannerNode('/home/minsoo/Dexnet_Minsoo/output/04-10_15-49_grasp_dataset_0408_CE_th0.002_a0.5_0.5/best.pt',use_visualize=True)
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
