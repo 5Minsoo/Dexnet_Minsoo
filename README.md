@@ -1,4 +1,3 @@
-—
 # GQ-CNN Based Grasp Planning for Metallic Objects Using Sim-to-Real Depth Synthesis with SAPIEN
 
 Discrete Tilt-based Grasp Planning Using GQ-CNN for CNC Grasping  with Low-Cost Depth Cameras
