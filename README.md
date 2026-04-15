@@ -1,4 +1,5 @@
-# GQ-CNN Based Grasp Planning for Metallic Objects Using Sim-to-Real Depth Synthesis with SAPIEN (Work in Progress)
+—
+# GQ-CNN Based Grasp Planning for Metallic Objects Using Sim-to-Real Depth Synthesis with SAPIEN
 
 Discrete Tilt-based Grasp Planning Using GQ-CNN for CNC Grasping  with Low-Cost Depth Cameras
 
@@ -74,6 +75,9 @@ This also helps in situations where highly reflective or thin objects cannot be 
 
 Experiments are currently in progress. Since the number of object classes is small, per-class success rate weighting is being tested during model training.
 
+<p align="center">
+  <img width="250" src="https://github.com/user-attachments/assets/dcf8e113-353d-4f46-bc0f-4bb8cd3f37c1" />
+</p>
 I expect that this approach can grasp raw materials and pre-machining parts while avoiding obstacles such as bins, without occlusion constraints, while maintaining low-cost depth cameras and lightweight computation.
 
 Quantitative results will be updated after experiments are completed.
