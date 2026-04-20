@@ -7,7 +7,6 @@ class GraspableObject3D:
     def __init__(self, mesh_path, sdf_resolution=64, surface_thresh=0.001):
         self.mesh_path=mesh_path
         self.mesh = trimesh.load(mesh_path)
-        self.mesh.apply_scale(0.001)
         self.surface_thresh = surface_thresh
         self.resolution = sdf_resolution
         self.center_mass=self.mesh.center_mass
@@ -97,5 +96,6 @@ class GraspableObject3D:
         return x1 + t_zc * v
     
     def stable_poses(self):
-        pose,prob=self.mesh.compute_stable_poses()
+        hull=self.mesh.convex_hull
+        pose,prob=hull.compute_stable_poses()
         return pose, prob

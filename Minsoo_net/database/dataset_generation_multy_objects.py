@@ -17,11 +17,9 @@ with open('/home/minsoo/Dexnet_Minsoo/Minsoo_net/config/master_config.yaml') as 
     num_stable_poses=config.get("num_stable_poses",10)
     max_angle=config.get("max_angle_deg",15)
     zarr_path = config.get("zarr_path","grasp_dataset.zarr")
-    cam_offset_min=config.get("cam_offset_min",0.35)
-    cam_offset_max=config.get("cam_offset_max",0.50)
-    cam_offset_step=config.get("cam_offset_step",10)
+    co = config['cam_offset']
+    camera_offsets = np.linspace(co['start'], co['stop'], co['num'])
 
-camera_offsets=np.linspace(cam_offset_min,cam_offset_max,cam_offset_step)
 
 output_size = 32
 crop_size=96
@@ -30,35 +28,34 @@ batch_size = 10
 print(f"다시쓰기 / 이어하기 선택 {zarr_path}")
 mode=input("모드 선택(처음부터: 1번 / 이어하기 2번) 입력 후 Enter ")
 
+mesh_path=Path(__file__).parent.parent.resolve()
+mesh_path=mesh_path/"data"/"sample_objs"
+mesh_files = list(mesh_path.glob("*.obj")) + list(mesh_path.glob("*.stl"))
+print(f'해당 물체 진행: {len(mesh_files)}')
 
 if mode=="1":
     print(f"기존 데이터를 삭제하고 새로 작업을 시작합니다. {zarr_path}")
     store = zarr.open(zarr_path, mode='w')
-elif mode=="2":
+elif mode == "2":
     print(f"기존 데이터에 이어서 작업을 시작합니다. {zarr_path}")
     store = zarr.open(zarr_path, mode='a')
+
+    def is_done(name):
+        """object가 완료 마커를 가지고 있으면 True"""
+        if name not in store:
+            return False
+        return store[name].attrs.get("done", False)
+
+    skipped = [m.stem for m in mesh_files if is_done(m.stem)]
+    mesh_files = [m for m in mesh_files if not is_done(m.stem)]
+    if skipped:
+        print(f"이미 완료된 물체 건너뜀 ({len(skipped)}개): {skipped}")
+    print(f"실제 진행할 물체: {len(mesh_files)}개")
 else:
     sys.exit()
 
-store.attrs["config"] = {
-    "num_grasps": int(num_grasps),
-    "quality_threshold": float(quality_threshold),
-    "stable_pose_prob_threshold": float(prob_threshold),
-    "num_stable_poses": int(num_stable_poses),
-    "max_angle_deg": int(max_angle),
-    "cam_offset_min": float(cam_offset_min),
-    "cam_offset_max": float(cam_offset_max),
-    "cam_offset_step": int(cam_offset_step),
-    "crop_size": crop_size,
-    "output_size": output_size,
-    "batch_size": batch_size,
-}
 
-mesh_path=Path(__file__).parent.parent.resolve()
-mesh_path=mesh_path/"data"/"object"
-mesh_files = list(mesh_path.glob("*.obj")) + list(mesh_path.glob("*.stl"))
-print(f'해당 물체 진행: {mesh_files}')
-
+store.attrs["config"] = config
 
 tmp_imgs, tmp_labels,tmp_z = [], [],[]
 
@@ -192,6 +189,8 @@ for mesh_path in mesh_files:
         flush_to_zarr(img_ds,label_ds,z_ds)
         finish=time.time()
         print(f'이미지 랜더링 종료 Pose{start_idx-1} 걸린시간: {int(finish-start)}초')
+    obj_group.attrs["done"] = True
+    print(f'✓ {object_name} 완료')
 
 
 print(f"Zarr 데이터셋 생성 완료! 경로: {zarr_path}")

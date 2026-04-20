@@ -68,7 +68,7 @@ class GraspPipeline:
                 collision_grasps.append(grasp)
         return collision_grasps,collision_free_grasps
 
-    def evaluate_grasp_quality(self, collision_free_grasps, num_samples=100):
+    def evaluate_grasp_quality(self, collision_free_grasps, num_samples=15):
         """Grasp의 Quality를 확률적으로 평가합니다."""
         quality_grasps = []
         quality=[]
@@ -160,11 +160,11 @@ class GraspPipeline:
 if __name__ == "__main__":
     # 1. 설정 파라미터
     # 실제 환경에 맞춰 경로를 수정하세요.
-    OBJ_FILE_PATH = '/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/PVCTT13.stl'
+    OBJ_FILE_PATH = '/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/3dnet/1a4daa4904bb4a0949684e7f0bb99f9c.obj'
     # OBJ_FILE_PATH='/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/bin.stl'
     
     # --- 테스트 제어 변수 ---
-    START_INDEX = 4      # 0부터 시작하거나, 특정 Pose부터 재개하고 싶을 때 변경
+    START_INDEX = 0      # 0부터 시작하거나, 특정 Pose부터 재개하고 싶을 때 변경
     NUM_TEST_GRASPS = 10 # 한 Pose당 생성할 Grasp 후보 개수
     VISUALIZE = True   # 시각화 여부
     # -----------------------

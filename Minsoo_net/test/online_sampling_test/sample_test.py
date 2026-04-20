@@ -31,7 +31,7 @@ class GraspPlanner:
         self.depth = self.camera.get_depth_image()
 
     def plan_grasp(self):
-        return self.policy.cem_best(self.depth,num_iters=10)
+        return self.policy.cem_best(sewlf.depth,num_iters=10)
 
     def run(self,image=None):
         if image is None and self.K is not None:
@@ -48,7 +48,7 @@ class GraspPlanner:
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
-    planner = GraspPlanner('/home/minsoo/Dexnet_Minsoo/output/04-14_19-05_grasp_dataset_0414_CE_th0.002_a0.5_0.5/best.pt',use_visualize=True,camera=False)
+    planner = GraspPlanner('/home/minsoo/Dexnet_Minsoo/output/04-20_13-08_grasp_dataset_big1_CE_th0.002_a0.5_0.5/best.pt',use_visualize=True,camera=False)
     # planner = GraspPlanner('/home/minsoo/Dexnet_Minsoo/output/Best_03-30/best.pt',use_visualize=True)
     for i in range(1,10):
         grasp, score = planner.run(

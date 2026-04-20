@@ -10,7 +10,7 @@ num_grasp_rots: 8
 max_num_surface_points: 200
 grasp_dist_thresh: 0.0005
 gripper_max_width: 0.05
-max_sampling_iteration: 1000
+max_sampling_iteration: 50
 
 # ---------------------------------------------------------
 # 그리퍼 정보
@@ -77,16 +77,21 @@ uniqueness_ratio: 50
 # ---------------------------------------------------------
 # 데이터셋 생성 파라미터들
 # ---------------------------------------------------------
-zarr_path : "grasp_dataset_0414.zarr"
-num_grasps : 500
+zarr_path : "/home/minsoo/Dexnet_Minsoo/grasp_dataset_big1.zarr"
+num_grasps : 100
 quality_threshold : 0.002
-stable_pose_prob_threshold : 0.012
-num_stable_poses : 6 
-max_angle_deg : 20
-cam_offset_min : 0.30
-cam_offset_max : 0.40
-cam_offset_step : 10
+stable_pose_prob_threshold : 0.0
+num_stable_poses : 15
+max_angle_deg : 15
+cam_offset:
+  start: 0.30
+  stop: 0.40
+  num: 10
 
+angle_offsets_deg:
+  start: -45
+  stop: 45
+  num: 5
 # ---------------------------------------------------------
 # 학습 파라미터
 # ---------------------------------------------------------

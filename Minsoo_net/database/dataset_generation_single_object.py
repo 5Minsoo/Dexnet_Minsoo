@@ -27,7 +27,7 @@ batch_size = 10
 store = zarr.open(zarr_path, mode='w')
 
 mesh_path=Path(__file__).parent.parent.resolve()
-mesh_path=mesh_path/"data"/"object"/"bin.stl"
+mesh_path=mesh_path/"data"/"object"/"3dnet" /"1a4daa4904bb4a0949684e7f0bb99f9c.obj"
 
 
 tmp_imgs, tmp_labels,tmp_z = [], [],[]

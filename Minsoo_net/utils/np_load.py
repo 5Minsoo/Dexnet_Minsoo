@@ -1,19 +1,11 @@
-import cv2
-import numpy as np
+# mark_all_done.py
+import zarr, yaml
 
-image = cv2.imread('/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/saved_data/depth_raw_4.png', cv2.IMREAD_UNCHANGED)
+with open('/home/minsoo/Dexnet_Minsoo/Minsoo_net/config/master_config.yaml') as f:
+    zarr_path = yaml.safe_load(f).get("zarr_path", "grasp_dataset_big1.zarr")
 
-mask = (image == 0).astype(np.uint8)  # 단일 채널 uint8
+store = zarr.open(zarr_path, mode='a')
 
-# 만약 16bit depth면 inpaint용으로 8bit 변환 필요
-if image.dtype == np.uint16:
-    image_8bit = (image / 256).astype(np.uint8)
-else:
-    image_8bit = image
+print(len(store.keys))
 
-result = cv2.inpaint(image_8bit, mask, inpaintRadius=3, flags=cv2.INPAINT_NS)
-
-cv2.imshow('original', image_8bit)
-cv2.imshow('inpainted', result)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+print(f"\n총 {len(list(store.keys()))}개 물체에 done 마커 추가")

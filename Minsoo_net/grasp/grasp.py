@@ -3,6 +3,11 @@ from typing import Optional, Tuple, List, Dict
 from Minsoo_net.grasp.contact import Contact3D
 import yaml
 from copy import deepcopy
+
+with open('/home/minsoo/Dexnet_Minsoo/Minsoo_net/config/master_config.yaml') as f:
+    config=yaml.safe_load(f)
+    ao = config['angle_offsets_deg']
+    angle_offsets_deg = np.linspace(ao['start'], ao['stop'], ao['num'])
 class ParallelJawGrasp:
     """
     평행 조 그리퍼 self 하나를 표현.
@@ -238,7 +243,7 @@ class ParallelJawGrasp:
     def multi_angle_grasps(
         self,
         stable_pose: np.ndarray,
-        angle_offsets_deg: List[float] = np.linspace(-5,5,3),
+        angle_offsets_deg: List[float] = angle_offsets_deg,
         max_approach_angle: float = np.pi/6,
     ) -> List['ParallelJawGrasp']:
         """

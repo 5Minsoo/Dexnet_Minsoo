@@ -46,9 +46,11 @@ class QuasiStaticGraspQualityRV():
         start = time.time()
         quality=[]
         for i in range(size):
-            q = PointGraspMetrics3D.grasp_quality(grasp_sample[i], obj_sample[i],
-                                                params_sample[i])
-            quality.append(q)
+            try:
+                q = PointGraspMetrics3D.grasp_quality(grasp_sample[i], obj_sample[i],params_sample[i])
+                quality.append(q)
+            except (np.linalg.LinAlgError, ValueError):
+                continue
 
         quality_time = time.time()
         # print('Quality comp took %.3f sec' %(quality_time - start))
@@ -61,4 +63,6 @@ class QuasiStaticGraspQualityRV():
             (논문에서 Robust Grasp Quality를 구할 때 주로 사용)
             """
             qualities = self.sample(size)
+            if len(qualities) == 0:
+                return 0.0
             return np.mean(qualities)

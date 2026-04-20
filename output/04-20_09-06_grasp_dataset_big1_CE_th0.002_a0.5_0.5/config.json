@@ -1,0 +1,24 @@
+{
+    "train_batch_size": 64,
+    "val_batch_size": 64,
+    "num_epochs": 25,
+    "train_pct": 0.8,
+    "base_lr": 0.01,
+    "momentum": 0.9,
+    "weight_decay": 0.0005,
+    "decay_rate": 0.95,
+    "decay_step_multiplier": 0.2,
+    "drop_rate": 0.0,
+    "metric_thresh": 0.002,
+    "eval_frequency": 1,
+    "save_frequency": 1,
+    "log_frequency": 10000,
+    "num_random_files": 10000,
+    "seed": 24098,
+    "alpha": [
+        0.5,
+        0.5
+    ],
+    "loss": "CE",
+    "decay_step": 2242
+}

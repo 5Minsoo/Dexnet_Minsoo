@@ -1,0 +1,44 @@
+[project]
+name = "kitech-robotics-project"
+version = "0.1.0"
+description = "Autonomous Manufacturing & Grasping Project"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "cadquery==2.7.0",
+    "cvxopt==1.3.3",
+    "fcl==0.0.15",
+    "matplotlib==3.6.3",
+    "numpy==2.4.4",
+    "opencv-python==4.8.1.78",
+    "pillow==12.2.0",
+    "points==0.4.0",
+    "primitives==0.1.0",
+    "pyhull==2015.2.1",
+    "pypng==0.20220715.0",
+    "pyrealsense2==2.57.7.10387",
+    "pyrender==0.1.45",
+    "pysdf==0.1.9",
+    "python-fcl==0.7.0.10",
+    "pyyaml==6.0.3",          # 중복 제거 (최신 버전 선택)
+    "sapien==3.0.3",
+    "scikit-learn==1.8.0",
+    "scipy==1.17.1",
+    "scikit-image>=0.23.0",   # skimage==0.0 대신 실제 패키지명으로 교체
+    "trimesh==4.11.3",
+    "zarr==3.1.6",
+    # ROS 관련: cv_bridge는 PyPI 버전을 시도하지만, 에러 시 시스템 패키지 사용 권장
+    "cv_bridge==1.13.0.post0", 
+]
+
+[tool.uv]
+# 리눅스이면서, 동시에 내 컴퓨터(x86_64)인 환경만 타겟으로 잡습니다.
+environments = [
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==7.4.4",
+    "ipython==8.12.3",
+]

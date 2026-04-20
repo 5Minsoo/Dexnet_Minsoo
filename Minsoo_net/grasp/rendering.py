@@ -39,7 +39,6 @@ class GraspRenderer:
     def __init__(
         self,
         mesh_path: str,
-        mesh_scale: tuple = (0.001, 0.001, 0.001),
         sensor_model: str = "D435",
         image_size: tuple = (480, 640),      # (H, W) — D435 기본
         spp: int = 32,
@@ -47,7 +46,6 @@ class GraspRenderer:
         config_path='/home/minsoo/Dexnet_Minsoo/Minsoo_net/config/master_config.yaml'
     ):
         self.mesh_path = mesh_path
-        self.mesh_scale = mesh_scale
         sapien.set_log_level("error")
         # ── 전역 렌더 설정 (프로세스당 1회만) ──
         if not GraspRenderer._render_initialized:
@@ -72,7 +70,7 @@ class GraspRenderer:
         # ── 물체 로드 ──
         builder = self.scene.create_actor_builder()
         builder.add_convex_collision_from_file(mesh_path)
-        builder.add_visual_from_file(mesh_path, scale=(0.001,0.001,0.001),material=self.material)
+        builder.add_visual_from_file(mesh_path,material=self.material)
         self.obj = builder.build_kinematic(name="object")
         self.obj.set_pose(Pose(p=[0, 0, 0]))
 

@@ -18,3 +18,5 @@ else
     echo "❌ 데이터셋 생성 중 오류가 발생하여 학습을 중단합니다."
     exit 1
 fi
+
+# find . -name "*.obj" | shuf -n 50 | xargs -I {} cp {} sample_objs/

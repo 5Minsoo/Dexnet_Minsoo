@@ -26,12 +26,11 @@ import scipy.stats as ss
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, Subset
 import zarr
 import yaml
 from model import DexNet2
 from focal_loss import FocalLoss
-from torch.utils.data import WeightedRandomSampler
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -48,15 +47,16 @@ CFG = dict(
     # ── 학습 ──
     train_batch_size=64,
     val_batch_size=64,
-    num_epochs=40,
+    num_epochs=25,
     train_pct=0.8,
 
     # ── optimizer ──
-    base_lr=0.001,
+    base_lr=0.01,
     momentum=0.9,
-    weight_decay=0.0005,        # L2 regularization
+    weight_decay=0.0005,     # L2 regularization 
     decay_rate=0.95,
-    drop_rate=0.0,
+    decay_step_multiplier=1.5,
+    drop_rate=0.2,
 
     # ── 라벨 ──
     metric_thresh=config.get("quality_threshold",0.002) ,       # label > thresh → positive (1)
@@ -64,7 +64,7 @@ CFG = dict(
     # ── 로깅 / 저장 ──
     eval_frequency=1,           # epoch 단위
     save_frequency=1,           # epoch 단위
-    log_frequency=1600,           # step 단위
+    log_frequency=10000,           # step 단위
 
 
     # ── 전처리 ──
@@ -133,18 +133,6 @@ class DexNetZarrDataset(Dataset):
             obj_success_rates[obj_key] = max(rate, 1e-6)
             self.total_samples+=obj_total
             self.success+=obj_success
-
-        raw_weights = {k: 1.0 / v for k, v in obj_success_rates.items()}
-        w_sum = sum(raw_weights.values())
-        n_obj = len(raw_weights)
-        self.obj_weights = {k: v / w_sum * n_obj for k, v in raw_weights.items()}
-
-        # 샘플별 가중치 배열
-        self.sample_weights = np.array([self.obj_weights[p[0]] for p in self.paths], dtype=np.float32)
-
-        for k in sorted(self.obj_weights.keys()):
-            log.info(f"  {k}: 정답비율={obj_success_rates[k]*100:.2f}%, 가중치={self.obj_weights[k]:.4f}")
-
 
         # 5. 최종 결과 출력 (전체 샘플 수에서 성공을 뺌)
         print("-" * 30)
@@ -338,31 +326,29 @@ def train(args):
         max_samples=cfg["num_random_files"])
 
     # ── 데이터셋 ──
-    train_ds = DexNetZarrDataset(
-        args.data, indices=train_indices,
-        im_height=args.im_height, im_width=args.im_width,
-        metric_thresh=cfg["metric_thresh"], cfg=cfg,
-        im_mean=im_mean, im_std=im_std,
-        pose_mean=pose_mean, pose_std=pose_std)
 
-    val_ds = DexNetZarrDataset(
-        args.data, indices=val_indices,
-        im_height=args.im_height, im_width=args.im_width,
-        metric_thresh=cfg["metric_thresh"], cfg=cfg,
-        im_mean=im_mean, im_std=im_std,
-        pose_mean=pose_mean, pose_std=pose_std)
+    full_ds = DexNetZarrDataset(
+    args.data,
+    im_height=args.im_height, im_width=args.im_width,
+    metric_thresh=cfg["metric_thresh"], cfg=cfg,
+    im_mean=im_mean, im_std=im_std,
+    pose_mean=pose_mean, pose_std=pose_std)
 
-    sampler = WeightedRandomSampler(
-        weights=train_ds.sample_weights,
-        num_samples=len(train_ds),
-        replacement=True
-    )
+    train_ds = Subset(full_ds, train_indices)
+    val_ds = Subset(full_ds, val_indices)
 
     train_loader = DataLoader(
-        train_ds, batch_size=cfg["train_batch_size"],
-        sampler=sampler,  # shuffle 대신 sampler 사용
-        num_workers=12, pin_memory=True, drop_last=True)
+        train_ds, batch_size=cfg["train_batch_size"], # shuffle 대신 sampler 사용
+        num_workers=12, pin_memory=True, drop_last=True, shuffle=True)
+    
+    steps_per_epoch = len(train_loader)   # = len(train_ds) // batch_size (drop_last=True)
 
+    cfg["decay_step"] = int(cfg["decay_step_multiplier"] * steps_per_epoch)
+
+    log.info(f"Steps per epoch: {steps_per_epoch}")
+    log.info(f"Decay step: {cfg['decay_step']} "
+            f"(= {cfg['decay_step_multiplier']} × {steps_per_epoch})")
+    
     val_loader = DataLoader(
         val_ds, batch_size=cfg["val_batch_size"],
         shuffle=False, num_workers=12, pin_memory=True)
@@ -455,7 +441,11 @@ def train(args):
                     f"loss={loss.item():.4f} "
                     f"batch_acc={batch_correct/batch_total:.3f}  "
                     f"lr={lr_now:.6f}")
-        scheduler.step()
+                
+            if global_step % cfg["decay_step"] == 0:
+                scheduler.step()
+                log.info(f"  >> LR decayed at step {global_step}: "
+                        f"lr={optimizer.param_groups[0]['lr']:.6f}")
 
         # ── Epoch 요약 ──
         train_loss = epoch_loss / max(epoch_total, 1)

@@ -24,3 +24,7 @@ dexnet/
 .sh
 
 dex-net
+model_zoo
+pytorch_practice
+data
+broken_meshes
