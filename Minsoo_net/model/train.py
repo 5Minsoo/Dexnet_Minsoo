@@ -527,7 +527,7 @@ def main():
     if args.output is None:
         data_name = os.path.splitext(os.path.basename(args.data))[0]
         alpha_str = f"{args.alpha[0]}_{args.alpha[1]}"
-        args.output = f"./output/{now}_{data_name}_{args.loss}_th{args.thresh}_a{alpha_str}"
+        args.output = f"./output/{now}_{data_name}_{args.loss}_th{args.thresh}"
 
     train(args)
 

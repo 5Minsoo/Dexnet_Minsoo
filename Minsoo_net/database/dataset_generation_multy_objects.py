@@ -68,7 +68,6 @@ def flush_to_zarr(img_ds,label_ds,z_ds):
     img_ds.append(np.array(tmp_imgs))
     label_ds.append(np.array(tmp_labels))
     z_ds.append(np.array(tmp_z))
-    
     tmp_imgs, tmp_labels,tmp_z = [], [],[]
 
 def get_camera_positions(grasp, pose, offsets=[0.2, 0.25, 0.3]):
@@ -186,6 +185,7 @@ for mesh_path in mesh_files:
                     tmp_z.append(grasp_depth)
                     if len(tmp_imgs) >= batch_size:
                         flush_to_zarr(img_ds,label_ds,z_ds)
+                        print('flushed')
         flush_to_zarr(img_ds,label_ds,z_ds)
         finish=time.time()
         print(f'이미지 랜더링 종료 Pose{start_idx-1} 걸린시간: {int(finish-start)}초')

@@ -31,7 +31,7 @@ class GraspPlanner:
         self.depth = self.camera.get_depth_image()
 
     def plan_grasp(self):
-        return self.policy.cem_best(sewlf.depth,num_iters=10)
+        return self.policy.cem_best(self.depth,num_iters=10)
 
     def run(self,image=None):
         if image is None and self.K is not None:

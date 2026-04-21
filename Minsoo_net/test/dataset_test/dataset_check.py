@@ -32,6 +32,7 @@ dataset_indices = []
 # 전체 통계 계산용 변수
 global_total_samples = 0
 global_success_samples = 0
+obj_num=0
 
 for obj_key in root.keys():
     obj_group = root[obj_key]
@@ -40,7 +41,7 @@ for obj_key in root.keys():
     obj_labels_list = []
     obj_total_samples = 0
     obj_success_samples = 0
-    
+    obj_num+=1
     for pose_key in obj_group.keys():
         labels = np.array(obj_group[pose_key]["labels"])
         num_samples = len(labels)
@@ -77,6 +78,7 @@ for obj_key in root.keys():
 
 logging.debug('\n' + '=' * 40)
 logging.debug('[전체 통계]')
+logging.debug(f'물체 개수: {obj_num}')
 if all_labels:
     print_stats(np.concatenate(all_labels))
 

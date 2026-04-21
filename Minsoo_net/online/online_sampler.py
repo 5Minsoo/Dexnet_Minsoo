@@ -176,8 +176,7 @@ class OnlineAntipodalSampler:
         axes = axes / np.linalg.norm(axes, axis=1, keepdims=True)
         thetas = np.arctan2(axes[:, 0], axes[:, 1])
             
-
-        depth_mean = cv2.medianBlur(depth_image._data.astype(np.float32), 5)
+        depth_mean = cv2.medianBlur(depth_image._data.astype(np.float32), 3)
         depths = depth_mean[centers[:, 0], centers[:, 1]]  # (N,) 끝
         MIN_VALID_DEPTH = 0.15  # 15cm (카메라 스펙상 최소 거리)
         valid_mask = (depths > MIN_VALID_DEPTH)
@@ -185,7 +184,7 @@ class OnlineAntipodalSampler:
         centers = centers[valid_mask]
         thetas = thetas[valid_mask]
         depths = depths[valid_mask]
-        offsets = np.linspace(0.0,0.1,10)  # 미터 단위 오프셋
+        offsets = np.linspace(-0.05,0.05,10)  # 미터 단위 오프셋
         # 각 grasp마다 offset 개수만큼 복제
         N = len(centers)
         K = len(offsets)
@@ -196,6 +195,12 @@ class OnlineAntipodalSampler:
         ds = np.repeat(offsets, N) + np.tile(depths, K)  # (N*K,)
         logger.debug(f'전체 결과 {us.shape, vs.shape, ts.shape, ds.shape}')
         grasps = np.column_stack([us, vs, ts, ds])  # (N*K, 4)
+
+        max_img_depth = depth_image._data.max()
+        depth_upper_bound_mask = grasps[:, 3] < max_img_depth
+        grasps = grasps[depth_upper_bound_mask]
+        logger.debug(f'후보 depth 값: {ds.min(), ds.max()}')
+        logger.debug(f'Max depth({max_img_depth}) 필터링 후 결과: {grasps.shape}')
 
         # max_grasps 제한
         if len(grasps) > self.max_grasps:
