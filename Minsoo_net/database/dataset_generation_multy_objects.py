@@ -29,8 +29,8 @@ print(f"다시쓰기 / 이어하기 선택 {zarr_path}")
 mode=input("모드 선택(처음부터: 1번 / 이어하기 2번) 입력 후 Enter ")
 
 mesh_path=Path(__file__).parent.parent.resolve()
-mesh_path=mesh_path/"data"/"sample_objs"
-mesh_files = list(mesh_path.glob("*.obj")) + list(mesh_path.glob("*.stl"))
+mesh_path=mesh_path/"data"/"object"
+mesh_files = list(mesh_path.rglob("*.obj")) + list(mesh_path.rglob("*.stl"))
 print(f'해당 물체 진행: {len(mesh_files)}')
 
 if mode=="1":
@@ -185,7 +185,6 @@ for mesh_path in mesh_files:
                     tmp_z.append(grasp_depth)
                     if len(tmp_imgs) >= batch_size:
                         flush_to_zarr(img_ds,label_ds,z_ds)
-                        print('flushed')
         flush_to_zarr(img_ds,label_ds,z_ds)
         finish=time.time()
         print(f'이미지 랜더링 종료 Pose{start_idx-1} 걸린시간: {int(finish-start)}초')

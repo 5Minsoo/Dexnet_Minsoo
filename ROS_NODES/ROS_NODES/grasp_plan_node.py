@@ -11,7 +11,6 @@ from tf2_ros import Buffer, TransformListener, TransformBroadcaster,StaticTransf
 from geometry_msgs.msg import TransformStamped
 
 from Minsoo_net.online.online_camera import RealSenseCamera
-from Minsoo_net.model.model import DexNet2
 from Minsoo_net.online.online_sampler import OnlineAntipodalSampler,CrossEntropyRobustGraspingPolicy
 from Minsoo_net.online.visualize import GraspVisualizer2D
 from moveit_helper_functions import MoveItMoveHelper
