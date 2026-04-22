@@ -58,7 +58,7 @@ class OnlineAntipodalSampler:
         self.image_margin=image_margin
         self.visualize=visualize
 
-    def sample_grasps(self, depth_image,use_visualize=False):
+    def sample_grasps(self, depth_image,use_visualize=False,box_distance=None):
         """
         깊이 이미지를 기반으로 N개의 4-DOF 파지 후보군을 배치로 반환합니다.
         반환 형태: (N, 4) 크기의 NumPy 배열 [u(x), v(y), theta, depth]
@@ -184,7 +184,7 @@ class OnlineAntipodalSampler:
         centers = centers[valid_mask]
         thetas = thetas[valid_mask]
         depths = depths[valid_mask]
-        offsets = np.linspace(-0.05,0.05,10)  # 미터 단위 오프셋
+        offsets = np.linspace(0.01,0.05,10)  # 미터 단위 오프셋
         # 각 grasp마다 offset 개수만큼 복제
         N = len(centers)
         K = len(offsets)
@@ -195,8 +195,10 @@ class OnlineAntipodalSampler:
         ds = np.repeat(offsets, N) + np.tile(depths, K)  # (N*K,)
         logger.debug(f'전체 결과 {us.shape, vs.shape, ts.shape, ds.shape}')
         grasps = np.column_stack([us, vs, ts, ds])  # (N*K, 4)
-
-        max_img_depth = depth_image._data.max()
+        if box_distance is None:
+            max_img_depth = depth_image._data.max()
+        else:
+            max_img_depth=box_distance
         depth_upper_bound_mask = grasps[:, 3] < max_img_depth
         grasps = grasps[depth_upper_bound_mask]
         logger.debug(f'후보 depth 값: {ds.min(), ds.max()}')
@@ -226,11 +228,11 @@ class CrossEntropyRobustGraspingPolicy:
         else:
             self.camera=None
             self.K=None
-        self.sampler=sampler(gripper_width_m=0.05,K=self.K,image_margin=0.2,max_edge=100,max_grasps=100)
+        self.sampler=sampler(gripper_width_m=0.05,K=self.K,image_margin=0.2,max_edge=1000,max_grasps=100)
         
-    def cem_best(self, depth_image, elite_percentage=0.2, num_iters=3, gmm_component_frac=0.3, reg_covar=1e-3):
+    def cem_best(self, depth_image, elite_percentage=0.2, num_iters=3, gmm_component_frac=0.3, reg_covar=1e-3, box_distance=None):
         # 1. 초기 샘플링
-        samples = self.sampler.sample_grasps(depth_image,use_visualize=self.visualize)
+        samples = self.sampler.sample_grasps(depth_image,use_visualize=self.visualize,box_distance=box_distance)
         start_time=time.time()
         for i in range(num_iters):
             # 2. 평가

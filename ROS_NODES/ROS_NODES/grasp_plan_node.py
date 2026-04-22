@@ -37,14 +37,14 @@ class GraspPlannerNode(Node):
         self.visualize=use_visualize
 
     def main_loop(self):
-        self.helper.move_to_joint_values(joint_goal={
-            "joint_1": 0.2618,
-            "joint_2": -0.0349,
-            "joint_3": 1.8850,
-            "joint_4": -0.0873,
-            "joint_5": 1.0472,
-            "joint_6": -1.2043
-        })
+        # self.helper.move_to_joint_values(joint_goal={
+        #     "joint_1": 0.2618,
+        #     "joint_2": -0.0349,
+        #     "joint_3": 1.8850,
+        #     "joint_4": -0.0873,
+        #     "joint_5": 1.0472,
+        #     "joint_6": -1.2043
+        # })
         # self.helper.move_to_joint_values(joint_goal={
         #     "joint_1": 0.1945,
         #     "joint_2": 0.1722,
@@ -53,14 +53,14 @@ class GraspPlannerNode(Node):
         #     "joint_5": 1.3097,
         #     "joint_6": -1.3113
         # })
-        # self.helper.move_to_joint_values(joint_goal={
-        #     "joint_1": 0.1920,
-        #     "joint_2": 0.2094,
-        #     "joint_3": 1.7279,
-        #     "joint_4": 0.0000,
-        #     "joint_5": 1.1868,
-        #     "joint_6": -1.3090
-        # })
+        self.helper.move_to_joint_values(joint_goal={
+            "joint_1": 0.3491,   # 20°
+            "joint_2": -0.1745,  # -10°
+            "joint_3": 2.1118,   # 121°
+            "joint_4": -0.4887,  # -28°
+            "joint_5": 0.5934,   # 34°
+            "joint_6": -0.8203   # -47°
+        })
         self.helper.gripper_open()
         time.sleep(1.0)
         self.update_frame()
@@ -76,7 +76,8 @@ class GraspPlannerNode(Node):
         self.depth = self.camera.get_depth_image()
 
     def plan_grasp(self,extrinsic):
-        self.best_grasp,_=self.policy.cem_best(self.depth,num_iters=5)
+        box_depth=abs((extrinsic[2,3]-0.123)/extrinsic[2,2])
+        self.best_grasp,_=self.policy.cem_best(self.depth,num_iters=5,box_distance=box_depth)
         return self._pixel_to_world_coordinate(self.best_grasp,extrinsic)
 
     def _pixel_to_world_coordinate(self, grasp, extrinsic):
@@ -142,14 +143,14 @@ class GraspPlannerNode(Node):
         input1=input('계속하려면 Enter')
         self.helper.move_cartesian(pos,quat)
 
-        pos-=(offset+0.03)*offset_dir
+        pos-=(offset)*offset_dir
         logging.debug(f' 다음 이동 Position: {pos}')
         input1=input('계속하려면 Enter')
 
         self.helper.move_cartesian(pos,quat)
         time.sleep(0.5)
         self.helper.gripper_close()
-
+        time.sleep(0.5)
         pos+=offset*offset_dir
         self.helper.move_cartesian(pos,quat)
         time.sleep(0.5)
@@ -164,7 +165,7 @@ class GraspPlannerNode(Node):
 def main():
     logging.basicConfig(level=logging.DEBUG)
     rclpy.init()
-    node = GraspPlannerNode('/home/minsoo/Dexnet_Minsoo/output/04-10_15-49_grasp_dataset_0408_CE_th0.002_a0.5_0.5/best.pt',use_visualize=True)
+    node = GraspPlannerNode('/home/minsoo/Dexnet_Minsoo/output/04-22_10-21_grasp_dataset_big1_th0.002/best.pt',use_visualize=True)
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
