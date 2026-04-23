@@ -1,7 +1,38 @@
-home_joints:
-  joint_1: 0.1945
-  joint_2: 0.1722
-  joint_3: 1.6341
-  joint_4: 0.0021
-  joint_5: 1.3097
-  joint_6: -1.3113
+tilts:
+  left:
+    joint_1: 15.0000
+    joint_2: -2.0000
+    joint_3: 108.0000
+    joint_4: -5.0002
+    joint_5: 60.0004
+    joint_6: -68.9872
+
+  vertical:
+    joint_1: 11.1440
+    joint_2: 9.8664
+    joint_3: 93.6280
+    joint_4: 0.1203
+    joint_5: 75.0401
+    joint_6: -75.1318
+
+  right:
+    joint_1: 11.0007
+    joint_2: 11.9978
+    joint_3: 99.0018
+    joint_4: 0.0000
+    joint_5: 67.9928
+    joint_6: -74.9999
+
+cem_num: 5 # CEM 최대 반복 횟수
+hard_offset: 0.03 # Realsense 카메라 자체 오차
+
+max_edge: 1000 # Online sampling 선택 edge points 개수
+image_margin: 0.2 # 이미지 가장자리 처리
+max_grasps: 100 # Online sampling 최종 선택 grasps 개수
+gripper_width: 0.05 # 그리퍼 폭
+gripper_width_min: 0.3 # Online sampling 후보 최소 너비 (그리퍼 너비 n배)
+gripper_width_max: 1.5
+
+box_z: 0.123 # World좌표 기준 box 위치
+
+sampling_offset: [0.01, 0.05, 10]

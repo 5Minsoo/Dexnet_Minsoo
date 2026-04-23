@@ -6,6 +6,8 @@ import numpy as np
 import cv2
 from scipy.spatial import cKDTree
 import torch
+import yaml
+from pathlib import Path
 from sklearn.mixture import GaussianMixture
 
 from Minsoo_net.online.depth_image import DepthImage
@@ -13,6 +15,10 @@ from Minsoo_net.online.visualize import GraspVisualizer2D
 from Minsoo_net.online.online_camera import RealSenseCamera
 from Minsoo_net.model.model import DexNet2
 logger = logging.getLogger(__name__)
+
+yaml_path=Path(__file__).parent.parent.resolve() / "config" / "online_config.yaml"
+with open(yaml_path) as f:
+    config=yaml.safe_load(f)
 
 def force_closure(p1s, p2s, n1s, n2s, mu):
     v = p2s - p1s  # (N, 2)
@@ -44,7 +50,7 @@ def camera_coords(depth_image, pixel_points, K_inv):
 viz=GraspVisualizer2D()
 
 class OnlineAntipodalSampler:
-    def __init__(self, gripper_width_m,grad_threshold=0.015, K=None, max_grasps=10000, image_margin=0.10, max_edge=100,visualize=False):
+    def __init__(self, gripper_width_m,grad_threshold=0.015, K=None, max_grasps=10000, image_margin=0.10, max_edge=100, gripper_min= 0.3, gripper_max= 1.5, offset = [0.01, 0.05, 10], visualize=False):
         self.gripper_width_m = gripper_width_m  
         if K is None:
             self.K=np.array([[392.23574829  , 0.     ,    324.36325073],
@@ -56,6 +62,9 @@ class OnlineAntipodalSampler:
         self.grad_threshold=grad_threshold
         self.max_edge=max_edge
         self.image_margin=image_margin
+        self.gripper_min=gripper_min
+        self.gripper_max=gripper_max
+        self.offset=offset
         self.visualize=visualize
 
     def sample_grasps(self, depth_image,use_visualize=False,box_distance=None):
@@ -95,8 +104,8 @@ class OnlineAntipodalSampler:
         pixels = pixels[valid_depths]
         logger.debug(f'valid depth pixels: {pixels.shape}')
 
-        max_reach_m = self.gripper_width_m *1.5
-        min_reach_m=self.gripper_width_m*0.3
+        max_reach_m = self.gripper_width_m *self.gripper_max
+        min_reach_m=self.gripper_width_m*self.gripper_min
         point_cloud=camera_coords(depth_image._data,pixels,self.K_inv)
         logger.debug(f'Camera coord max {np.max(point_cloud)}')
         logger.debug(f'전체 가능 pair 개수: {int(len(point_cloud)*(len(point_cloud)-1)/2)}')
@@ -184,7 +193,7 @@ class OnlineAntipodalSampler:
         centers = centers[valid_mask]
         thetas = thetas[valid_mask]
         depths = depths[valid_mask]
-        offsets = np.linspace(0.01,0.05,10)  # 미터 단위 오프셋
+        offsets = np.linspace(*self.offset)  # 미터 단위 오프셋
         # 각 grasp마다 offset 개수만큼 복제
         N = len(centers)
         K = len(offsets)
@@ -228,7 +237,7 @@ class CrossEntropyRobustGraspingPolicy:
         else:
             self.camera=None
             self.K=None
-        self.sampler=sampler(gripper_width_m=0.05,K=self.K,image_margin=0.3,max_edge=1000,max_grasps=100)
+        self.sampler=sampler
         
     def cem_best(self, depth_image, elite_percentage=0.2, num_iters=3, gmm_component_frac=0.3, reg_covar=1e-3, box_distance=None):
         # 1. 초기 샘플링

@@ -43,12 +43,13 @@ class GraspPlanner:
         logging.debug(f'self.depth._data shape{self.depth._data.shape}')
         logging.debug(f'입력 이미지 mean: {np.mean(a=self.depth._data)} std: {np.std(a=self.depth._data)}')
         grasp, score = self.plan_grasp()
+        self.viz.visualize_from_grasps(self.image,grasp)
         logging.debug(f'best grasp: {grasp}, score: {score}')
         return grasp, score
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
-    planner = GraspPlanner('/home/minsoo/Dexnet_Minsoo/output/04-21_15-26_grasp_dataset_big1_CE_th0.002/epoch_017.pt',use_visualize=True,camera=False)
+    planner = GraspPlanner('/home/minsoo/Dexnet_Minsoo/output/04-22_10-21_grasp_dataset_big1_th0.002/best.pt',use_visualize=False,camera=False)
     # planner = GraspPlanner('/home/minsoo/Dexnet_Minsoo/output/Best_03-30/best.pt',use_visualize=True)
     for i in range(1,10):
         grasp, score = planner.run(

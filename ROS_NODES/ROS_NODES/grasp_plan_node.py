@@ -2,11 +2,14 @@ import sys,logging
 
 import cv2,time
 import numpy as np
-import torch
+import argparse
+import yaml
+import math
+from pathlib import Path
+from scipy.spatial.transform import Rotation
 
 import rclpy
 from rclpy.node import Node
-from scipy.spatial.transform import Rotation
 from tf2_ros import Buffer, TransformListener, TransformBroadcaster,StaticTransformBroadcaster
 from geometry_msgs.msg import TransformStamped
 
@@ -14,18 +17,23 @@ from Minsoo_net.online.online_camera import RealSenseCamera
 from Minsoo_net.online.online_sampler import OnlineAntipodalSampler,CrossEntropyRobustGraspingPolicy
 from Minsoo_net.online.visualize import GraspVisualizer2D
 from moveit_helper_functions import MoveItMoveHelper
+
 sys.path.append('/home/minsoo/Dexnet_Minsoo/Minsoo_net/online')
 
+
 class GraspPlannerNode(Node):
-    def __init__(self, Checkpoint_path,use_visualize=False):
+    def __init__(self, args, config):
         super().__init__('Grasp_planning_node')
         self.viz=GraspVisualizer2D()
         self.camera=RealSenseCamera()
-        
+        self.args=args
+        self.config=config
         self.depth=None
         self.image_size=None
         self.samples=None
-        self.policy=CrossEntropyRobustGraspingPolicy(Checkpoint_path,OnlineAntipodalSampler,use_visualize=use_visualize)
+        self.visualize=self.args.visualize
+        self.sampler=OnlineAntipodalSampler(gripper_width_m=self.config['gripper_width'], K=self.camera.intrinsic_parameter ,image_margin= self.config['image_margin'],max_edge=self.config['max_edge'],max_grasps=self.config['max_grasps'])
+        self.policy=CrossEntropyRobustGraspingPolicy(self.args.model,self.sampler,use_visualize=self.visualize)
         self.helper=MoveItMoveHelper()
         self.timer=self.create_timer(0.1,self.main_loop)
         self.timer=self.create_timer(0.1,self.tf_pub)
@@ -34,33 +42,9 @@ class GraspPlannerNode(Node):
         self.tf_listener = TransformListener(self.tf_buffer, self)
         self.tf_broadcaster = TransformBroadcaster(self)
 
-        self.visualize=use_visualize
 
     def main_loop(self):
-        # self.helper.move_to_joint_values(joint_goal={
-        #     "joint_1": 0.2618,
-        #     "joint_2": -0.0349,
-        #     "joint_3": 1.8850,
-        #     "joint_4": -0.0873,
-        #     "joint_5": 1.0472,
-        #     "joint_6": -1.2043
-        # })
-        self.helper.move_to_joint_values(joint_goal={
-            "joint_1": 0.1945,
-            "joint_2": 0.1722,
-            "joint_3": 1.6341,
-            "joint_4": 0.0021,
-            "joint_5": 1.3097,
-            "joint_6": -1.3113
-        })
-        # self.helper.move_to_joint_values(joint_goal={
-        #     "joint_1": 0.3491,   # 20°
-        #     "joint_2": -0.1745,  # -10°
-        #     "joint_3": 2.1118,   # 121°
-        #     "joint_4": -0.4887,  # -28°
-        #     "joint_5": 0.5934,   # 34°
-        #     "joint_6": -0.8203   # -47°
-        # })
+        self.helper.move_to_joint_values({k: math.radians(v) for k, v in self.config['tilts'][self.args.tilt].items()})
         self.helper.gripper_open()
         time.sleep(1.0)
         self.update_frame()
@@ -76,12 +60,14 @@ class GraspPlannerNode(Node):
         self.depth = self.camera.get_depth_image()
 
     def plan_grasp(self,extrinsic):
-        box_depth=abs((extrinsic[2,3]-0.123)/extrinsic[2,2])
+        box_depth=abs((extrinsic[2,3]-self.config['box_z'])/extrinsic[2,2])
         self.best_grasp,_=self.policy.cem_best(self.depth,num_iters=10,box_distance=box_depth)
         self.viz.visualize_from_grasps(self.depth._data,self.best_grasp,title="Best grasp")
         return self._pixel_to_world_coordinate(self.best_grasp,extrinsic)
 
     def _pixel_to_world_coordinate(self, grasp, extrinsic):
+        if grasp is None:
+            return None, None, None
         u, v, theta, z = grasp
         K = self.camera.intrinsic_parameter
         cam = np.linalg.inv(K) @ np.array([u, v, 1.0])
@@ -144,7 +130,7 @@ class GraspPlannerNode(Node):
         input1=input('계속하려면 Enter')
         self.helper.move_cartesian(pos,quat)
 
-        pos-=(offset)*offset_dir
+        pos-=(offset+self.config["hard_offset"])*offset_dir
         logging.debug(f' 다음 이동 Position: {pos}')
         input1=input('계속하려면 Enter')
 
@@ -163,10 +149,21 @@ class GraspPlannerNode(Node):
         pos+=offset*offset_dir
         self.helper.move_cartesian(pos,quat)    
                 
-def main():
+def main():    
+    yaml_path=Path(__file__).parent.parent.resolve() / "config" / "online_config.yaml"
+    with open(yaml_path) as f:
+        config=yaml.safe_load(f)
+
+    parser = argparse.ArgumentParser(description="예제 스크립트")
+
+    parser.add_argument("--tilt", "-t", default="vertical", help="Tilt 방향")
+    parser.add_argument("--visualize", "-v", default=True, help="CEM 과정 시각화 여부")
+    parser.add_argument("--model", "-m", help="모델 pt 경로")
+    args = parser.parse_args()
+
     logging.basicConfig(level=logging.DEBUG)
     rclpy.init()
-    node = GraspPlannerNode('/home/minsoo/Dexnet_Minsoo/output/04-22_10-21_grasp_dataset_big1_th0.002/best.pt',use_visualize=False)
+    node = GraspPlannerNode(args,config)
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
