@@ -60,8 +60,8 @@ class GraspPlannerNode(Node):
         self.depth = self.camera.get_depth_image()
 
     def plan_grasp(self,extrinsic):
-        box_depth=abs((extrinsic[2,3]-self.config['box_z'])/extrinsic[2,2])
-        self.best_grasp,_=self.policy.cem_best(self.depth,num_iters=10,box_distance=box_depth)
+        filter=self._make_grasp_filter()
+        self.best_grasp,_=self.policy.cem_best(self.depth,num_iters=10,filter=filter)
         if self.best_grasp is None:
             return None, None, None
         self.viz.visualize_from_grasps(self.depth._data,self.best_grasp,title="Best grasp")
@@ -126,6 +126,61 @@ class GraspPlannerNode(Node):
     def tf_pub(self):
         self.tf_broadcaster.sendTransform(self.last_tf)
 
+    def _make_grasp_filter(self):
+        """
+        각 grasp을 실제로 실행(approach 축으로 z만큼 내려감)했을 때,
+        더 낮은 finger tip이 박스 윗면(box_z)을 뚫지 않는 grasp만 통과.
+        """
+        t = self.tf_buffer.lookup_transform('base_link', 'link_6', rclpy.time.Time())
+        p, r = t.transform.translation, t.transform.rotation
+        R_grip = Rotation.from_quat([r.x, r.y, r.z, r.w])
+        grip_origin = np.array([p.x, p.y, p.z])
+
+        t_cg = self.tf_buffer.lookup_transform('link_6', 'camera_link', rclpy.time.Time())
+        r_cg = t_cg.transform.rotation
+        R_cam2grip = Rotation.from_quat([r_cg.x, r_cg.y, r_cg.z, r_cg.w])
+
+        half_w = self.config['gripper_width'] / 2
+        L = self.config['finger_length']
+        tip_L0 = np.array([-half_w, 0, L])
+        tip_R0 = np.array([ half_w, 0, L])
+
+        box_z = self.config['box_z']
+        max_penetration = self.config.get('max_penetration', 0.005)
+
+        # 그리퍼 approach 방향 (월드 좌표계, 단위벡터)
+        approach_dir = -R_grip.as_matrix()[:, 2]
+
+        def _filter(samples):
+            if len(samples) == 0:
+                return samples
+
+            theta_cam = samples[:, 2]
+            z_target = samples[:, 3] - 0.118               # 각 grasp이 내려가는 거리
+            N = len(theta_cam)
+
+            # 카메라 yaw → 그리퍼 yaw
+            dir_cam = np.stack([np.cos(theta_cam), np.sin(theta_cam), np.zeros(N)], axis=1)
+            dir_grip = R_cam2grip.apply(dir_cam)
+            yaw = np.arctan2(dir_grip[:, 1], dir_grip[:, 0]) + np.pi/2
+
+            # Yaw 적용 후 finger tip의 월드 좌표 (현재 그리퍼 위치 기준)
+            R_yaw = Rotation.from_euler('z', yaw)
+            tip_L_world = R_grip.apply(R_yaw.apply(tip_L0)) + grip_origin
+            tip_R_world = R_grip.apply(R_yaw.apply(tip_R0)) + grip_origin
+
+            # 그리퍼가 approach 방향으로 z_target만큼 내려간 뒤의 finger tip 위치
+            descent = z_target[:, None] * approach_dir   # (N, 3)
+            tip_L_final = tip_L_world + descent
+            tip_R_final = tip_R_world + descent
+
+            # 더 낮은 finger가 박스 윗면 위에 있는지
+            lowest_z = np.minimum(tip_L_final[:, 2], tip_R_final[:, 2])
+            valid = lowest_z >= (box_z - max_penetration)
+            return samples[valid]
+
+        return _filter
+        
     def pick_and_place(self,pos,quat,offset_dir,offset):
         pos+=offset*offset_dir
         logging.debug(f' 다음 이동 Position: {pos}')

@@ -31,6 +31,7 @@ max_edge: 1000 # Online sampling 선택 edge points 개수
 image_margin: 0.2 # 이미지 가장자리 처리
 max_grasps: 100 # Online sampling 최종 선택 grasps 개수
 gripper_width: 0.05 # 그리퍼 폭
+finger_length: 0.158
 gripper_width_min: 0.0   # Online sampling 후보 최소 너비 (그리퍼 너비 n배)
 gripper_width_max: 1.5
 
