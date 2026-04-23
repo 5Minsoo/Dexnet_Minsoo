@@ -45,22 +45,22 @@ class GraspPlannerNode(Node):
         #     "joint_5": 1.0472,
         #     "joint_6": -1.2043
         # })
-        # self.helper.move_to_joint_values(joint_goal={
-        #     "joint_1": 0.1945,
-        #     "joint_2": 0.1722,
-        #     "joint_3": 1.6341,
-        #     "joint_4": 0.0021,
-        #     "joint_5": 1.3097,
-        #     "joint_6": -1.3113
-        # })
         self.helper.move_to_joint_values(joint_goal={
-            "joint_1": 0.3491,   # 20°
-            "joint_2": -0.1745,  # -10°
-            "joint_3": 2.1118,   # 121°
-            "joint_4": -0.4887,  # -28°
-            "joint_5": 0.5934,   # 34°
-            "joint_6": -0.8203   # -47°
+            "joint_1": 0.1945,
+            "joint_2": 0.1722,
+            "joint_3": 1.6341,
+            "joint_4": 0.0021,
+            "joint_5": 1.3097,
+            "joint_6": -1.3113
         })
+        # self.helper.move_to_joint_values(joint_goal={
+        #     "joint_1": 0.3491,   # 20°
+        #     "joint_2": -0.1745,  # -10°
+        #     "joint_3": 2.1118,   # 121°
+        #     "joint_4": -0.4887,  # -28°
+        #     "joint_5": 0.5934,   # 34°
+        #     "joint_6": -0.8203   # -47°
+        # })
         self.helper.gripper_open()
         time.sleep(1.0)
         self.update_frame()
@@ -77,7 +77,8 @@ class GraspPlannerNode(Node):
 
     def plan_grasp(self,extrinsic):
         box_depth=abs((extrinsic[2,3]-0.123)/extrinsic[2,2])
-        self.best_grasp,_=self.policy.cem_best(self.depth,num_iters=5,box_distance=box_depth)
+        self.best_grasp,_=self.policy.cem_best(self.depth,num_iters=10,box_distance=box_depth)
+        self.viz.visualize_from_grasps(self.depth._data,self.best_grasp,title="Best grasp")
         return self._pixel_to_world_coordinate(self.best_grasp,extrinsic)
 
     def _pixel_to_world_coordinate(self, grasp, extrinsic):
@@ -165,7 +166,7 @@ class GraspPlannerNode(Node):
 def main():
     logging.basicConfig(level=logging.DEBUG)
     rclpy.init()
-    node = GraspPlannerNode('/home/minsoo/Dexnet_Minsoo/output/04-22_10-21_grasp_dataset_big1_th0.002/best.pt',use_visualize=True)
+    node = GraspPlannerNode('/home/minsoo/Dexnet_Minsoo/output/04-22_10-21_grasp_dataset_big1_th0.002/best.pt',use_visualize=False)
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:

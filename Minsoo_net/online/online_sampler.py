@@ -228,7 +228,7 @@ class CrossEntropyRobustGraspingPolicy:
         else:
             self.camera=None
             self.K=None
-        self.sampler=sampler(gripper_width_m=0.05,K=self.K,image_margin=0.2,max_edge=1000,max_grasps=100)
+        self.sampler=sampler(gripper_width_m=0.05,K=self.K,image_margin=0.3,max_edge=1000,max_grasps=100)
         
     def cem_best(self, depth_image, elite_percentage=0.2, num_iters=3, gmm_component_frac=0.3, reg_covar=1e-3, box_distance=None):
         # 1. 초기 샘플링
@@ -259,7 +259,9 @@ class CrossEntropyRobustGraspingPolicy:
             std = np.std(elite_samples, axis=0)
             std[std == 0] = 1e-6
             elite_norm = (elite_samples - mean) / std
-
+            
+            if std[0] < 3.0 and std[1] < 5.0 and std[2] < 0.3 and std[3] < 0.002:
+                break
             # 5. GMM 피팅 + 리샘플링
             n_components = max(int(gmm_component_frac * num_elite), 1)
             gmm = GaussianMixture(n_components=n_components, reg_covar=reg_covar)
