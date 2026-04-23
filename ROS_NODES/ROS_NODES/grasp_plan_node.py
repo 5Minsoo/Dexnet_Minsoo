@@ -33,7 +33,7 @@ class GraspPlannerNode(Node):
         self.samples=None
         self.visualize=self.args.visualize
         self.sampler=OnlineAntipodalSampler(gripper_width_m=self.config['gripper_width'], K=self.camera.intrinsic_parameter ,image_margin= self.config['image_margin'],max_edge=self.config['max_edge'],max_grasps=self.config['max_grasps'])
-        self.policy=CrossEntropyRobustGraspingPolicy(self.args.model,self.sampler,use_visualize=self.visualize)
+        self.policy=CrossEntropyRobustGraspingPolicy(self.config['model_path'],self.sampler,use_visualize=self.visualize)
         self.helper=MoveItMoveHelper()
         self.timer=self.create_timer(0.1,self.main_loop)
         self.timer=self.create_timer(0.1,self.tf_pub)
@@ -62,6 +62,8 @@ class GraspPlannerNode(Node):
     def plan_grasp(self,extrinsic):
         box_depth=abs((extrinsic[2,3]-self.config['box_z'])/extrinsic[2,2])
         self.best_grasp,_=self.policy.cem_best(self.depth,num_iters=10,box_distance=box_depth)
+        if self.best_grasp is None:
+            return None, None, None
         self.viz.visualize_from_grasps(self.depth._data,self.best_grasp,title="Best grasp")
         return self._pixel_to_world_coordinate(self.best_grasp,extrinsic)
 
@@ -150,15 +152,14 @@ class GraspPlannerNode(Node):
         self.helper.move_cartesian(pos,quat)    
                 
 def main():    
-    yaml_path=Path(__file__).parent.parent.resolve() / "config" / "online_config.yaml"
+    yaml_path=Path(__file__).parent.parent.parent.resolve() / "Minsoo_net" / "config" / "online_config.yaml"
     with open(yaml_path) as f:
         config=yaml.safe_load(f)
 
     parser = argparse.ArgumentParser(description="예제 스크립트")
 
     parser.add_argument("--tilt", "-t", default="vertical", help="Tilt 방향")
-    parser.add_argument("--visualize", "-v", default=True, help="CEM 과정 시각화 여부")
-    parser.add_argument("--model", "-m", help="모델 pt 경로")
+    parser.add_argument("--visualize", "-v", action='store_true', help="CEM 과정 시각화 스위치")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG)

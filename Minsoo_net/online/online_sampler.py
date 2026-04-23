@@ -242,6 +242,8 @@ class CrossEntropyRobustGraspingPolicy:
     def cem_best(self, depth_image, elite_percentage=0.2, num_iters=3, gmm_component_frac=0.3, reg_covar=1e-3, box_distance=None):
         # 1. 초기 샘플링
         samples = self.sampler.sample_grasps(depth_image,use_visualize=self.visualize,box_distance=box_distance)
+        if len(samples) ==0:
+            return None,None
         start_time=time.time()
         for i in range(num_iters):
             # 2. 평가
