@@ -1,11 +1,21 @@
-from Minsoo_net.grasp.rendering import GraspRenderer
-from Minsoo_net.grasp import GraspPipeline
-import numpy as np
-import zarr, sys
-import cv2
+import sys
 from pathlib import Path
 import time
+import argparse
+
+import numpy as np
+import zarr
+import cv2
 import yaml
+
+from Minsoo_net.grasp.rendering import GraspRenderer
+from Minsoo_net.grasp import GraspPipeline
+
+parser = argparse.ArgumentParser(description="데이터셋 생성")
+parser.add_argument("--folder_num", "-f", default="1", help="폴더 번호")
+parser.add_argument("--mode", "-m", default="continue", help="restart or continue")
+args = parser.parse_args()
+
 # --- 설정 ---
 use_visual=False
 
@@ -23,20 +33,19 @@ with open('/home/minsoo/Dexnet_Minsoo/Minsoo_net/config/master_config.yaml') as 
 
 output_size = 32
 crop_size=96
-batch_size = 10 
-
-print(f"다시쓰기 / 이어하기 선택 {zarr_path}")
-mode=input("모드 선택(처음부터: 1번 / 이어하기 2번) 입력 후 Enter ")
+batch_size = 2048
+batch_flush=512
 
 mesh_path=Path(__file__).parent.parent.resolve()
-mesh_path=mesh_path/"data"/"object"
+mesh_path=mesh_path/"data"/"object" / "Frankapanda" / f"{args.folder_num}"
 mesh_files = list(mesh_path.rglob("*.obj")) + list(mesh_path.rglob("*.stl"))
+print(f'현재 path: {mesh_path}')
 print(f'해당 물체 진행: {len(mesh_files)}')
 
-if mode=="1":
+if args.mode=="restart":
     print(f"기존 데이터를 삭제하고 새로 작업을 시작합니다. {zarr_path}")
     store = zarr.open(zarr_path, mode='w')
-elif mode == "2":
+elif args.mode == "continue":
     print(f"기존 데이터에 이어서 작업을 시작합니다. {zarr_path}")
     store = zarr.open(zarr_path, mode='a')
 
@@ -153,6 +162,9 @@ for mesh_path in mesh_files:
                         crop_size=crop_size, output_size=output_size
                     )
                     if use_visual:
+                        renderer.scene.step()
+                        renderer.scene.update_render()
+                        renderer.sensor.take_picture()
                         viewer.render()
                         depth_norm = cv2.normalize(depth, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
                         depth_color = cv2.applyColorMap(depth_norm, cv2.COLORMAP_JET)
@@ -178,12 +190,11 @@ for mesh_path in mesh_files:
                         cv2.imshow('Depth vs Cropped', combined_img)
                         viewer.render()
                         # 디버깅 시 하나씩 확인하려면 waitKey(0), 자동으로 휙휙 넘어가게 하려면 waitKey(1)
-                        cv2.waitKey(0)
-                    
+                        cv2.waitKey(1)
                     tmp_imgs.append(cropped)
                     tmp_labels.append(label)
                     tmp_z.append(grasp_depth)
-                    if len(tmp_imgs) >= batch_size:
+                    if len(tmp_imgs) >= batch_flush:
                         flush_to_zarr(img_ds,label_ds,z_ds)
         flush_to_zarr(img_ds,label_ds,z_ds)
         finish=time.time()

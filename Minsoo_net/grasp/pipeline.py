@@ -53,14 +53,10 @@ class GraspPipeline:
         collision_free_grasps = []
         collision_grasps = []        
         for grasp in aligned_grasps:
-            # _, approach_angle, _ = grasp.grasp_angles_from_stp_z(pose)
+            _, approach_angle, _ = grasp.grasp_angles_from_stp_z(pose)
             
-            # if approach_angle > self.max_approach_angle:
-            #     continue
-            
-            #######################collide along approach로 변경 가능####################
-            # if not self.checker.grasp_in_collision(grasp.T_grasp_obj, key=obj_key):
-            #     collision_free_grasps.append(grasp)
+            if approach_angle > self.max_approach_angle:
+                continue
 
             if not self.checker.collides_along_approach(grasp, key=obj_key):
                 collision_free_grasps.append(grasp)
@@ -95,6 +91,7 @@ class GraspPipeline:
         returns stable_poses,initial_grasps,collision_free,quality_grasps,qualities
         """
         yielded_count = 0
+        self.checker.set_table() 
         for idx, (pose, prob) in enumerate(zip(self.stable_poses[:self.num_poses], self.probs[:self.num_poses])):
             if prob < self.prob_threshold:
                 continue
@@ -105,18 +102,10 @@ class GraspPipeline:
                 continue
             print(f"\n>>> [RUN] 원본 stable_poses[{idx}] -> 현재 계산 중 (yielded_count: {yielded_count})")
             obj_key = f'bin_{idx}'
-            self.checker.set_table() 
             self.checker.set_object(obj_key, self.graspable_obj.mesh, T_world_obj=pose)
-            valid_grasps = []
             # 테이블에 맞춰 정렬
             perpendicular_grasps = [grasp.perpendicular_table(pose) for grasp in self.initial_grasps]
-            for grasp in perpendicular_grasps:
-                _, approach_angle, _ = grasp.grasp_angles_from_stp_z(pose)
-                
-                if approach_angle < self.max_approach_angle:
-                    valid_grasps.append(grasp)
-
-            aligned_grasps = [g for grasp in valid_grasps for g in grasp.multi_angle_grasps(pose)]
+            aligned_grasps = [g for grasp in perpendicular_grasps for g in grasp.multi_angle_grasps(pose)]
             # 1. 충돌 검사
             collision_grasps, collision_free_grasps = self.filter_collision_free_grasps(aligned_grasps, pose, obj_key)
             
@@ -149,7 +138,7 @@ class GraspPipeline:
             print(f'quality grasp 개수: {len(quality_grasps)}')
             
             if use_visual:
-                # visualize_grasps(self.graspable_obj, collision_grasps, pose=pose, gripper=self.gripper,title="Collision Grasps")
+                visualize_grasps(self.graspable_obj, collision_grasps, pose=pose, gripper=self.gripper,title="Collision Grasps")
                 visualize_grasps(self.graspable_obj, collision_free_grasps, pose=pose, gripper=self.gripper,title="Collision free Grasps")
                 visualize_grasps(self.graspable_obj, quality_grasps, pose=pose, gripper=self.gripper,title="Quality Grasps")
             
@@ -160,7 +149,7 @@ class GraspPipeline:
 if __name__ == "__main__":
     # 1. 설정 파라미터
     # 실제 환경에 맞춰 경로를 수정하세요.
-    OBJ_FILE_PATH = '/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/3dnet/1a4daa4904bb4a0949684e7f0bb99f9c.obj'
+    OBJ_FILE_PATH = '/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/bin.stl'
     # OBJ_FILE_PATH='/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/bin.stl'
     
     # --- 테스트 제어 변수 ---
@@ -180,7 +169,8 @@ if __name__ == "__main__":
             obj_file=OBJ_FILE_PATH,
             num_grasps=NUM_TEST_GRASPS,
             prob_threshold=0.012,
-            quality_threshold=0.002
+            quality_threshold=0.002,
+            max_approach_angle_deg=30
         )
         
         print(f"✅ 객체 로드 및 Stable Poses 계산 완료. (총 {len(pipeline.stable_poses)}개 발견)")

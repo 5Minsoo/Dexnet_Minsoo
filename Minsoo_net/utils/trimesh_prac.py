@@ -3,7 +3,7 @@ import trimesh
 import pyrender
 import sklearn
 # ── 1. 메시 로드 ──
-mesh = trimesh.load('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/sample_objs/ed2aaca045fb1714cd4229f38ad0d015.obj')
+mesh = trimesh.load('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/Frankapanda/00002947_6a39e60d71ae4d19ae0e66ac_step_000_0000.obj')
 def filter_duplicate_stable_poses(transforms, probs, mesh, angle_thresh=0.15):
     # 물체 주축 (PCA)
     pca = sklearn.decomposition.PCA(n_components=3)

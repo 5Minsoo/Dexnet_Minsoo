@@ -244,7 +244,6 @@ class ParallelJawGrasp:
         self,
         stable_pose: np.ndarray,
         angle_offsets_deg: List[float] = angle_offsets_deg,
-        max_approach_angle: float = np.pi/6,
     ) -> List['ParallelJawGrasp']:
         """
         perpendicular 기준 theta에서 여러 오프셋 각도로 grasp를 복제함.
@@ -276,11 +275,7 @@ class ParallelJawGrasp:
             new_grasp.approach_angle = theta
             new_grasp.T_grasp_obj[:3, :3] = gripper_axis @ R
             new_grasp.T_grasp_obj[:3, 3] = self.center
-
-            # 유효성 검사: approach axis와 table normal 사이 각도
-            _, approach_angle, _ = new_grasp.grasp_angles_from_stp_z(stable_pose)
-            if approach_angle <= max_approach_angle:
-                results.append(new_grasp)
+            results.append(new_grasp)
         return results
     
     def grasp_key(self, decimals=6):
