@@ -7,6 +7,7 @@ import numpy as np
 import zarr
 import cv2
 import yaml
+import trimesh
 
 from Minsoo_net.grasp.rendering import GraspRenderer
 from Minsoo_net.grasp import GraspPipeline
@@ -91,9 +92,13 @@ def get_camera_positions(grasp, pose, offsets=[0.2, 0.25, 0.3]):
 for mesh_path in mesh_files:
     object_name=mesh_path.stem
     mesh_path=str(mesh_path)
+    m = trimesh.load(mesh_path, force='mesh')
+    if min(m.bounding_box_oriented.extents) < 0.005:
+        print('너무 얇아서 제외')
+        continue
     print(f'{object_name} 로드중')
 
-    grasp_pipeline=GraspPipeline(mesh_path,quality_threshold=quality_threshold,num_grasps=num_grasps,max_approach_angle_deg=max_angle,num_poses=num_stable_poses)
+    grasp_pipeline=GraspPipeline(mesh_path,quality_threshold=quality_threshold,num_grasps=num_grasps,max_approach_angle_deg=max_angle)
     renderer=GraspRenderer(mesh_path)
     if use_visual:
         viewer=renderer.scene.create_viewer()
@@ -190,7 +195,7 @@ for mesh_path in mesh_files:
                         cv2.imshow('Depth vs Cropped', combined_img)
                         viewer.render()
                         # 디버깅 시 하나씩 확인하려면 waitKey(0), 자동으로 휙휙 넘어가게 하려면 waitKey(1)
-                        cv2.waitKey(1)
+                        cv2.waitKey(0)
                     tmp_imgs.append(cropped)
                     tmp_labels.append(label)
                     tmp_z.append(grasp_depth)

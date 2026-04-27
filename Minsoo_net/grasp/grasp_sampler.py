@@ -43,6 +43,7 @@ class AntipodalGraspSampler:
         self.max_num_surface_points = config.get('max_num_surface_points', 100)
         self.grasp_dist_thresh = config.get('grasp_dist_thresh', 0)
         self.max_iter=config.get('max_sampling_iteration',100)
+        self.stop_iter=config.get('stop_iteration_num',8)
 
     # ------------------------------------------------------------------
     # public API
@@ -58,8 +59,9 @@ class AntipodalGraspSampler:
         """
         목표 개수만큼 antipodal grasp를 생성한다.
 
-        내부적으로 sample_grasps → 거리 중복 제거 → (옵션) 회전 확장
+        내부적으로 sample_grasps → 거리 중복 제거
         을 목표 개수에 도달하거나 max_iter까지 반복한다.
+        max_stagnat 횟수까지 grasp 개수 증가가 없으면 break
         """
         max_iter=self.max_iter
         if target_num_grasps is None:
@@ -68,7 +70,8 @@ class AntipodalGraspSampler:
         grasps = []
         remaining = target_num_grasps
         k = 1
-
+        prev_count=0
+        stagnant=0
         while remaining > 0 and k <= max_iter:
             new_grasps = self.sample_grasps(graspable, grasp_gen_mult * remaining)
 
@@ -96,7 +99,14 @@ class AntipodalGraspSampler:
 
             grasps += pruned
             print(f'{len(grasps)}/{target_num_grasps} grasps after iter {k}')
-
+            if len(grasps) == prev_count:
+                stagnant +=1                                               
+                if stagnant >= self.stop_iter:
+                    print(f'[stop] {self.stop_iter}회 연속 grasp 증가 없음 → 중단')                                         
+                    break                                                                                                                                                                                                                                 
+            else:
+                stagnant = 0                                                              
+            prev_count = len(grasps)
             grasp_gen_mult *= 2
             remaining = target_num_grasps - len(grasps)
             k += 1

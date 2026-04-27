@@ -10,8 +10,8 @@ num_grasp_rots: 8
 max_num_surface_points: 200
 grasp_dist_thresh: 0.0005
 gripper_max_width: 0.05
-max_sampling_iteration: 50
-
+max_sampling_iteration: 25
+stop_iteration_num: 3
 # ---------------------------------------------------------
 # 그리퍼 정보
 # ---------------------------------------------------------
@@ -80,12 +80,12 @@ uniqueness_ratio: 50
 zarr_path : "/home/minsoo/Dexnet_Minsoo/grasp_dataset_ABC.zarr"
 num_grasps : 100
 quality_threshold : 0.002
-stable_pose_prob_threshold : 0.0
-num_stable_poses : 15
+stable_pose_prob_threshold : 0.05 # 현재는 안씀
+num_stable_poses : 1000 # 현재는 안씀
 max_angle_deg : 30
 cam_offset:
-  start: 0.20
-  stop: 0.35
+  start: 0.45
+  stop: 0.60
   num: 10
 
 angle_offsets_deg:

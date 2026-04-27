@@ -21,7 +21,7 @@ def look_at(camera_pos, target_point=None, up_vector=np.array([0.0,0.0,1.0])):
     rot = R.from_matrix(se).as_quat()
     return [rot[3],rot[0],rot[1],rot[2]]
 
-path='/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/bin.stl'
+path='/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/Frankapanda/3/00466638_0454db3e9640bf872a6ebe77_step_000_0000.obj'
 # --- 환경 설정 및 객체 로드 ---
 mesh = trimesh.load(path)
 stable_poses, stable_probs = mesh.compute_stable_poses()

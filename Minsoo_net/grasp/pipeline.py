@@ -23,8 +23,7 @@ class GraspPipeline:
                  num_grasps=3, 
                  prob_threshold=0.012, 
                  quality_threshold=0.03,
-                 max_approach_angle_deg=15,
-                 num_poses=10):
+                 max_approach_angle_deg=15):
         
         # 1. 파일 경로 설정
         self.config_path = p / "config" / "master_config.yaml"
@@ -47,7 +46,6 @@ class GraspPipeline:
         
         # 안정적인 Pose 계산
         self.stable_poses, self.probs = self.graspable_obj.stable_poses()
-        self.num_poses=num_poses
     def filter_collision_free_grasps(self, aligned_grasps, pose, obj_key):
         """접근 각도 필터링 및 충돌 검사를 수행합니다."""
         collision_free_grasps = []
@@ -92,8 +90,8 @@ class GraspPipeline:
         """
         yielded_count = 0
         self.checker.set_table() 
-        for idx, (pose, prob) in enumerate(zip(self.stable_poses[:self.num_poses], self.probs[:self.num_poses])):
-            if prob < self.prob_threshold:
+        for idx, (pose, prob) in enumerate(zip(self.stable_poses, self.probs)):
+            if prob < max(self.probs)*0.05:
                 continue
                 
             if yielded_count < start_index:

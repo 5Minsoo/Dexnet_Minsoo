@@ -4,7 +4,7 @@ import logging
 import random
 import matplotlib.pyplot as plt
 
-zarr_path = '/home/minsoo/Dexnet_Minsoo/grasp_dataset_big1.zarr'
+zarr_path = '/home/minsoo/Dexnet_Minsoo/grasp_dataset_ABC.zarr'
 root = zarr.open(str(zarr_path), mode="r")
 
 threshold = 0.002

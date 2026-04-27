@@ -1,34 +1,71 @@
-from Minsoo_net.grasp.rendering import GraspRenderer
-from Minsoo_net.grasp import GraspPipeline
-import numpy as np
-import zarr, sys
-import cv2
+import sys
 from pathlib import Path
 import time
-from sapien import Pose
+import argparse
+
+import numpy as np
+import zarr
+import cv2
+import yaml
+import trimesh
+
+from Minsoo_net.grasp.rendering import GraspRenderer
+from Minsoo_net.grasp import GraspPipeline
+
+parser = argparse.ArgumentParser(description="데이터셋 생성")
+parser.add_argument("--folder_num", "-f", default="1", help="폴더 번호")
+parser.add_argument("--mode", "-m", default="continue", help="restart or continue")
+args = parser.parse_args()
+
 # --- 설정 ---
 use_visual=True
 
-num_grasps=10
-quality_threshold=0.015
-# prob_threshold=0.014 현재 안씀 포즈 상위 10개로 변경. 변경할거면 execute if문 주석 해제
-num_poses=12
-max_angle=15
+with open('/home/minsoo/Dexnet_Minsoo/Minsoo_net/config/master_config.yaml') as f:
+    config=yaml.safe_load(f)
+    num_grasps=config.get("num_grasps",300)
+    quality_threshold=config.get("quality_threshold",0.002)
+    prob_threshold=config.get("stable_pose_prob_threshold",0.012) 
+    num_stable_poses=config.get("num_stable_poses",10)
+    max_angle=config.get("max_angle_deg",15)
+    zarr_path = config.get("zarr_path","grasp_dataset.zarr")
+    co = config['cam_offset']
+    camera_offsets = np.linspace(co['start'], co['stop'], co['num'])
 
-num_camera_points=5
-camera_radius=(0.4,0.6)
-camera_tilt=(0,3.14/6)
 
-
-zarr_path = "grasp_dataset_test.zarr"
 output_size = 32
-batch_size = 10 
-
-store = zarr.open(zarr_path, mode='w')
+crop_size=96
+batch_size = 2048
+batch_flush=512
 
 mesh_path=Path(__file__).parent.parent.resolve()
-mesh_path=mesh_path/"data"/"object"/"3dnet" /"1a4daa4904bb4a0949684e7f0bb99f9c.obj"
+mesh_path=mesh_path/"data"/"object" / "Frankapanda" / f"{args.folder_num}"
+mesh_files = list(mesh_path.rglob("*.obj")) + list(mesh_path.rglob("*.stl"))
+print(f'현재 path: {mesh_path}')
+print(f'해당 물체 진행: {len(mesh_files)}')
 
+if args.mode=="restart":
+    print(f"기존 데이터를 삭제하고 새로 작업을 시작합니다. {zarr_path}")
+    store = zarr.open(zarr_path, mode='w')
+elif args.mode == "continue":
+    print(f"기존 데이터에 이어서 작업을 시작합니다. {zarr_path}")
+    store = zarr.open(zarr_path, mode='a')
+
+    def is_done(name):
+        """object가 완료 마커를 가지고 있으면 True"""
+        if name not in store:
+            return False
+        return store[name].attrs.get("done", False)
+
+    skipped = [m.stem for m in mesh_files if is_done(m.stem)]
+    mesh_files = [m for m in mesh_files if not is_done(m.stem)]
+    if skipped:
+        print(f"이미 완료된 물체 건너뜀 ({len(skipped)}개): {skipped}")
+    print(f"실제 진행할 물체: {len(mesh_files)}개")
+else:
+    sys.exit()
+
+mesh_files=['/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/3dnet/2931d9dd6a930462c08b86a6f9248f91.obj']
+store.attrs["config"] = config
 
 tmp_imgs, tmp_labels,tmp_z = [], [],[]
 
@@ -41,120 +78,134 @@ def flush_to_zarr(img_ds,label_ds,z_ds):
     img_ds.append(np.array(tmp_imgs))
     label_ds.append(np.array(tmp_labels))
     z_ds.append(np.array(tmp_z))
-    
     tmp_imgs, tmp_labels,tmp_z = [], [],[]
 
+def get_camera_positions(grasp, pose, offsets=[0.2, 0.25, 0.3]):
+    T_world_gripper = pose @ grasp.T_grasp_obj
+    z_axis = T_world_gripper[:3, 2]
+    gripper_pos = T_world_gripper[:3, 3]
+    cam_target = gripper_pos
 
-object_name=mesh_path.stem
-mesh_path=str(mesh_path)
-print(f'{object_name} 로드중')
+    cam_positions = [gripper_pos - z_axis * d for d in offsets]
+    return cam_positions, cam_target
 
-grasp_pipeline=GraspPipeline(mesh_path,quality_threshold=quality_threshold,num_grasps=num_grasps,max_approach_angle_deg=max_angle,num_poses=num_poses)
-renderer=GraspRenderer(mesh_path)
-points=GraspRenderer.sample_spherical_positions(camera_radius,camera_tilt,(0,3.14),num_points=num_camera_points)
-if use_visual:
-    viewer=renderer.scene.create_viewer()
-    for _ in range(10):
-        viewer.render()
-obj_group=store.require_group(object_name)
+for mesh_path in mesh_files:
+    object_name=mesh_path
+    mesh_path=str(mesh_path)
+    m = trimesh.load(mesh_path, force='mesh')
+    if min(m.bounding_box_oriented.extents) < 0.005:
+        print('너무 얇아서 제외')
+        continue
+    print(f'{object_name} 로드중')
 
-existing_pose_keys = sorted(
-[k for k in obj_group.keys() if k.startswith("pose")],
-key=lambda x: int(x.replace("pose", ""))
-)
-start_idx=0
-for pose_key in existing_pose_keys:
-    pose_num = int(pose_key.replace("pose", ""))
-    labels_len = obj_group[pose_key]['labels'].shape[0]
-    
-    # 데이터가 비어있거나 부족하면 해당 번호부터 다시 시작
-    # Labels 에 저장된 라벨은 Points 와 관련돼있어서 훨씬더 길게 저장됨. num grasps가 경우에 따라 항상 더 커질수 있어서 일단 3개 미만으로 잡고 감. (3개 미만이면 그 pose부터 시작하게)
-    if labels_len < 3: 
-        start_idx = pose_num
-        print(f"  [!] {pose_key} 데이터 부족 ({labels_len}개). 여기서부터 재시작합니다.")
-        break
-    else:
-        # 정상이라면 다음 번호로 start_idx 갱신
-        start_idx = pose_num +1
+    grasp_pipeline=GraspPipeline(mesh_path,quality_threshold=quality_threshold,num_grasps=num_grasps,max_approach_angle_deg=max_angle,num_poses=num_stable_poses)
+    renderer=GraspRenderer(mesh_path)
+    if use_visual:
+        viewer=renderer.scene.create_viewer()
+        for _ in range(10):
+            viewer.render()
+    obj_group=store.require_group(object_name)
+
+    existing_pose_keys = sorted(
+    [k for k in obj_group.keys() if k.startswith("pose")],
+    key=lambda x: int(x.replace("pose", ""))
+    )
+    start_idx=0
+    for pose_key in existing_pose_keys:
+        pose_num = int(pose_key.replace("pose", ""))
+        labels_len = obj_group[pose_key]['labels'].shape[0]
+        
+        # 데이터가 비어있거나 부족하면 해당 번호부터 다시 시작
+        # Labels 에 저장된 라벨은 Points 와 관련돼있어서 훨씬더 길게 저장됨. num grasps가 경우에 따라 항상 더 커질수 있어서 일단 3개 미만으로 잡고 감. (3개 미만이면 그 pose부터 시작하게)
+        if labels_len < 3: 
+            start_idx = pose_num
+            print(f"  [!] {pose_key} 데이터 부족 ({labels_len}개). 여기서부터 재시작합니다.")
+            break
+        else:
+            # 정상이라면 다음 번호로 start_idx 갱신
+            start_idx = pose_num +1
 
 
-finish=time.time()
-# --- 메인 루프 ---
-for pose, failed_grasps, quality_grasps, quality_scores in grasp_pipeline.execute(start_index=start_idx):
-    start=time.time()
-    print(f'Grasp sampling 시간 {int(start-finish)}초')
-    renderer.set_stable_pose(pose)
-    metalic,roughness=renderer.sample_material(num_camera_points)
-    pose_group=obj_group.require_group(f"pose{start_idx}")
-    start_idx+=1
-    img_ds = pose_group.create_array("images", shape=(0, output_size, output_size), 
-                            chunks=(batch_size, output_size, output_size), 
-                            dtype='float32',overwrite=True)
-    label_ds = pose_group.create_array("labels", shape=(0,), 
-                                    chunks=(batch_size,), 
-                                    dtype='float32',overwrite=True)
-    z_ds = pose_group.create_array("gripper_depth", shape=(0,), 
-                                    chunks=(batch_size,), 
-                                    dtype='float32',overwrite=True)
-    # 성공(quality) / 실패(0) 데이터 분류
-    tasks = [(quality_grasps, quality_scores), 
-            (failed_grasps, [0.0]*len(failed_grasps))]
-
-    for grasps, labels in tasks:
-        print("이미지 랜더링 시작 (진행중..)")
-        for grasp, label in zip(grasps, labels):
-            metalic,roughness=renderer.sample_material()
-            renderer.set_material(metalic=metalic[0],roughness=roughness[0])
-            for point in points:
-                depth = renderer.render(camera_pos=point,target_pos=[0,0,0])
-                # 좌표 계산 및 시각화 (기존 로직)
-                origin = [0, 0, 0]
-                center = (pose @ np.append(grasp.center, 1.0))[:3]
-                axis = (pose @ np.append(grasp.axis, 1.0))[:3]
-                image_point = renderer.world_to_pixel([origin, center, axis])
-                grasp_depth=(renderer.get_extrinsic()@np.append(center,1.0))[2]
-                
-                cropped = GraspRenderer.crop_grasp_image(
-                    depth, image_point[1], image_point[2]-image_point[0], 
-                    crop_size=96, output_size=output_size
-                )
-                if use_visual:
-                    viewer.render()
-                    viewer.set_camera_pose(pose=Pose(p=point,q=GraspRenderer._look_at(point)))
-                    depth_norm = cv2.normalize(depth, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-                    depth_color = cv2.applyColorMap(depth_norm, cv2.COLORMAP_JET)
-                    
-                    # 원본 이미지 위에 Grasp 중심점과 축 그리기 (디버그용)
-                    center_2d = image_point[1]
-                    axis_2d = image_point[2] - image_point[0]
-                    depth_debug = GraspRenderer.draw_grasp_debug(depth_color, center_2d, axis_2d)
-
-                    # 2. 크롭 뎁스 정규화 및 컬러맵 적용
-                    cropped_norm = cv2.normalize(cropped, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-                    cropped_color = cv2.applyColorMap(cropped_norm, cv2.COLORMAP_JET)
-
-                    # 3. 크기 맞추기 및 이어붙이기 (hconcat)
-                    # cv2.hconcat을 쓰려면 두 이미지의 세로 길이(h)가 같아야 하므로 크롭 이미지를 확대합니다.
-                    h = depth_debug.shape[0]
-                    cropped_resized = cv2.resize(cropped_color, (h, h), interpolation=cv2.INTER_NEAREST)
-                    
-                    # 가로로 이어 붙이기
-                    combined_img = cv2.hconcat([depth_debug, cropped_resized])
-
-                    # 4. 화면 출력
-                    cv2.imshow('Depth vs Cropped', depth)
-                    viewer.render()
-                    # 디버깅 시 하나씩 확인하려면 waitKey(0), 자동으로 휙휙 넘어가게 하려면 waitKey(1)
-                    cv2.waitKey(0)
-                
-                tmp_imgs.append(cropped)
-                tmp_labels.append(label)
-                tmp_z.append(grasp_depth)
-                if len(tmp_imgs) >= batch_size:
-                    flush_to_zarr(img_ds,label_ds,z_ds)
-    flush_to_zarr(img_ds,label_ds,z_ds)
     finish=time.time()
-    print(f'이미지 랜더링 종료 Pose{start_idx-1} 걸린시간: {int(finish-start)}초')
+    # --- 메인 루프 ---
+    for pose, failed_grasps, quality_grasps, quality_scores in grasp_pipeline.execute(start_index=start_idx):
+        start=time.time()
+        print(f'Grasp sampling 시간 {int(start-finish)}초')
+        renderer.set_stable_pose(pose)
+        pose_group=obj_group.require_group(f"pose{start_idx}")
+        start_idx+=1
+        img_ds = pose_group.create_array("images", shape=(0, output_size, output_size), 
+                                chunks=(batch_size, output_size, output_size), 
+                                dtype='float32',overwrite=True)
+        label_ds = pose_group.create_array("labels", shape=(0,), 
+                                        chunks=(batch_size,), 
+                                        dtype='float32',overwrite=True)
+        z_ds = pose_group.create_array("gripper_depth", shape=(0,), 
+                                        chunks=(batch_size,), 
+                                        dtype='float32',overwrite=True)
+        # 성공(quality) / 실패(0) 데이터 분류
+        tasks = [(quality_grasps, quality_scores), 
+                (failed_grasps, [0.0]*len(failed_grasps))]
+
+        for grasps, labels in tasks:
+            print("이미지 랜더링 시작 (진행중..)")
+            for grasp, label in zip(grasps, labels):
+                cam_poses,cam_target=get_camera_positions(grasp,pose,offsets=camera_offsets)
+                metalic,roughness=renderer.sample_material()
+                renderer.set_material(metalic=metalic,roughness=roughness)
+                for cam_pos in cam_poses:
+                    depth = renderer.render(camera_pos=cam_pos,target_pos=cam_target)
+                    # 좌표 계산 및 시각화 (기존 로직)
+                    origin = [0, 0, 0]
+                    center = (pose @ np.append(grasp.center, 1.0))[:3]
+                    axis = (pose @ np.append(grasp.axis, 1.0))[:3]
+                    image_point = renderer.world_to_pixel([origin, center, axis])
+                    grasp_depth=(renderer.get_extrinsic()@np.append(center,1.0))[2]
+                    
+                    cropped = GraspRenderer.crop_grasp_image(
+                        depth, image_point[1], image_point[2]-image_point[0], 
+                        crop_size=crop_size, output_size=output_size
+                    )
+                    if use_visual:
+                        renderer.scene.step()
+                        renderer.scene.update_render()
+                        renderer.sensor.take_picture()
+                        viewer.render()
+                        depth_norm = cv2.normalize(depth, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+                        depth_color = cv2.applyColorMap(depth_norm, cv2.COLORMAP_JET)
+                        
+                        # 원본 이미지 위에 Grasp 중심점과 축 그리기 (디버그용)
+                        center_2d = image_point[1]
+                        axis_2d = image_point[2] - image_point[0]
+                        depth_debug = GraspRenderer.draw_grasp_debug(depth_color, center_2d, axis_2d)
+
+                        # 2. 크롭 뎁스 정규화 및 컬러맵 적용
+                        cropped_norm = cv2.normalize(cropped, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+                        cropped_color = cv2.applyColorMap(cropped_norm, cv2.COLORMAP_JET)
+
+                        # 3. 크기 맞추기 및 이어붙이기 (hconcat)
+                        # cv2.hconcat을 쓰려면 두 이미지의 세로 길이(h)가 같아야 하므로 크롭 이미지를 확대합니다.
+                        h = depth_debug.shape[0]
+                        cropped_resized = cv2.resize(cropped_color, (h, h), interpolation=cv2.INTER_NEAREST)
+                        
+                        # 가로로 이어 붙이기
+                        combined_img = cv2.hconcat([depth_debug, cropped_resized])
+
+                        # 4. 화면 출력
+                        cv2.imshow('Depth vs Cropped', combined_img)
+                        viewer.render()
+                        # 디버깅 시 하나씩 확인하려면 waitKey(0), 자동으로 휙휙 넘어가게 하려면 waitKey(1)
+                        cv2.waitKey(0)
+                    tmp_imgs.append(cropped)
+                    tmp_labels.append(label)
+                    tmp_z.append(grasp_depth)
+                    if len(tmp_imgs) >= batch_flush:
+                        flush_to_zarr(img_ds,label_ds,z_ds)
+        flush_to_zarr(img_ds,label_ds,z_ds)
+        finish=time.time()
+        print(f'이미지 랜더링 종료 Pose{start_idx-1} 걸린시간: {int(finish-start)}초')
+    obj_group.attrs["done"] = True
+    print(f'✓ {object_name} 완료')
 
 
 print(f"Zarr 데이터셋 생성 완료! 경로: {zarr_path}")

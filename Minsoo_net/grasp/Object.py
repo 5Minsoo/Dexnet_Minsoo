@@ -7,6 +7,7 @@ class GraspableObject3D:
     def __init__(self, mesh_path, sdf_resolution=64, surface_thresh=0.001):
         self.mesh_path=mesh_path
         self.mesh = trimesh.load(mesh_path)
+        self.rescale_mseh()
         self.surface_thresh = surface_thresh
         self.resolution = sdf_resolution
         self.center_mass=self.mesh.center_mass
@@ -99,3 +100,13 @@ class GraspableObject3D:
         hull=self.mesh.convex_hull
         pose,prob=hull.compute_stable_poses()
         return pose, prob
+    
+    def rescale_mseh(self, target_min_size=0.10):
+        """
+        Object Mesh를 그리퍼 너비 안에 들어오게 Scale.
+        최소 길이 = 그리퍼 폭 되도록
+        """
+        current_min_length = np.min(self.mesh.bounding_box_oriented.extents)
+        if current_min_length>target_min_size:
+            scale_factor = target_min_size / current_min_length
+            self.mesh.apply_scale(scale_factor)

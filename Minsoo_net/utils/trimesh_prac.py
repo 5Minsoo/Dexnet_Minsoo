@@ -3,7 +3,7 @@ import trimesh
 import pyrender
 import sklearn
 # ── 1. 메시 로드 ──
-mesh = trimesh.load('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/Frankapanda/00002947_6a39e60d71ae4d19ae0e66ac_step_000_0000.obj')
+mesh = trimesh.load('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/Frankapanda/1/00001158_0d5aceffdc1f4188ae053ebf_step_000_0048.obj')
 def filter_duplicate_stable_poses(transforms, probs, mesh, angle_thresh=0.15):
     # 물체 주축 (PCA)
     pca = sklearn.decomposition.PCA(n_components=3)
@@ -40,6 +40,19 @@ def filter_duplicate_stable_poses(transforms, probs, mesh, angle_thresh=0.15):
     return unique_transforms, unique_probs
 hull=mesh.convex_hull
 trans,probs=hull.compute_stable_poses()
+# 1. AABB (월드 좌표계 기준 절대 크기)
+aabb_extents = mesh.extents
+print(f"AABB 기준 X, Y, Z 크기: {aabb_extents}")
+# bounding box의 [min_x, min_y, min_z], [max_x, max_y, max_z] 좌표가 필요하다면:
+print(f"AABB 최소/최대 좌표: {mesh.bounds}") 
+
+# 2. OBB (객체에 타이트하게 맞춘 실제 크기)
+obb = mesh.bounding_box_oriented
+obb_extents = obb.extents
+print(f"OBB 기준 가로, 세로, 높이: {obb_extents}")
+
+# (참고) OBB가 어떤 자세로 회전되어 있는지 변환 행렬 확인
+print(f"OBB 변환 행렬(Transform):\n{obb.primitive.transform}")
 unique_transforms, unique_probs = trans,probs
 
 # ── 4. pyrender 시각화 ──
@@ -49,10 +62,14 @@ spacing = 0.1
 # 월드 축
 world_axis = trimesh.creation.axis(origin_size=0.002, axis_length=0.4)
 scene.add(pyrender.Mesh.from_trimesh(world_axis,smooth=False), pose=np.eye(4))
-
+j=1
+scene.add(pyrender.Mesh.from_trimesh(mesh,smooth=False))
 for i, (T, p) in enumerate(zip(unique_transforms, unique_probs)):
+    if p<max(unique_probs)*0.05:
+        continue
     T_offset = T.copy()
-    T_offset[2, 3] += i * spacing
+    T_offset[2, 3] += j * spacing
+    j+=1
 
     # 물체
     tri_mesh = mesh.copy()
