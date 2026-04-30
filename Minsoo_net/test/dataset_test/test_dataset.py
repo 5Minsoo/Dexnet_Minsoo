@@ -3,6 +3,8 @@ import logging
 
 import zarr
 import numpy as np
+from pathlib import Path
+import json
 
 from Minsoo_net.grasp.collision_checker import GraspCollisionChecker
 from Minsoo_net.grasp.gripper import RobotGripper
@@ -14,7 +16,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     datefmt="%H:%M:%S",
 )
-zarr_path='/home/minsoo/Dexnet_Minsoo/grasp_dataset_260000.zarr'
+zarr_path='/home/minsoo/Dexnet_Minsoo/grasp_dataset_ABC.zarr'
 
 class TestDataset(TestCase):
     def setUp(self):
@@ -51,3 +53,5 @@ class TestDataset(TestCase):
             for j, pose in enumerate(poses):
                 img = self.f[key][pose]['images'][:]
                 self.assertFalse(np.any(np.isnan(img)))
+                if not img.size ==0:
+                    self.assertGreater(np.mean(img), 0.02, msg=f"Broken Image mean:{np.mean(img)}")

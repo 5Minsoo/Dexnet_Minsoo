@@ -81,7 +81,7 @@ zarr_path : "/home/minsoo/Dexnet_Minsoo/grasp_dataset_ABC.zarr"
 num_grasps : 100
 quality_threshold : 0.002
 stable_pose_prob_threshold : 0.05 # 현재는 안씀
-num_stable_poses : 1000 # 현재는 안씀
+num_stable_poses : 15
 max_angle_deg : 30
 cam_offset:
   start: 0.45

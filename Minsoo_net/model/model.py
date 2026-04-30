@@ -20,7 +20,7 @@ import torch.nn.functional as F
 
 # ── LRN 파라미터 ─────────────────────────────────────────────────────
 LRN_SIZE = 5
-LRN_ALPHA = 2e-05
+LRN_ALPHA = 1.0e-4
 LRN_BETA = 0.75
 LRN_BIAS = 1.0
 
@@ -49,11 +49,11 @@ class DexNet2(nn.Module):
         self.pool2_1 = nn.MaxPool2d(1, stride=1)
 
         self.conv2_2 = nn.Conv2d(64, 64, 3, padding=1)
-        self.pool2_2 = nn.MaxPool2d(2, stride=2)
+        self.pool2_2 = nn.MaxPool2d(1, stride=1)
         self.lrn2_2 = nn.LocalResponseNorm(LRN_SIZE, alpha=LRN_ALPHA,
                                             beta=LRN_BETA, k=LRN_BIAS)
 
-        fc3_in = (im_height // 4) * (im_width // 4) * 64
+        fc3_in = (im_height // 2) * (im_width // 2) * 64
         self.fc3 = nn.Linear(fc3_in, 1024)
 
         # ── Pose stream ──
@@ -106,30 +106,40 @@ class DexNet2(nn.Module):
     @torch.no_grad()
     def predict(self, images, poses):
         """
-        images : (N, H, W, 1) raw depth (NHWC)
-        poses  : (N, 1) raw gripper depth
-        Returns probs (N, 2), logits (N, 2)
+        images : (N, H, W, 1) raw depth (NHWC) or torch
+        poses  : (N, 1) raw gripper depth or torch
+        Returns probs (N, 2), logits (N, 2) (Numpy)
         """
+        device = next(self.parameters()).device  # 모델의 현재 디바이스
+        images = torch.as_tensor(images, dtype=torch.float32, device=device)
+        poses = torch.as_tensor(poses, dtype=torch.float32, device=device)
+
         self.eval()
-        dev = next(self.parameters()).device
         im_n = (images - self.im_mean) / self.im_std
-        po_n = (poses - self.pose_mean) / self.pose_std
-        im_t = torch.from_numpy(im_n.transpose(0, 3, 1, 2).astype(np.float32)).to(dev)
-        po_t = torch.from_numpy(po_n.astype(np.float32)).to(dev)
+        po_t = (poses - self.pose_mean) / self.pose_std
+
+        if im_n.shape[1] in (1,3):
+            im_t=im_n
+        else:
+            im_t = im_n.permute(0, 3, 1, 2).contiguous()
+
         logit_list = []
         outs = []
         for i in range(0, im_t.shape[0], 128):
             logits = self(im_t[i:i+128], po_t[i:i+128])
             logit_list.append(logits)
             outs.append(F.softmax(logits, dim=-1))
-        logging.debug(f"raw depth range: min={np.nanmin(images):.4f}, max={np.nanmax(images):.4f}")
-        logging.debug(f"raw depth shape: {images.shape}")
-        logging.debug(f"pose_mean: {self.pose_mean}, pose_std: {self.pose_std}") 
+        
+        logging.debug(f"raw depth range: min={images.min().item():.4f}, "
+                    f"max={images.max().item():.4f}")
+        logging.debug(f"raw depth shape: {tuple(images.shape)}")
+        logging.debug(f"pose_mean: {self.pose_mean}, pose_std: {self.pose_std}")
         logging.debug(f"image_mean: {self.im_mean}, image_std: {self.im_std}")
-        logging.debug(f"input range: {im_t.min()}, {im_t.max()}")
-        logging.debug(f"pose range: {po_t.min()}, {po_t.max()}")
-        logging.debug(f"logits: {logits[:5]}")  
+        logging.debug(f"input range: {im_t.min().item():.4f}, {im_t.max().item():.4f}")
+        logging.debug(f"pose range: {po_t.min().item():.4f}, {po_t.max().item():.4f}")
+        logging.debug(f"logits: {logits[:5]}")
         logging.debug(f"probs: {F.softmax(logits, dim=-1)[:5]}")
+        
         return torch.cat(outs, 0).cpu().numpy(), torch.cat(logit_list, 0).cpu().numpy()
 
     def predict_success(self, images, poses):
@@ -149,9 +159,9 @@ class DexNet2(nn.Module):
         ckpt = torch.load(path, map_location=device, weights_only=False)
         m = cls(im_height=ckpt["im_height"], im_width=ckpt["im_width"])
         m.load_state_dict(ckpt["state_dict"])
-        m.im_mean = ckpt["im_mean"]
-        m.im_std = ckpt["im_std"]
-        m.pose_mean = ckpt["pose_mean"]
-        m.pose_std = ckpt["pose_std"]
+        m.im_mean = torch.as_tensor(ckpt["im_mean"], dtype=torch.float32, device=device)
+        m.im_std = torch.as_tensor(ckpt["im_std"], dtype=torch.float32, device=device)
+        m.pose_mean = torch.as_tensor(ckpt["pose_mean"], dtype=torch.float32, device=device)
+        m.pose_std = torch.as_tensor(ckpt["pose_std"], dtype=torch.float32, device=device)
         m.eval()
         return m

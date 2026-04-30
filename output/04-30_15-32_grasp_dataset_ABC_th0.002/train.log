@@ -1,0 +1,256 @@
+[train INFO] Config: {'im_height': 256, 'im_width': 256, 'train_batch_size': 64, 'val_batch_size': 64, 'num_epochs': 40, 'train_split': 0.8, 'base_lr': 0.08, 'momentum': 0.9, 'weight_decay': 0.0005, 'decay_rate': 0.95, 'decay_step_multiplier': 1.5, 'drop_rate': 0.2, 'metric_thresh': 0.002, 'eval_frequency': 1, 'save_frequency': 1, 'log_frequency': 10000, 'num_random_files': 10000, 'seed': 24098}
+[train INFO] Device: cuda
+[train INFO] ------------------------------
+[train INFO] 데이터셋 통계 (04/30 15:32)
+[train INFO] 전체 Data : 5502178개
+[train INFO] 성공 Data : 1274384개 (23.2%)
+[train INFO] 실패 Data : 4227794개
+[train INFO] ------------------------------
+[train INFO] Total samples (전체 Pose 개수): 5502178
+[train INFO] Train: 4401742, Val: 1100436
+[train INFO] Computing dataset statistics...
+[train INFO]   Processing 0/10000 samples...
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] 저장된 Image 사이즈가 모델 입력과 다릅니다
+[train INFO] Config: {'im_height': 32, 'im_width': 32, 'train_batch_size': 256, 'val_batch_size': 256, 'num_epochs': 40, 'train_split': 0.8, 'base_lr': 0.04, 'momentum': 0.9, 'weight_decay': 0.0005, 'decay_rate': 0.95, 'decay_step_multiplier': 1.5, 'drop_rate': 0.2, 'metric_thresh': 0.002, 'eval_frequency': 1, 'save_frequency': 1, 'log_frequency': 10000, 'num_random_files': 10000, 'seed': 24098}
+[train INFO] Device: cuda
+[train INFO] ------------------------------
+[train INFO] 데이터셋 통계 (04/30 15:32)
+[train INFO] 전체 Data : 5502178개
+[train INFO] 성공 Data : 1274384개 (23.2%)
+[train INFO] 실패 Data : 4227794개
+[train INFO] ------------------------------
+[train INFO] Total samples (전체 Pose 개수): 5502178
+[train INFO] Train: 4401742, Val: 1100436
+[train INFO] Computing dataset statistics...
+[train INFO]   Processing 0/10000 samples...
+[train INFO]   Processing 2000/10000 samples...
+[train INFO]   Processing 4000/10000 samples...
+[train INFO]   Processing 6000/10000 samples...
+[train INFO]   Processing 8000/10000 samples...
+[train INFO]   im_mean=0.479199, im_std=0.162677
+[train INFO]   pose_mean=0.524707, pose_std=0.047709
+[train INFO] Steps per epoch: 17194
+[train INFO] Decay step: 25791 (= 1.5 × 17194)
+[train INFO] ============================================================
+[train INFO] Starting training
+[train INFO] ============================================================

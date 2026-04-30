@@ -18,7 +18,7 @@ parser.add_argument("--mode", "-m", default="continue", help="restart or continu
 args = parser.parse_args()
 
 # --- 설정 ---
-use_visual=False
+use_visual=True
 
 with open('/home/minsoo/Dexnet_Minsoo/Minsoo_net/config/master_config.yaml') as f:
     config=yaml.safe_load(f)
@@ -31,7 +31,8 @@ with open('/home/minsoo/Dexnet_Minsoo/Minsoo_net/config/master_config.yaml') as 
     co = config['cam_offset']
     camera_offsets = np.linspace(co['start'], co['stop'], co['num'])
 
-
+zarr_path='/home/minsoo/Dexnet_Minsoo/grasp_dataset_test.zarr'
+num_grasps=10
 output_size = 32
 crop_size=96
 batch_size = 2048
@@ -98,7 +99,7 @@ for mesh_path in mesh_files:
         continue
     print(f'{object_name} 로드중')
 
-    grasp_pipeline=GraspPipeline(mesh_path,quality_threshold=quality_threshold,num_grasps=num_grasps,max_approach_angle_deg=max_angle)
+    grasp_pipeline=GraspPipeline(mesh_path,quality_threshold=quality_threshold,num_grasps=num_grasps,max_approach_angle_deg=max_angle, num_poses=num_stable_poses)
     renderer=GraspRenderer(mesh_path)
     if use_visual:
         viewer=renderer.scene.create_viewer()
@@ -171,22 +172,27 @@ for mesh_path in mesh_files:
                         renderer.scene.update_render()
                         renderer.sensor.take_picture()
                         viewer.render()
-                        depth_norm = cv2.normalize(depth, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-                        depth_color = cv2.applyColorMap(depth_norm, cv2.COLORMAP_JET)
-                        
+
                         # 원본 이미지 위에 Grasp 중심점과 축 그리기 (디버그용)
                         center_2d = image_point[1]
                         axis_2d = image_point[2] - image_point[0]
-                        depth_debug = GraspRenderer.draw_grasp_debug(depth_color, center_2d, axis_2d)
-
+                        # depth_norm = cv2.normalize(depth, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+                        # depth_color = cv2.applyColorMap(depth_norm, cv2.COLORMAP_JET)
+                        depth_debug = renderer.draw_grasp_debug(image=depth, center=center_2d, axis=axis_2d, depth=grasp_depth)
+                        cropped_debug = renderer.draw_cropped_debug(
+                            cropped=cropped,
+                            depth=grasp_depth,
+                            crop_size=crop_size,
+                            output_size=output_size,
+                        )
                         # 2. 크롭 뎁스 정규화 및 컬러맵 적용
-                        cropped_norm = cv2.normalize(cropped, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-                        cropped_color = cv2.applyColorMap(cropped_norm, cv2.COLORMAP_JET)
+                        # cropped_norm = cv2.normalize(cropped, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+                        # cropped_color = cv2.applyColorMap(cropped_norm, cv2.COLORMAP_JET)
 
                         # 3. 크기 맞추기 및 이어붙이기 (hconcat)
                         # cv2.hconcat을 쓰려면 두 이미지의 세로 길이(h)가 같아야 하므로 크롭 이미지를 확대합니다.
                         h = depth_debug.shape[0]
-                        cropped_resized = cv2.resize(cropped_color, (h, h), interpolation=cv2.INTER_NEAREST)
+                        cropped_resized = cv2.resize(cropped_debug, (h, h), interpolation=cv2.INTER_NEAREST)
                         
                         # 가로로 이어 붙이기
                         combined_img = cv2.hconcat([depth_debug, cropped_resized])
@@ -196,11 +202,13 @@ for mesh_path in mesh_files:
                         viewer.render()
                         # 디버깅 시 하나씩 확인하려면 waitKey(0), 자동으로 휙휙 넘어가게 하려면 waitKey(1)
                         cv2.waitKey(0)
+                    print('image cropped')
                     tmp_imgs.append(cropped)
                     tmp_labels.append(label)
                     tmp_z.append(grasp_depth)
                     if len(tmp_imgs) >= batch_flush:
                         flush_to_zarr(img_ds,label_ds,z_ds)
+                        print(f'flushed_{object_name}_pose{start_idx}')
         flush_to_zarr(img_ds,label_ds,z_ds)
         finish=time.time()
         print(f'이미지 랜더링 종료 Pose{start_idx-1} 걸린시간: {int(finish-start)}초')

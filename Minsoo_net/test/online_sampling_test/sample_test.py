@@ -49,9 +49,9 @@ class GraspPlanner:
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
-    planner = GraspPlanner('/home/minsoo/Dexnet_Minsoo/output/04-22_10-21_grasp_dataset_big1_th0.002/best.pt',use_visualize=False,camera=False)
+    planner = GraspPlanner('/home/minsoo/Dexnet_Minsoo/output/model.pt',use_visualize=True,camera=False)
     # planner = GraspPlanner('/home/minsoo/Dexnet_Minsoo/output/Best_03-30/best.pt',use_visualize=True)
-    for i in range(1,10):
+    for i in range(8,10):
         grasp, score = planner.run(
             image=cv2.imread(f'/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/saved_data2/depth_raw_{i}.png', cv2.IMREAD_GRAYSCALE) * 0.001)
         if grasp is not None:

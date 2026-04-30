@@ -23,7 +23,9 @@ class GraspPipeline:
                  num_grasps=3, 
                  prob_threshold=0.012, 
                  quality_threshold=0.03,
-                 max_approach_angle_deg=15):
+                 max_approach_angle_deg=15,
+                 num_poses=15):
+
         
         # 1. 파일 경로 설정
         self.config_path = p / "config" / "master_config.yaml"
@@ -46,6 +48,8 @@ class GraspPipeline:
         
         # 안정적인 Pose 계산
         self.stable_poses, self.probs = self.graspable_obj.stable_poses()
+        self.num_poses=num_poses
+
     def filter_collision_free_grasps(self, aligned_grasps, pose, obj_key):
         """접근 각도 필터링 및 충돌 검사를 수행합니다."""
         collision_free_grasps = []
@@ -90,7 +94,7 @@ class GraspPipeline:
         """
         yielded_count = 0
         self.checker.set_table() 
-        for idx, (pose, prob) in enumerate(zip(self.stable_poses, self.probs)):
+        for idx, (pose, prob) in enumerate(zip(self.stable_poses[:self.num_poses], self.probs[:self.num_poses])):
             if prob < max(self.probs)*0.05:
                 continue
                 
@@ -135,10 +139,11 @@ class GraspPipeline:
             print(f'failed grasp 개수: {len(failed_grasps)}') # 추가된 로그
             print(f'quality grasp 개수: {len(quality_grasps)}')
             
+            gripper_vis=None
             if use_visual:
-                visualize_grasps(self.graspable_obj, collision_grasps, pose=pose, gripper=self.gripper,title="Collision Grasps")
-                visualize_grasps(self.graspable_obj, collision_free_grasps, pose=pose, gripper=self.gripper,title="Collision free Grasps")
-                visualize_grasps(self.graspable_obj, quality_grasps, pose=pose, gripper=self.gripper,title="Quality Grasps")
+                visualize_grasps(self.graspable_obj, collision_grasps, pose=pose, gripper=gripper_vis,title="Collision Grasps")
+                visualize_grasps(self.graspable_obj, collision_free_grasps, pose=pose, gripper=gripper_vis,title="Collision free Grasps")
+                visualize_grasps(self.graspable_obj, quality_grasps, pose=pose, gripper=gripper_vis,title="Quality Grasps")
             
             yield pose, failed_grasps, quality_grasps, quality
             yielded_count += 1
@@ -147,12 +152,12 @@ class GraspPipeline:
 if __name__ == "__main__":
     # 1. 설정 파라미터
     # 실제 환경에 맞춰 경로를 수정하세요.
-    OBJ_FILE_PATH = '/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/bin.stl'
+    OBJ_FILE_PATH = '/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/Frankapanda/4/00998298_6b183878e2bdd76a6ec6b351_step_000_0010.obj'
     # OBJ_FILE_PATH='/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/bin.stl'
     
     # --- 테스트 제어 변수 ---
     START_INDEX = 0      # 0부터 시작하거나, 특정 Pose부터 재개하고 싶을 때 변경
-    NUM_TEST_GRASPS = 10 # 한 Pose당 생성할 Grasp 후보 개수
+    NUM_TEST_GRASPS = 1 # 한 Pose당 생성할 Grasp 후보 개수
     VISUALIZE = True   # 시각화 여부
     # -----------------------
 

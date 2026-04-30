@@ -28,3 +28,8 @@ model_zoo
 pytorch_practice
 data
 broken_meshes
+utils
+.venv
+*example*
+
+*.sh

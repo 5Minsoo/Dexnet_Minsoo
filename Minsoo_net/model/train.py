@@ -46,13 +46,13 @@ CFG = dict(
     im_width=32,
 
     # ── 학습 ──
-    train_batch_size=64,
-    val_batch_size=64,
+    train_batch_size=256,
+    val_batch_size=256,
     num_epochs=25,
     train_split=0.8,
 
     # ── optimizer ──
-    base_lr=0.01,
+    base_lr=0.04,
     momentum=0.9,
     weight_decay=0.0005,
     decay_rate=0.95,
@@ -311,7 +311,7 @@ def train(args,cfg):
 
     train_loader = DataLoader(
         train_ds, batch_size=cfg["train_batch_size"],
-        num_workers=12, pin_memory=True, drop_last=True, shuffle=True)
+        num_workers=12, pin_memory=True, drop_last=True, shuffle=True, persistent_workers=True, prefetch_factor=4)
     
     steps_per_epoch = len(train_loader)   # = len(train_ds) // batch_size (drop_last=True)
 
@@ -323,7 +323,7 @@ def train(args,cfg):
     
     val_loader = DataLoader(
         val_ds, batch_size=cfg["val_batch_size"],
-        shuffle=False, num_workers=12, pin_memory=True)
+        shuffle=False, num_workers=12, pin_memory=True, persistent_workers=True, prefetch_factor=4)
 
     # ── 모델 ──
     model = DexNet2(im_height=cfg['im_height'], im_width=cfg['im_width'])
@@ -367,9 +367,9 @@ def train(args,cfg):
         t0 = time.time()
 
         for batch_idx, (images, poses, labels) in enumerate(train_loader):
-            images = images.to(device)
-            poses = poses.to(device)
-            labels = labels.to(device)
+            images = images.to(device, non_blocking=True)
+            poses = poses.to(device,non_blocking=True)
+            labels = labels.to(device,non_blocking=True)
 
             logits = model(images, poses, drop_rate=cfg["drop_rate"])
             loss = criterion(logits, labels)

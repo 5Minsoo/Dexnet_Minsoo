@@ -3,6 +3,7 @@ import sapien.core as sapien_core
 import numpy as np
 import cv2
 import math
+import os
 from sapien.core import Pose
 from sapien.sensor import StereoDepthSensor, StereoDepthSensorConfig
 from Minsoo_net.grasp.random_variables import ParamsGaussianRV
@@ -277,41 +278,156 @@ class GraspRenderer:
             cv2.circle(colored, (int(point[0]), int(point[1])), 5, (0, 0, 0), -1)
         return colored
 
-    @staticmethod
+    def _draw_grasp_marks(
+        self,
+        vis: np.ndarray,
+        cx: int,
+        cy: int,
+        ux: float,
+        uy: float,
+        half: float,
+        color=(0, 255, 0),
+        thickness: int = 2,
+        arrow_thickness: int = 2,
+        jaw_ratio: float = 0.5,
+        arrow_ratio: float = 0.8,
+        arrow_head: float = 0.6,
+        cross_size: int = 10,
+    ):
+        """공통 그리기 루틴: + ㅣ →←ㅣ + (DexNet style, axis 방향에 맞춰 회전)."""
+        jaw = int(half * jaw_ratio)
+        arrow_len = int(half * arrow_ratio)
+
+        # axis에 수직인 단위벡터
+        nx, ny = -uy, ux
+
+        # 양 끝점 (jaw 중심)
+        x0, y0 = int(cx - ux * half), int(cy - uy * half)
+        x1, y1 = int(cx + ux * half), int(cy + uy * half)
+
+        # 1) 양 끝 jaw ㅣ ㅣ (axis에 수직)
+        for ex, ey in [(x0, y0), (x1, y1)]:
+            jx0, jy0 = int(ex - nx * jaw), int(ey - ny * jaw)
+            jx1, jy1 = int(ex + nx * jaw), int(ey + ny * jaw)
+            cv2.line(vis, (jx0, jy0), (jx1, jy1), color, thickness)
+
+        # 2) 양 끝 바깥 → jaw 안쪽 화살표
+        ax0 = int(x0 - ux * arrow_len)
+        ay0 = int(y0 - uy * arrow_len)
+        cv2.arrowedLine(vis, (ax0, ay0), (x0, y0), color, arrow_thickness, tipLength=arrow_head)
+
+        ax1 = int(x1 + ux * arrow_len)
+        ay1 = int(y1 + uy * arrow_len)
+        cv2.arrowedLine(vis, (ax1, ay1), (x1, y1), color, arrow_thickness, tipLength=arrow_head)
+
+        # 3) 중심 + 마커 (axis 방향과 수직 방향으로 직접 그림)
+        # axis 방향 선
+        cv2.line(
+            vis,
+            (int(cx - ux * cross_size), int(cy - uy * cross_size)),
+            (int(cx + ux * cross_size), int(cy + uy * cross_size)),
+            color, thickness,
+        )
+        # axis 수직 방향 선
+        cv2.line(
+            vis,
+            (int(cx - nx * cross_size), int(cy - ny * cross_size)),
+            (int(cx + nx * cross_size), int(cy + ny * cross_size)),
+            color, thickness,
+        )
+
+
     def draw_grasp_debug(
-        image: np.ndarray, center: tuple, axis: tuple, line_length: int = 200
+        self,
+        image: np.ndarray,
+        center: tuple,
+        axis: tuple,
+        depth: float,
+        gripper_width_m: float = 0.05,
     ) -> np.ndarray:
-        """이미지에 grasp 중심점과 방향 축을 그려 반환한다."""
+        """원본 이미지에 grasp을 DexNet 스타일로 그린다."""
         vis = image.copy()
         cx, cy = int(center[0]), int(center[1])
-        cv2.circle(vis, (cx, cy), 10, (0, 0, 0), -1)
 
         mag = math.hypot(axis[0], axis[1])
-        if mag > 0:
-            ux, uy = axis[0] / mag, axis[1] / mag
-            pt1 = (int(cx - ux * line_length), int(cy - uy * line_length))
-            pt2 = (int(cx + ux * line_length), int(cy + uy * line_length))
-            cv2.line(vis, pt1, pt2, (0, 0, 0), 4)
+        if mag == 0 or depth <= 0:
+            return vis
+
+        K = self.sensor_config.ir_intrinsic
+        fx = float(K[0, 0])
+        half = (gripper_width_m * fx / depth) / 2.0
+
+        ux, uy = axis[0] / mag, axis[1] / mag
+        self._draw_grasp_marks(vis, cx, cy, ux, uy, half)
         return vis
- 
+
+
+    def draw_cropped_debug(
+        self,
+        cropped: np.ndarray,
+        depth: float,
+        crop_size: int,
+        output_size: int,
+        gripper_width_m: float = 0.05,
+    ) -> np.ndarray:
+        """크롭 이미지 중앙에 grasp을 가로 방향으로 그린다 (DexNet 스타일)."""
+        vis = cropped.copy()
+        h, w = vis.shape[:2]
+        cx, cy = w // 2, h // 2
+
+        if depth <= 0:
+            return vis
+
+        K = self.sensor_config.ir_intrinsic
+        fx = float(K[0, 0]) * (output_size / crop_size)
+        half = (gripper_width_m * fx / depth) / 2.0
+
+        # cropped는 axis가 가로 정렬돼있다고 가정
+        self._draw_grasp_marks(vis, cx, cy, ux=1.0, uy=0.0, half=half)
+        return vis
 # ── 사용 예시 ───────────────────────────────────────────────
 
 if __name__ == "__main__":
-    MESH = "/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/bin.stl"
-    mesh=trimesh.load(MESH)
-    mesh.apply_scale(0.001)
-    trans,_=mesh.compute_stable_poses()
-    renderer = GraspRenderer(MESH, mesh_scale=(0.001, 0.001, 0.001))
+    renderer = GraspRenderer(mesh_path='/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/PVCTT13.stl')    # 실제 클래스명에 맞게
 
-    # 1) 단일 시점 렌더링
-    while True:
-        cam_pos = np.array([0.0, 0.0, 0.4])
-        renderer.set_material(1.0,0.8)
-        renderer.set_stable_pose(trans[0])
-        depth1 = renderer.render(cam_pos,target_pos=[0,0,0])
-        valid_mask = depth1 > 0
+    # 가짜 depth 이미지 (480x640, 0.3~1.0m)
+    rng = np.random.default_rng(0)
+    H, W = 480, 640
+    depth = rng.uniform(0.3, 1.0, size=(H, W)).astype(np.float32)
 
-        _, indices = distance_transform_edt(~valid_mask, return_indices=True)
-        result = depth1[indices[0], indices[1]]
-        cv2.imshow("depth", result)
-        cv2.waitKey(0)
+    # 가짜 cropped (output_size x output_size)
+    crop_size, output_size = 96, 224
+    cropped = rng.uniform(0.3, 1.0, size=(output_size, output_size)).astype(np.float32)
+
+    # depth → 컬러맵
+    def to_color(d):
+        norm = cv2.normalize(d, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+        return cv2.applyColorMap(norm, cv2.COLORMAP_JET)
+
+    depth_color = to_color(depth)
+    cropped_color = to_color(cropped)
+
+    # 다양한 각도로 테스트
+    grasp_depth = 0.5
+    for deg in [0, 30, 60, 90, 135]:
+        rad = np.deg2rad(deg)
+        axis = (np.cos(rad), np.sin(rad))
+        center = (W // 2, H // 2)
+
+        debug_full = renderer.draw_grasp_debug(
+            image=depth_color, center=center, axis=axis, depth=grasp_depth
+        )
+        debug_cropped = renderer.draw_cropped_debug(
+            cropped=cropped_color, depth=grasp_depth,
+            crop_size=crop_size, output_size=output_size,
+        )
+
+        h = debug_full.shape[0]
+        debug_cropped_resized = cv2.resize(debug_cropped, (h, h), interpolation=cv2.INTER_NEAREST)
+        combined = cv2.hconcat([debug_full, debug_cropped_resized])
+
+        cv2.imshow(f'angle={deg}deg (q=quit, any=next)', combined)
+        key = cv2.waitKey(0)
+        cv2.destroyAllWindows()
+        if key == ord('q'):
+            break
