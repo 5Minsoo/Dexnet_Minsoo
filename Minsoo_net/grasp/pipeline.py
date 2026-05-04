@@ -9,6 +9,7 @@ from Minsoo_net.grasp import (
     GraspCollisionChecker,
     RobotGripper,
     visualize_grasps,
+    visualize_samples,
     PointGraspMetrics3D,
     QuasiStaticGraspQualityRV,
     GraspableObjectPoseGaussianRV,
@@ -114,6 +115,10 @@ class GraspPipeline:
             print(f"Total grasps: {len(self.initial_grasps)}")
             print(f"Collision-free grasps: {len(collision_free_grasps)}")
             print(f"Collision grasps: {len(collision_grasps)}")
+            if use_visual:
+                # visualize_samples(self.graspable_obj,self.initial_grasps,pose=pose,title="Sampled Grasps")
+                visualize_grasps(self.graspable_obj,aligned_grasps,pose=pose,title="Sampled Grasps", duplicate=True)
+                # visualize_grasps(self.graspable_obj,aligned_grasps,pose=pose,title="Sampled Grasps",gripper=self.gripper)
             seen={}
             for grasp in collision_free_grasps:
                 key=grasp.grasp_key()
@@ -144,6 +149,10 @@ class GraspPipeline:
                 visualize_grasps(self.graspable_obj, collision_grasps, pose=pose, gripper=gripper_vis,title="Collision Grasps")
                 visualize_grasps(self.graspable_obj, collision_free_grasps, pose=pose, gripper=gripper_vis,title="Collision free Grasps")
                 visualize_grasps(self.graspable_obj, quality_grasps, pose=pose, gripper=gripper_vis,title="Quality Grasps")
+
+                # visualize_grasps(self.graspable_obj, collision_grasps, pose=pose,title="Collision Grasps",gripper=self.gripper)
+                # visualize_grasps(self.graspable_obj, collision_free_grasps, pose=pose,title="Collision free Grasps",gripper=self.gripper)
+                # visualize_grasps(self.graspable_obj, quality_grasps, pose=pose,title="Quality Grasps",gripper=self.gripper)
             
             yield pose, failed_grasps, quality_grasps, quality
             yielded_count += 1
@@ -152,7 +161,7 @@ class GraspPipeline:
 if __name__ == "__main__":
     # 1. 설정 파라미터
     # 실제 환경에 맞춰 경로를 수정하세요.
-    OBJ_FILE_PATH = '/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/Frankapanda/4/00998298_6b183878e2bdd76a6ec6b351_step_000_0010.obj'
+    OBJ_FILE_PATH = '/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/Frankapanda/3/00576648_d4d00869b27c21532c4f2e7b_step_000_0000.obj'
     # OBJ_FILE_PATH='/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/bin.stl'
     
     # --- 테스트 제어 변수 ---

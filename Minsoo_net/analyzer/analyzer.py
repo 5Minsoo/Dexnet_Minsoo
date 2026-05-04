@@ -15,7 +15,7 @@ from Minsoo_net.model.train import DexNetZarrDataset
 
 seed=24098
 zarr_path='/home/minsoo/Dexnet_Minsoo/grasp_dataset_ABC.zarr'
-model_path='/home/minsoo/Dexnet_Minsoo/output/04-30_17-00_grasp_dataset_ABC_th0.002/best.pt'
+model_path='/home/minsoo/Dexnet_Minsoo/output/Dexnet_original/model.pt'
 metric_thresh=0.002
 train_split=0.8
 thresh = 0.5

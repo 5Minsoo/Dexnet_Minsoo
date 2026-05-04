@@ -286,7 +286,7 @@ class GraspRenderer:
         ux: float,
         uy: float,
         half: float,
-        color=(0, 255, 0),
+        color=(0, 0, 255),
         thickness: int = 2,
         arrow_thickness: int = 2,
         jaw_ratio: float = 0.5,
@@ -383,7 +383,7 @@ class GraspRenderer:
         half = (gripper_width_m * fx / depth) / 2.0
 
         # cropped는 axis가 가로 정렬돼있다고 가정
-        self._draw_grasp_marks(vis, cx, cy, ux=1.0, uy=0.0, half=half)
+        self._draw_grasp_marks(vis, cx, cy, ux=1.0, uy=0.0, half=half,thickness=1,arrow_thickness=1,cross_size=3)
         return vis
 # ── 사용 예시 ───────────────────────────────────────────────
 

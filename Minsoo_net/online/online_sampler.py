@@ -252,7 +252,7 @@ class CrossEntropyRobustGraspingPolicy:
             q_values = self.model.predict_success(cropped_input, poses_input)
 
             if self.visualize:
-                self.viz.visualize_debug(depth_image._data, samples, q_values)
+                self.viz.visualize_debug(depth_image._data, samples, q_values,max_show=10)
 
             # 3. elite 선택
             num_elite = max(int(len(samples) * elite_percentage), 1)

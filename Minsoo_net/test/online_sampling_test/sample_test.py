@@ -43,7 +43,7 @@ class GraspPlanner:
         logging.debug(f'self.depth._data shape{self.depth._data.shape}')
         logging.debug(f'입력 이미지 mean: {np.mean(a=self.depth._data)} std: {np.std(a=self.depth._data)}')
         grasp, score = self.plan_grasp()
-        self.viz.visualize_from_grasps(self.image,grasp)
+        # self.viz.visualize_from_grasps(self.image,grasp,max_show=3)
         logging.debug(f'best grasp: {grasp}, score: {score}')
         return grasp, score
 

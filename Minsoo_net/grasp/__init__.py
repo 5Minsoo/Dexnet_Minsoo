@@ -6,7 +6,7 @@ from .grasp import ParallelJawGrasp
 from .grasp_sampler import AntipodalGraspSampler
 from .collision_checker import GraspCollisionChecker
 from .gripper import RobotGripper
-from .visualize import visualize_grasps
+from .visualize import visualize_grasps, visualize_samples
 from .quality import PointGraspMetrics3D
 from .robust_quality import QuasiStaticGraspQualityRV
 from .random_variables import GraspableObjectPoseGaussianRV, ParamsGaussianRV, ParallelJawGraspPoseGaussianRV
@@ -21,6 +21,7 @@ __all__ = [
     'GraspCollisionChecker',
     'RobotGripper',
     'visualize_grasps',
+    'visualize_samples',
     'PointGraspMetrics3D',
     'GraspPipeline'
 ]

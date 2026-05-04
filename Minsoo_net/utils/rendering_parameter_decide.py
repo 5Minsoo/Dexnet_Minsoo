@@ -6,6 +6,7 @@ import json
 from sapien.core import Pose
 from sapien.sensor import StereoDepthSensor, StereoDepthSensorConfig
 from scipy.spatial.transform import Rotation as R
+from scipy.spatial.transform import Rotation as R
 sapien.set_log_level("error")
 
 # --- 헬퍼 함수들 ---
@@ -21,7 +22,9 @@ def look_at(camera_pos, target_point=None, up_vector=np.array([0.0,0.0,1.0])):
     rot = R.from_matrix(se).as_quat()
     return [rot[3],rot[0],rot[1],rot[2]]
 
-path='/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/Frankapanda/3/00466638_0454db3e9640bf872a6ebe77_step_000_0000.obj'
+path='/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/Frankapanda/3/00576648_d4d00869b27c21532c4f2e7b_step_000_0000.obj'
+cam_mesh_path = '/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/D455.obj'
+
 # --- 환경 설정 및 객체 로드 ---
 mesh = trimesh.load(path)
 stable_poses, stable_probs = mesh.compute_stable_poses()
@@ -40,8 +43,11 @@ def apply_stable_pose(pose_idx):
 t, r_quat = apply_stable_pose(0)
 
 scene = sapien.Scene()
+ground_material = sapien.render.RenderMaterial()
+ground_material.set_base_color([0.1,0.4,0.15,1.0])  # 밝은 회색
+
 scene.set_timestep(1)
-scene.add_ground(altitude=0)
+scene.add_ground(altitude=0, render_material=ground_material)
 scene.set_ambient_light([0.5, 0.5, 0.5])
 scene.add_directional_light([0, 1, -1], [0.5, 0.5, 0.5])
 sapien.render.set_camera_shader_dir("rt")
@@ -52,11 +58,29 @@ sapien.render.set_ray_tracing_denoiser("optix")
 material = sapien.render.RenderMaterial()
 material.set_metallic(1.0)
 material.set_roughness(0.6)
+material.set_base_color([0.6, 0.6, 0.6, 1.0]) 
+
 
 builder = scene.create_actor_builder()
 builder.add_visual_from_file(path, material=material)
 bin_obj = builder.build_kinematic(name="bin")
 bin_obj.set_pose(sapien.Pose(p=t, q=r_quat))
+
+# --- 카메라 mesh 액터 (kinematic, 중력영향 X) ---
+cam_material = sapien.render.RenderMaterial()
+cam_material.set_metallic(0.3)
+cam_material.set_roughness(0.7)
+cam_material.set_base_color([0.8, 0.8, 0.8, 1.0])  # 어두운 회색
+
+cam_builder = scene.create_actor_builder()
+# STEP 파일은 sapien에서 직접 못 읽을 수 있어서 trimesh로 변환 후 obj로 저장하거나
+# add_visual_from_file이 STEP을 지원하는지 확인 필요. 보통 obj/stl/dae 권장.
+cam_builder.add_visual_from_file(
+    filename=cam_mesh_path,
+    scale=[0.001, 0.001, 0.001],  # STEP 파일은 보통 mm 단위 → m로 변환
+    material=cam_material,
+)
+cam_actor = cam_builder.build_kinematic(name="d455_cam")
 
 # --- 센서 설정 ---
 cam_pos = np.array([0.0, 0.0, 0.5])
@@ -65,6 +89,28 @@ orientation = look_at(cam_pos)
 sensor_config = StereoDepthSensorConfig(model="D435")
 sensor_mount_actor = scene.create_actor_builder().build_kinematic()
 sensor = StereoDepthSensor(config=sensor_config, mount_entity=sensor_mount_actor, pose=Pose(cam_pos, orientation))
+
+# 카메라 mesh도 동일한 pose로 배치
+
+
+# 원래 카메라 orientation (look_at에서 나온 값, [w,x,y,z] 순)
+# scipy는 [x,y,z,w] 순이라 변환 필요
+quat_xyzw = [orientation[1], orientation[2], orientation[3], orientation[0]]
+rot_cam = R.from_quat(quat_xyzw)
+
+# 90도 회전 (어느 축인지에 따라 골라쓰세요)
+rot_offset = R.from_euler('x', 90, degrees=True)  # X축 90도
+rot_offset = R.from_euler('y', 90, degrees=True)  # Y축 90도
+# rot_offset = R.from_euler('z', 90, degrees=True)  # Z축 90도
+
+# 회전 합성 (mesh 로컬 축 기준 회전 = 오른쪽에 곱하기)
+rot_final = rot_cam * rot_offset
+
+# 다시 sapien 형식 [w,x,y,z]로
+q = rot_final.as_quat()  # [x,y,z,w]
+orientation_mesh = [q[3], q[0], q[1], q[2]]
+
+cam_actor.set_pose(Pose(cam_pos, orientation_mesh))
 
 # --- OpenCV 슬라이더 ---
 def nothing(x): pass
@@ -157,6 +203,14 @@ while not viewer.closed:
 
         sensor = StereoDepthSensor(config=sensor_config, mount_entity=sensor_mount_actor, pose=Pose(cam_pos, orientation))
         viewer.set_camera_pose(sensor.get_pose())
+
+        # 카메라 mesh도 따라가기
+        quat_xyzw = [orientation[1], orientation[2], orientation[3], orientation[0]]
+        rot_mesh = R.from_quat(quat_xyzw) * R.from_euler('y', 90, degrees=True) * R.from_euler('z', 90, degrees=True)
+        q = rot_mesh.as_quat()
+        orientation_mesh = [q[3], q[0], q[1], q[2]]
+
+        cam_actor.set_pose(Pose(cam_pos, orientation_mesh))
 
         prev_sensor_params = {'bw': cur_bw_val, 'unq': cur_unq, 'p1': cur_p1, 'p2': cur_p2}
         prev_cam_params = {'r': cur_cam_r, 'theta': cur_cam_theta, 'phi': cur_cam_phi}

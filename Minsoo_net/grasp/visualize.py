@@ -40,7 +40,7 @@ def _create_stick_gripper(open_width=0.05, finger_length=0.045,
 
 def visualize_grasps(graspable, grasps, pose,
                      finger_length=0.04, tube_radius=0.0015,
-                     gripper=None, gripper_type="panda", title=None):
+                     gripper=None, gripper_type="panda", title=None, duplicate=False):
     """
     pyrender로 메쉬 + 그래스프를 시각화한다.
 
@@ -68,6 +68,8 @@ def visualize_grasps(graspable, grasps, pose,
         viewer 창 제목
     """
     assert gripper_type in ["panda", "robotiq"]
+    if not grasps:
+        return 
 
     scene = pyrender.Scene(ambient_light=[0.3, 0.3, 0.3])
 
@@ -79,31 +81,31 @@ def visualize_grasps(graspable, grasps, pose,
     axis_world = trimesh.creation.axis(
         transform=np.eye(4), axis_length=0.08, origin_size=0.003
     )
-    scene.add(pyrender.Mesh.from_trimesh(axis_world, smooth=False), pose=np.eye(4))
+    # scene.add(pyrender.Mesh.from_trimesh(axis_world, smooth=False), pose=np.eye(4))
 
     # ---- 오브젝트 pose 좌표축 ----
     axis_pose = trimesh.creation.axis(
         transform=pose, axis_length=0.03, origin_size=0.003
     )
-    scene.add(pyrender.Mesh.from_trimesh(axis_pose, smooth=False), pose=np.eye(4))
+    # scene.add(pyrender.Mesh.from_trimesh(axis_pose, smooth=False), pose=np.eye(4))
 
     # ---- 색상 팔레트 ----
     colors = [
-        [255, 50, 50, 255],
-        [50, 50, 255, 255],
-        [50, 200, 50, 255],
-        [255, 165, 0, 255],
-        [200, 50, 200, 255],
-        [0, 200, 200, 255],
-        [255, 255, 50, 255],
-        [150, 75, 0, 255],
+        [0,255,0,255],
     ]
+    red = [255, 0, 0, 255]
+
+    min_angle_idx = min(
+      range(len(grasps)),                                                           
+      key=lambda i: grasps[i].grasp_angles_from_stp_z(pose)[1]
+  )  
 
     # ---- 그래스프 ----
     for i, g in enumerate(grasps):
         T = g.T_grasp_obj
         color = colors[i % len(colors)]
-
+        if i == min_angle_idx and duplicate:
+            color = red
         # 그래스프 좌표축
         axis_grasp = trimesh.creation.axis(
             transform=pose @ T, axis_length=0.01, origin_size=0.001
@@ -174,24 +176,24 @@ def visualize_samples(graspable, grasps, pose,
     axis_world = trimesh.creation.axis(
         transform=np.eye(4), axis_length=0.08, origin_size=0.003
     )
-    scene.add(pyrender.Mesh.from_trimesh(axis_world, smooth=False), pose=np.eye(4))
+    # scene.add(pyrender.Mesh.from_trimesh(axis_world, smooth=False), pose=np.eye(4))
 
     # ---- 오브젝트 pose 좌표축 ----
     axis_pose = trimesh.creation.axis(
         transform=pose, axis_length=0.03, origin_size=0.003
     )
-    scene.add(pyrender.Mesh.from_trimesh(axis_pose, smooth=False), pose=np.eye(4))
+    # scene.add(pyrender.Mesh.from_trimesh(axis_pose, smooth=False), pose=np.eye(4))
 
     # ---- 색상 팔레트 ----
     colors = [
-        [255, 50, 50, 255],
-        [50, 50, 255, 255],
-        [50, 200, 50, 255],
-        [255, 165, 0, 255],
-        [200, 50, 200, 255],
-        [0, 200, 200, 255],
-        [255, 255, 50, 255],
-        [150, 75, 0, 255],
+        [255, 0, 0, 255],      # 순수 빨강
+        [255, 30, 0, 255],
+        [255, 60, 0, 255],
+        [255, 90, 0, 255],
+        [255, 120, 0, 255],
+        [255, 140, 0, 255],
+        [255, 150, 0, 255],
+        [255, 165, 0, 255],    # 주황
     ]
 
     # ---- 그래스프 ----
@@ -200,6 +202,10 @@ def visualize_samples(graspable, grasps, pose,
         half_w = g.open_width / 2.0
         p1 = g.center + half_w * v
         p2 = g.center - half_w * v
+        
+        p1=g.contact_points[0]
+        p1=g.contact_points[1]
+
         T = g.T_grasp_obj
         color = colors[i % len(colors)]
 
@@ -207,7 +213,7 @@ def visualize_samples(graspable, grasps, pose,
         axis = trimesh.creation.axis(
             transform=pose @ T, axis_length=0.01, origin_size=0.001
         )
-        scene.add(pyrender.Mesh.from_trimesh(axis, smooth=False), pose=np.eye(4))
+        # scene.add(pyrender.Mesh.from_trimesh(axis, smooth=False), pose=np.eye(4))
 
         # ---- p1, p2 막대 (axis와 평행, 바깥쪽 방향) ----
         p1_outer = p1 + bar_length * v   # p1에서 +v 방향(바깥)
