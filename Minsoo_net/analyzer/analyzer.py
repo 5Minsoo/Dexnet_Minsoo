@@ -7,14 +7,15 @@ import zarr
 import torch
 from torch.utils.data import Subset, DataLoader
 import matplotlib.pyplot as plt
-from sklearn.metrics import (precision_recall_curve, roc_curve, auc, average_precision_score)                   
+from sklearn.metrics import (precision_recall_curve, roc_curve, auc, average_precision_score)    
+from tqdm import tqdm               
 
 from Minsoo_net.model.model import DexNet2
 from Minsoo_net.model.train import DexNetZarrDataset
 
 seed=24098
 zarr_path='/home/minsoo/Dexnet_Minsoo/grasp_dataset_ABC.zarr'
-model_path='/home/minsoo/Dexnet_Minsoo/output/model.pt'
+model_path='/home/minsoo/Dexnet_Minsoo/output/04-30_17-00_grasp_dataset_ABC_th0.002/best.pt'
 metric_thresh=0.002
 train_split=0.8
 thresh = 0.5
@@ -31,14 +32,17 @@ all_paths = []
 
 success = 0  
 total_samples = 0
-for obj_key in root.keys():
-    obj_group = root[obj_key]
-    for pose_key in obj_group.keys():
-        labels = np.array(obj_group[pose_key]["labels"])
-        total_samples+= len(labels)
-        num_grasps=len(labels)
-        for grasp_idx in range(num_grasps):
-            all_paths.append((obj_key, pose_key, grasp_idx))
+
+obj_keys = list(root.keys())
+total_poses = sum(len(list(root[k].keys())) for k in obj_keys)
+with tqdm(total=total_poses, desc="Scanning poses") as pbar:
+    for obj_key in root.keys():
+        obj_group = root[obj_key]
+        for pose_key in obj_group.keys():
+            num_grasps = np.array(obj_group[pose_key]["labels"]).shape[0]
+            total_samples += num_grasps
+            all_paths.extend((obj_key, pose_key, i) for i in range(num_grasps))
+            pbar.update(1)
 
 def visualize_first_conv_filters(model, save_path="conv1_filters.png"):
     """첫 번째 conv 층의 필터(weight) 시각화"""

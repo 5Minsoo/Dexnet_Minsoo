@@ -77,7 +77,7 @@ uniqueness_ratio: 50
 # ---------------------------------------------------------
 # 데이터셋 생성 파라미터들
 # ---------------------------------------------------------
-zarr_path : "/home/minsoo/Dexnet_Minsoo/grasp_dataset_ABC.zarr"
+zarr_path : "/home/minsoo/Dexnet_Minsoo/grasp_dataset_ABC_Desktop.zarr"
 num_grasps : 100
 quality_threshold : 0.002
 stable_pose_prob_threshold : 0.05 # 현재는 안씀

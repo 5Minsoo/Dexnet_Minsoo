@@ -27,7 +27,7 @@ import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader, Subset
 import zarr
 import yaml
-from model import DexNet2
+from Minsoo_net.model.model import DexNet2
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -52,11 +52,11 @@ CFG = dict(
     train_split=0.8,
 
     # ── optimizer ──
-    base_lr=0.04,
+    base_lr=0.02,
     momentum=0.9,
     weight_decay=0.0005,
     decay_rate=0.95,
-    decay_step_multiplier=1.5,
+    decay_step=200000,
     drop_rate=0.2,
 
     # ── 라벨 ──
@@ -315,11 +315,11 @@ def train(args,cfg):
     
     steps_per_epoch = len(train_loader)   # = len(train_ds) // batch_size (drop_last=True)
 
-    cfg["decay_step"] = int(cfg["decay_step_multiplier"] * steps_per_epoch)
+    cfg["decay_step"] = int(cfg["decay_step"])
 
     log.info(f"Steps per epoch: {steps_per_epoch}")
     log.info(f"Decay step: {cfg['decay_step']} "
-            f"(= {cfg['decay_step_multiplier']} × {steps_per_epoch})")
+            f"(= {cfg['decay_step']} × {steps_per_epoch})")
     
     val_loader = DataLoader(
         val_ds, batch_size=cfg["val_batch_size"],
