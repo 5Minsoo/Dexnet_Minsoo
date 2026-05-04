@@ -1,0 +1,16 @@
+{
+    "FN": 254652,
+    "FP": 343,
+    "TN": 844936,
+    "TP": 198,
+    "accuracy": 0.7682135458659848,
+    "ap_score": 0.21619541807612527,
+    "auc_score": 0.5031921299708908,
+    "error_rate": 0.23178645413401522,
+    "f1": 0.0015505636455474155,
+    "model_path": "/home/minsoo/Dexnet_Minsoo/output/Dexnet_original/model.pt",
+    "precision": 0.3659889094269871,
+    "recall": 0.0007769276044732196,
+    "thresh": 0.5,
+    "total_samples": 1100129
+}

@@ -1,0 +1,16 @@
+{
+    "FN": 57659,
+    "FP": 54037,
+    "TN": 791033,
+    "TP": 197400,
+    "accuracy": 0.8984700885078023,
+    "ap_score": 0.8480037231232772,
+    "auc_score": 0.9552121244069658,
+    "error_rate": 0.1015299114921977,
+    "f1": 0.7794730856709629,
+    "model_path": "/home/minsoo/Dexnet_Minsoo/output/04-30_17-00_grasp_dataset_ABC_th0.002/best.pt",
+    "precision": 0.7850873180955865,
+    "recall": 0.7739385789170349,
+    "thresh": 0.5,
+    "total_samples": 1100129
+}

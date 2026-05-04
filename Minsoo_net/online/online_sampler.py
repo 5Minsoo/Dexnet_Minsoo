@@ -50,7 +50,7 @@ def camera_coords(depth_image, pixel_points, K_inv):
 viz=GraspVisualizer2D()
 
 class OnlineAntipodalSampler:
-    def __init__(self, gripper_width_m=0.05,grad_threshold=0.015, K=None, max_grasps=10000, image_margin=0.10, max_edge=1000, gripper_min= 0.3, gripper_max= 1.5, offset = [0.01, 0.05, 10], visualize=False):
+    def __init__(self, gripper_width_m=0.05,grad_threshold=0.015, K=None, max_grasps=1000, image_margin=0.10, max_edge=100, gripper_min= 0.3, gripper_max= 1.5, offset = [0.01, 0.05, 10], visualize=False):
         self.gripper_width_m = gripper_width_m  
         if K is None:
             self.K=np.array([[392.23574829  , 0.     ,    324.36325073],
@@ -229,7 +229,7 @@ class CrossEntropyRobustGraspingPolicy:
         else:
             self.camera=None
             self.K=None
-        self.sampler=sampler
+        self.sampler=sampler(image_margin=0.3)
         
     def cem_best(self, depth_image, elite_percentage=0.2, num_iters=3, gmm_component_frac=0.3, reg_covar=1e-3, filter=None):
         # 1. 초기 샘플링
