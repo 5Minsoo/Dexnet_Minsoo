@@ -1,27 +1,27 @@
 tilts:
   left:
-    joint_1: 15.0000
-    joint_2: -2.0000
-    joint_3: 108.0000
+    joint_1: 13.00
+    joint_2: -0.0000
+    joint_3: 88.0000
     joint_4: -5.0002
-    joint_5: 60.0004
-    joint_6: -68.9872
+    joint_5: 75.0004
+    joint_6: -72.9872
 
   vertical:
-    joint_1: 11.1440
-    joint_2: 9.8664
-    joint_3: 93.6280
-    joint_4: 0.1203
-    joint_5: 75.0401
-    joint_6: -75.1318
+    joint_1: 9.0
+    joint_2: 17.0
+    joint_3: 66.0
+    joint_4: 0.0
+    joint_5: 95.0
+    joint_6: -77.0
 
   back:
-    joint_1: 33.0007
-    joint_2: 18.9978
-    joint_3: 84.0018
-    joint_4: -12.0000
-    joint_5: 91.9928
-    joint_6: -227.9999
+    joint_1: 25.0007
+    joint_2: 31.9978
+    joint_3: 45.0018
+    joint_4: -21.0000
+    joint_5: 112.9928
+    joint_6: -61.9999
   
 
 cem_num: 5 # CEM 최대 반복 횟수
@@ -37,6 +37,6 @@ gripper_width_max: 1.5
 
 box_z: 0.123 # World좌표 기준 box 위치
 
-sampling_offset: [0.00, 0.05, 10]
+sampling_offset: [-0.02, 0.05, 10]
 
-model_path: '/home/minsoo/Dexnet_Minsoo/output/04-22_10-21_grasp_dataset_big1_th0.002/best.pt'
+model_path: '/home/minsoo/Dexnet_Minsoo/output/04-30_17-00_grasp_dataset_ABC_th0.002/best.pt'

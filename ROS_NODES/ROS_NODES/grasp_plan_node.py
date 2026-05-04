@@ -187,9 +187,15 @@ class GraspPlannerNode(Node):
         input1=input('계속하려면 Enter')
         self.helper.move_cartesian(pos,quat)
 
+        time.sleep(0.3)
+        pos-=0.10*offset_dir
+        self.helper.move_cartesian(pos,quat)
+
         pos-=(offset+self.config["hard_offset"])*offset_dir
-        logging.debug(f' 다음 이동 Position: {pos}')
+        logging.debug(f' 다음 이동 Position: {pos}, 취소: q')
         input1=input('계속하려면 Enter')
+        if input1 == 'q':
+            return 0
 
         self.helper.move_cartesian(pos,quat)
         time.sleep(0.5)

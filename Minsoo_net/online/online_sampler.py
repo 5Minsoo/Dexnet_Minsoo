@@ -229,7 +229,7 @@ class CrossEntropyRobustGraspingPolicy:
         else:
             self.camera=None
             self.K=None
-        self.sampler=sampler()
+        self.sampler=sampler
         
     def cem_best(self, depth_image, elite_percentage=0.2, num_iters=3, gmm_component_frac=0.3, reg_covar=1e-3, filter=None):
         # 1. 초기 샘플링
@@ -289,6 +289,7 @@ class CrossEntropyRobustGraspingPolicy:
         logging.debug(f'모델 계산 시간{(end_time-start_time):.2f}')
 
         best_idx = np.argmax(q_values)
+        logging.debug(f'grasp pose min: {samples[:,3].min()}, best pose: {samples[best_idx][3]}')
         return samples[best_idx], q_values[best_idx]
 
 
