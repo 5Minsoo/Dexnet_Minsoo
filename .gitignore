@@ -33,3 +33,4 @@ utils
 *example*
 
 *.sh
+*.lock
