@@ -38,7 +38,7 @@ batch_size = 2048
 batch_flush = 512
 
 # --- 단일 mesh 파일 지정 ---
-mesh_path = Path('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/Frankapanda/3/00576648_d4d00869b27c21532c4f2e7b_step_000_0000.obj')
+mesh_path = Path('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/FKT38-A50-P25.stl')
 object_name = mesh_path.stem
 mesh_path_str = str(mesh_path)
 

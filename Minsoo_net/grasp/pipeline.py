@@ -111,14 +111,14 @@ class GraspPipeline:
             aligned_grasps = [g for grasp in perpendicular_grasps for g in grasp.multi_angle_grasps(pose)]
             # 1. 충돌 검사
             collision_grasps, collision_free_grasps = self.filter_collision_free_grasps(aligned_grasps, pose, obj_key)
-            
+            vertical_grasps=collision_free_grasps+collision_grasps
             print(f"Total grasps: {len(self.initial_grasps)}")
             print(f"Collision-free grasps: {len(collision_free_grasps)}")
             print(f"Collision grasps: {len(collision_grasps)}")
             if use_visual:
                 # visualize_samples(self.graspable_obj,self.initial_grasps,pose=pose,title="Sampled Grasps")
                 visualize_grasps(self.graspable_obj,aligned_grasps,pose=pose,title="Sampled Grasps", duplicate=True)
-                # visualize_grasps(self.graspable_obj,aligned_grasps,pose=pose,title="Sampled Grasps",gripper=self.gripper)
+                visualize_grasps(self.graspable_obj,vertical_grasps,pose=pose,title="vertical_grasps")
             seen={}
             for grasp in collision_free_grasps:
                 key=grasp.grasp_key()

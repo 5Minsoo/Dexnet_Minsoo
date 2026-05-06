@@ -84,9 +84,9 @@ stable_pose_prob_threshold : 0.05 # 현재는 안씀
 num_stable_poses : 15
 max_angle_deg : 30
 cam_offset:
-  start: 0.45
-  stop: 0.60
-  num: 10
+  start: 0.25
+  stop: 0.30
+  num: 2
 
 angle_offsets_deg:
   start: -90

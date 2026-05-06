@@ -4,7 +4,7 @@ import trimesh
 
 
 def _create_stick_gripper(open_width=0.05, finger_length=0.045,
-                          base_height=0.03, tube_radius=0.0015,
+                          base_height=0.02, tube_radius=0.0015,
                           sections=6, color=[0, 255, 0, 255]):
     """ GraspFactory 시각화 방식. 막대로 grasp 형상화. 현재는 robotiq-hande 전용.
     """
@@ -91,11 +91,15 @@ def visualize_grasps(graspable, grasps, pose,
 
     # ---- 색상 팔레트 ----
     colors = [
-        [0,255,0,255],
+        [0,170,0,255],
     ]
     red = [255, 0, 0, 255]
 
     min_angle_idx = min(
+      range(len(grasps)),                                                           
+      key=lambda i: grasps[i].grasp_angles_from_stp_z(pose)[1]
+  )  
+    max_angle_idx = min(
       range(len(grasps)),                                                           
       key=lambda i: grasps[i].grasp_angles_from_stp_z(pose)[1]
   )  
