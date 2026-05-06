@@ -226,6 +226,63 @@ class GraspVisualizer2D:
         cv2.waitKey(0)
         return canvas
 
+    def visualize_cropped_debug(
+            self,
+            cropped_images: np.ndarray,
+            max_show: int = None,
+            upscale: int = 4,
+            wait_time: int = 0
+        ) -> None:
+            """
+            크롭된 32x32 이미지 배열(또는 리스트)을 입력받아 가로 방향 마커를 그리고 하나씩 순차적으로 띄웁니다.
+            
+            :param cropped_images: (N, H, W) 또는 (N, H, W, C) 배열
+            :param max_show: 보여줄 최대 이미지 개수
+            :param upscale: 시각화를 위한 이미지 확대 배율 (32x32는 너무 작아 4배 기본 설정)
+            :param wait_time: cv2.waitKey 대기 시간 (0이면 무한 대기, 1 이상이면 ms 단위로 자동 넘어감)
+            """
+            if isinstance(cropped_images, list):
+                cropped_images = np.array(cropped_images)
+
+            n = len(cropped_images)
+            if max_show is not None and max_show < n:
+                idx = np.random.choice(n, max_show, replace=False)
+                cropped_images = cropped_images[idx]
+                n = max_show
+
+            for i, img in enumerate(cropped_images):
+                # 1. 정규화 및 컬러 이미지 변환
+                canvas = self._normalize_image(img)
+                h, w = canvas.shape[:2]
+
+                # 2. 마커를 선명하게 그리기 위해 그리기 전 업스케일링 (INTER_NEAREST로 픽셀 깨짐 방지)
+                if upscale > 1:
+                    canvas = cv2.resize(canvas, (w * upscale, h * upscale), interpolation=cv2.INTER_NEAREST)
+                    h, w = canvas.shape[:2]
+
+                # 3. 중앙 및 가로축 설정
+                cx, cy = w // 2, h // 2
+                half = int((w / 2) * 0.6) # 너비의 80%
+
+                # 마커 그리기
+                self._draw_grasp_marks(
+                    canvas, cx, cy, ux=1.0, uy=0.0, half=half,
+                    color=self.grasp_color,
+                    thickness=1 if upscale < 3 else 2,
+                    arrow_thickness=1 if upscale < 3 else 2,
+                    cross_size=max(2, int(w * 0.1))
+                )
+
+                # 4. 이미지 띄우기
+                cv2.imshow("Cropped Debug", canvas)
+                
+                # 키 입력 대기 (아무 키나 누르면 다음 이미지, q나 ESC 누르면 종료)
+                key = cv2.waitKey(wait_time) & 0xFF
+                if key == ord('q') or key == 27:
+                    print("시각화를 중단합니다.")
+                    break
+
+            cv2.destroyAllWindows()
 
 # ── 사용 예시 ──
 if __name__ == "__main__":
@@ -246,7 +303,7 @@ if __name__ == "__main__":
 
     # 200개 중 30개만 보여주기
     viz.visualize_2d(dummy_depth, centers, thetas=thetas,
-                     title="Grasp Candidates", max_show=10)
+                     title="Grasp Candidates", max_show=3)
 
     all_samples = np.column_stack([
         centers[:, 1], centers[:, 0], thetas,
@@ -256,4 +313,11 @@ if __name__ == "__main__":
 
     # debug: 200개 중 best 포함 20개만 그리기
     viz.visualize_debug(dummy_depth, all_samples, success_probs,
-                        top_k=10, max_show=20)
+                        top_k=10, max_show=3)
+    # === 기존 테스트 코드 아래에 이어서 추가 ===
+    
+    # 가상의 32x32 크롭 이미지 50개 생성 (테스트용)
+    dummy_crops = np.random.randint(0, 255, (50, 32, 32), dtype=np.uint8)
+    
+    # 최대 24개만 8열(가로 8개) 그리드로 보여주기 (4배 확대 -> 128x128 캔버스)
+    viz.visualize_cropped_debug(dummy_crops, max_show=24, upscale=4)

@@ -14,6 +14,8 @@ from Minsoo_net.online.depth_image import DepthImage
 from Minsoo_net.online.visualize import GraspVisualizer2D
 from Minsoo_net.online.online_camera import RealSenseCamera
 from Minsoo_net.model.model import DexNet2
+from Minsoo_net.grasp.rendering import GraspRenderer
+
 logger = logging.getLogger(__name__)
 
 yaml_path=Path(__file__).parent.parent.resolve() / "config" / "online_config.yaml"
@@ -230,6 +232,7 @@ class CrossEntropyRobustGraspingPolicy:
             self.camera=None
             self.K=None
         self.sampler=sampler(image_margin=0.3)
+        self.renderer=GraspRenderer(mesh_path="")
         
     def cem_best(self, depth_image, elite_percentage=0.2, num_iters=3, gmm_component_frac=0.3, reg_covar=1e-3, filter=None):
         # 1. 초기 샘플링
@@ -253,6 +256,7 @@ class CrossEntropyRobustGraspingPolicy:
 
             if self.visualize:
                 self.viz.visualize_debug(depth_image._data, samples, q_values,max_show=10)
+                self.viz.visualize_cropped_debug(cropped)
 
             # 3. elite 선택
             num_elite = max(int(len(samples) * elite_percentage), 1)
@@ -301,7 +305,7 @@ if __name__=="__main__":
     while True:
         # camera.update_frames()
         # depth=camera.get_depth_image()
-        depth=cv2.imread('/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/saved_data/depth_raw_1.png',cv2.IMREAD_GRAYSCALE)
+        depth=cv2.imread('/home/minsoo/Dexnet_Minsoo/Minsoo_net/test/saved_data2/depth_raw_7.png',cv2.IMREAD_GRAYSCALE)
         depth=depth*0.001
         depth=DepthImage(depth)
         grasp=np.float16(sampler.sample_grasps(depth,use_visualize=False))
