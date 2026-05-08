@@ -40,16 +40,10 @@ This also helps in situations where highly reflective or thin objects cannot be 
 - Generate synthetic training images in SAPIEN that reflect real camera noise on metallic surfaces
 - Validate sim-to-real gap through testing on a real robot
 
-<p align="center">
-  <img width="400" alt="Force closure antipodal sampling 1" src="https://github.com/user-attachments/assets/6c339cc2-a00c-49e5-9e7e-e0e5041918a4" />
-  <img width="400" alt="Force closure antipodal sampling 2" src="https://github.com/user-attachments/assets/d695dc9e-62ad-4df5-b33c-49dd85408056" />
-</p>
-<p align="center"><em>Force Closure & Antipodal Grasp Sampling</em></p>
-
-<p align="center">
-  <img width="400" alt="Model evaluation" src="https://github.com/user-attachments/assets/d2d42ed6-70ba-4581-ac04-04997a438ba4" />
-</p>
-<p align="center"><em>Model Evaluation</em></p>
+<img width="11699" height="3432" alt="Image" src="https://github.com/user-attachments/assets/cdaeb9f1-caf1-4783-8360-7fb9927a9fe4" />
+<p align="center"><em>Dataset Generation</em></p>
+<img width="11699" height="3087" alt="Image" src="https://github.com/user-attachments/assets/e54affb4-9f29-4226-a830-42619143b7a9" />
+<p align="center"><em>Realtime Inference</em></p>
 
 ---
 
@@ -86,5 +80,3 @@ Quantitative results will be updated after experiments are completed.
 ## Acknowledgments
 
 This work was supported by the Korea Institute of Industrial Technology (KITECH), Autonomous Manufacturing Process Research Division.
-
-
