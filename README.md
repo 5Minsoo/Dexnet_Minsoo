@@ -40,7 +40,7 @@ This also helps in situations where highly reflective or thin objects cannot be 
 - Generate synthetic training images in SAPIEN that reflect real camera noise on metallic surfaces
 - Validate sim-to-real gap through testing on a real robot
 
-<img width="11699" height="3432" alt="Image" src="https://github.com/user-attachments/assets/cdaeb9f1-caf1-4783-8360-7fb9927a9fe4" />
+<img width="11699" height="3432" alt="Image" src="https://github.com/user-attachments/assets/44358600-25ba-42fc-9083-757910a81e71" />
 <p align="center"><em>Dataset Generation</em></p>
 <img width="11699" height="3087" alt="Image" src="https://github.com/user-attachments/assets/e54affb4-9f29-4226-a830-42619143b7a9" />
 <p align="center"><em>Realtime Inference</em></p>
