@@ -161,7 +161,7 @@ class GraspPipeline:
 if __name__ == "__main__":
     # 1. 설정 파라미터
     # 실제 환경에 맞춰 경로를 수정하세요.
-    OBJ_FILE_PATH = '/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/example_model.obj'
+    OBJ_FILE_PATH = '/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/Real Objects/CNC1.obj'
     # OBJ_FILE_PATH='/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/bin.stl'
     
     # --- 테스트 제어 변수 ---

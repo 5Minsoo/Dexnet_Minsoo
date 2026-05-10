@@ -164,39 +164,6 @@ class RealSenseCamera:
         # 파이토치 모델에 넣기 좋게 (N, H, W) 형태의 다차원 넘파이 배열로 묶어서 반환
         return np.array(cropped_images, dtype=image.dtype)
 
-    @staticmethod
-    def show_images(color=None, depth=None, window_name="Camera View"):
-        frames = []
-
-        if color is not None:
-            if len(color.shape) == 2:
-                color = cv2.cvtColor(color, cv2.COLOR_GRAY2BGR)
-            frames.append(color)
-
-        if depth is not None:
-            depth_float = depth.astype(np.float32)
-            mask = depth_float > 0
-
-            if mask.any():
-                d_min, d_max = depth_float[mask].min(), depth_float[mask].max()
-                depth_norm = np.zeros_like(depth_float, dtype=np.uint8)
-                if d_max - d_min > 0:
-                    depth_norm[mask] = ((depth_float[mask] - d_min) / (d_max - d_min) * 255).astype(np.uint8)
-                else:
-                    depth_norm[mask] = 128
-                depth_colormap = cv2.applyColorMap(depth_norm, cv2.COLORMAP_JET)
-                depth_colormap[~mask] = (0, 0, 0)
-            else:
-                depth_colormap = np.zeros((*depth.shape, 3), dtype=np.uint8)
-            frames.append(depth_colormap)
-
-        if not frames:
-            return
-
-        combined = np.hstack(frames) if len(frames) > 1 else frames[0]
-        cv2.imshow(window_name, combined)
-        cv2.waitKey(1)
-
     def release(self):
         self.pipeline.stop()
         cv2.destroyAllWindows()

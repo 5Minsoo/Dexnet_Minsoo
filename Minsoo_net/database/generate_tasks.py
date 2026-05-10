@@ -1,8 +1,8 @@
 """
-Producer: mesh 폴더를 받아 GraspPipeline.execute 결과를 pkl로 떨어뜨린다.
-렌더링/zarr는 건드리지 않는다. render_tasks.py 가 consumer.
+Producer: Takes mesh folder. Generates GraspPipeline.execute. result as pkl file.
+Consumer: render_tasks.py.
 
-여러 터미널에서 --folder_num 만 다르게 띄워서 병렬 실행.
+Assign--folder_num for parallel execution.
 """
 import argparse
 import pickle
@@ -25,8 +25,6 @@ GENERATED_DIR = TASKS_ROOT / "generated"
 
 
 def strip_grasp(g):
-    # Contact3D 가 GraspableObject3D(SDF/mesh) 참조를 들고 있어 pkl이 무거워짐.
-    # 렌더링엔 center/axis/T_grasp_obj 만 쓰이므로 안전하게 제거.
     g.contact_points = None
     return g
 
@@ -53,8 +51,7 @@ def list_mesh_files(folder_num: str):
 
 
 def sync_zarr_done_markers(zarr_path: str, mesh_files):
-    """zarr 에 attrs['done']=True 인 object 는 generated/<obj>.ok 마커를 찍어둔다.
-    다음 실행부터는 zarr 안 열어도 됨. 새로 찍은 object 이름 리스트 반환."""
+    """ if attr['done'] == true, mark generated ok """
     store = zarr.open(zarr_path, mode="r")
     newly_marked = []
     for m in mesh_files:
@@ -71,7 +68,7 @@ def sync_zarr_done_markers(zarr_path: str, mesh_files):
 
 
 def publish_object(obj_name: str, obj_staging: Path) -> int:
-    """staging/<obj>/pose*.pkl 들을 pending/ 으로 옮기고 마커 생성. 옮긴 개수 반환."""
+    """staging/<obj>/pose*.pkl move to pending, mark ok. Returns num of moved"""
     moved = 0
     for f in sorted(obj_staging.iterdir()):
         if f.suffix != ".pkl":
@@ -80,7 +77,7 @@ def publish_object(obj_name: str, obj_staging: Path) -> int:
         moved += 1
     shutil.rmtree(obj_staging)
 
-    # READY 마커는 항상 마지막에 atomic 으로 만들어야 consumer 가 부분 옮김 상태를 안 본다.
+    # Safe regist using rename (os level)
     marker_tmp = PENDING_DIR / f"{obj_name}.READY.tmp"
     marker_tmp.touch()
     marker_tmp.rename(PENDING_DIR / f"{obj_name}.READY")
@@ -88,17 +85,12 @@ def publish_object(obj_name: str, obj_staging: Path) -> int:
 
 
 def generate_for_object(mesh_path: Path, config: dict) -> bool:
-    """한 object 의 모든 pose task pkl 을 staging 에 만들고 pending 으로 publish.
-    성공 시 True."""
+    """Generate grasp result pkl, publish to pending. Returns if success"""
     obj_name = mesh_path.stem
 
-    try:
-        m = trimesh.load(str(mesh_path), force="mesh")
-        if min(m.bounding_box_oriented.extents) < 0.005:
-            print(f"[!] {obj_name} 너무 얇아서 제외")
-            return False
-    except Exception as e:
-        print(f"[!] {obj_name} mesh 로드 실패: {e}")
+    m = trimesh.load(str(mesh_path), force="mesh")
+    if min(m.bounding_box_oriented.extents) < 0.005:
+        print(f"[!] {obj_name} 너무 얇아서 제외")
         return False
 
     print(f"{obj_name} 로드중")
@@ -135,6 +127,7 @@ def generate_for_object(mesh_path: Path, config: dict) -> bool:
                 "quality_scores": list(quality_scores),
                 "failed_grasps": failed_grasps,
             }
+            # Safe dump using rename
             out = obj_staging / f"pose{pose_idx}.pkl"
             tmp = out.with_suffix(".pkl.tmp")
             with open(tmp, "wb") as f:

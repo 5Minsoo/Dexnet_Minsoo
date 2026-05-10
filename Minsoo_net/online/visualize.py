@@ -4,7 +4,7 @@ import math
 
 
 class GraspVisualizer2D:
-    """깊이 이미지 위에 파지 후보(center, axis, theta)를 cv2로 시각화하는 클래스. (DexNet style)"""
+    """깊이 이미지 위에 파지 후보(center, axis, theta)를 cv2로 시각화하는 클래스."""
 
     def __init__(self, line_length=50, line_thickness=2, arrow_thickness=2,
                  jaw_ratio=0.3, arrow_ratio=0.5, arrow_head=0.3, cross_size=10,

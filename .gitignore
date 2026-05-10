@@ -34,3 +34,5 @@ utils
 
 *.sh
 *.lock
+*.ipynb
+.python-version

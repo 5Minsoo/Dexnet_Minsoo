@@ -22,13 +22,9 @@ class GraspRenderer:
         renderer = GraspRenderer("path/to/object.stl")
         renderer.set_stable_pose(rotation_matrix)  # stable pose 적용
         
-        # 단일 시점 렌더링
+        단일 시점 렌더링
         depth = renderer.render(camera_pos)
-        
-        # 구면 좌표 랜덤 시점 배치 렌더링
-        for depth, extrinsic in renderer.render_spherical(num_views=100):
-            ...
-        
+
         # DexNet grasp 후보에서 크롭 이미지 생성
         cropped = renderer.crop_grasp_image(depth, center_px, axis_px)
     """
@@ -48,7 +44,6 @@ class GraspRenderer:
     ):
         self.mesh_path = mesh_path
         sapien.set_log_level("error")
-        # ── 전역 렌더 설정 (프로세스당 1회만) ──
         if not GraspRenderer._render_initialized:
             sapien.render.set_camera_shader_dir("rt")
             sapien.render.set_ray_tracing_samples_per_pixel(spp)
@@ -142,28 +137,6 @@ class GraspRenderer:
         q = R.from_matrix(mat).as_quat()  # [x,y,z,w]
         return [q[3], q[0], q[1], q[2]]
 
-    @staticmethod
-    def sample_spherical_positions(
-        r_range: tuple,
-        theta_range: tuple,
-        phi_range: tuple,
-        num_points: int = 100,
-    ) -> np.ndarray:
-        """구면 좌표계에서 공간 균일 분포 시점 샘플링. shape=(N,3)"""
-        u, v, w = np.random.rand(3, num_points)
-
-        r = (r_range[0]**3 + u * (r_range[1]**3 - r_range[0]**3)) ** (1 / 3)
-
-        cos_min, cos_max = np.cos(theta_range[0]), np.cos(theta_range[1])
-        theta = np.arccos(cos_min + v * (cos_max - cos_min))
-
-        phi = phi_range[0] + w * (phi_range[1] - phi_range[0])
-
-        x = r * np.sin(theta) * np.cos(phi)
-        y = r * np.sin(theta) * np.sin(phi)
-        z = r * np.cos(theta)
-        return np.stack([x, y, z], axis=1)
-
     # ── 렌더링 ──────────────────────────────────────────────
 
     def _move_sensor(self, camera_pos: np.ndarray, target: np.ndarray = np.zeros(3)):
@@ -214,27 +187,6 @@ class GraspRenderer:
         self.sensor.compute_depth()
         return self.sensor.get_depth()
 
-    def render_spherical(
-        self,
-        num_views: int = 100,
-        r_range: tuple = (0.2, 0.3),
-        theta_range: tuple = (0, np.pi / 6),
-        phi_range: tuple = (0, np.pi),
-    ):
-        """
-        구면 좌표계 상에서 num_views만큼 시점을 샘플링하여 렌더링하는 제너레이터.
-        
-        Yields:
-            (depth, extrinsic, camera_pos)
-        """
-        positions = self.sample_spherical_positions(
-            r_range, theta_range, phi_range, num_views
-        )
-        for pos in positions:
-            depth = self.render(pos)
-            extrinsic = self.get_extrinsic()
-            yield depth, extrinsic, pos
-
     # ── Grasp 이미지 크롭 ──────────────────────────────────
 
     @staticmethod
@@ -267,17 +219,6 @@ class GraspRenderer:
         cropped = cv2.getRectSubPix(rotated, (crop_size, crop_size), center)
         return cv2.resize(cropped, (output_size, output_size), interpolation=cv2.INTER_AREA)
 
-    # ── 시각화 유틸 ─────────────────────────────────────────
-
-    @staticmethod
-    def visualize_depth(depth: np.ndarray, point: tuple = None) -> np.ndarray:
-        """depth 배열을 컬러맵 이미지로 변환. point가 주어지면 점을 찍는다."""
-        norm = cv2.normalize(depth, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-        colored = cv2.applyColorMap(norm, cv2.COLORMAP_JET)
-        if point is not None:
-            cv2.circle(colored, (int(point[0]), int(point[1])), 5, (0, 0, 0), -1)
-        return colored
-
     def _draw_grasp_marks(
         self,
         vis: np.ndarray,
@@ -294,7 +235,7 @@ class GraspRenderer:
         arrow_head: float = 0.6,
         cross_size: int = 10,
     ):
-        """공통 그리기 루틴: + ㅣ →←ㅣ + (DexNet style, axis 방향에 맞춰 회전)."""
+        """공통 그리기 루틴: + ㅣ →←ㅣ + (axis 방향에 맞춰 회전)."""
         jaw = int(half * jaw_ratio)
         arrow_len = int(half * arrow_ratio)
 
@@ -336,7 +277,6 @@ class GraspRenderer:
             color, thickness,
         )
 
-
     def draw_grasp_debug(
         self,
         image: np.ndarray,
@@ -345,7 +285,6 @@ class GraspRenderer:
         depth: float,
         gripper_width_m: float = 0.05,
     ) -> np.ndarray:
-        """원본 이미지에 grasp을 DexNet 스타일로 그린다."""
         vis = image.copy()
         cx, cy = int(center[0]), int(center[1])
 
@@ -370,7 +309,7 @@ class GraspRenderer:
         output_size: int,
         gripper_width_m: float = 0.05,
     ) -> np.ndarray:
-        """크롭 이미지 중앙에 grasp을 가로 방향으로 그린다 (DexNet 스타일)."""
+        """크롭 이미지 중앙에 grasp을 가로 방향으로 그린다."""
         vis = cropped.copy()
         h, w = vis.shape[:2]
         cx, cy = w // 2, h // 2
@@ -385,6 +324,7 @@ class GraspRenderer:
         # cropped는 axis가 가로 정렬돼있다고 가정
         self._draw_grasp_marks(vis, cx, cy, ux=1.0, uy=0.0, half=half,thickness=1,arrow_thickness=1,cross_size=3)
         return vis
+    
 # ── 사용 예시 ───────────────────────────────────────────────
 
 if __name__ == "__main__":

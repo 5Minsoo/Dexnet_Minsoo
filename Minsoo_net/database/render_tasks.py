@@ -1,9 +1,6 @@
 """
-Consumer: pending/ 에서 task 를 클레임해 렌더링하고 zarr 에 쓴다.
-GPU 동시 인스턴스 제약 때문에 최대 2개 터미널에서만 띄울 것.
-
-클레임 단위는 object 1개 (그 object 의 모든 pose pkl + READY 마커).
-같은 object 를 두 워커가 동시에 잡지 않으므로 zarr 그룹 race 없음.
+Consumer code: Reads pkl, Renders Images, marks done.
+Supports multy execution.
 """
 import argparse
 import os
@@ -100,7 +97,7 @@ def claim_object(my_proc_dir: Path):
         try:
             os.rename(marker, marker_dst)            # atomic claim
         except FileNotFoundError:
-            continue                                  # 다른 워커가 먼저 가져감
+            continue                                  
 
         claimed = []
         for src in sorted(PENDING_DIR.glob(f"{obj_name}__pose*.pkl")):
@@ -166,8 +163,8 @@ def render_pose(renderer, task, img_ds, label_ds, z_ds,
 
 def process_object(store, obj_name, task_files, marker_path, config,
                    output_size, crop_size, batch_size, batch_flush):
-    """클레임된 object 의 모든 pose pkl 을 처리하고 zarr 에 쓴다."""
-    # zarr 에 이미 완료된 물체면 렌더링 스킵하고 task 만 done 으로 보냄.
+    """  Read obejcts pose pkl, render, write on zarr file  """
+    # move task to done, if marked done in zarr
     if obj_name in store and store[obj_name].attrs.get("done", False):
         print(f"[skip] {obj_name} 은 zarr 에 이미 done. 렌더링 생략.")
         for tf in task_files:
@@ -175,7 +172,7 @@ def process_object(store, obj_name, task_files, marker_path, config,
         marker_path.rename(DONE_DIR / marker_path.name)
         return True
 
-    # 첫 task 에서 mesh_path 추출 → renderer 생성
+    # Get mesh path from first file, init renderer
     with open(task_files[0], "rb") as f:
         first = pickle.load(f)
     mesh_path = first["mesh_path"]
