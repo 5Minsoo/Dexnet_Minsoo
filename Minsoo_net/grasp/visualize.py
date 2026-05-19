@@ -99,7 +99,7 @@ def visualize_grasps(graspable, grasps, pose,
       range(len(grasps)),                                                           
       key=lambda i: grasps[i].grasp_angles_from_stp_z(pose)[1]
   )  
-    max_angle_idx = min(
+    max_angle_idx = max(
       range(len(grasps)),                                                           
       key=lambda i: grasps[i].grasp_angles_from_stp_z(pose)[1]
   )  
@@ -108,8 +108,9 @@ def visualize_grasps(graspable, grasps, pose,
     for i, g in enumerate(grasps):
         T = g.T_grasp_obj
         color = colors[i % len(colors)]
-        if i == min_angle_idx and duplicate:
+        if i == max_angle_idx and duplicate:
             color = red
+            pass
         # 그래스프 좌표축
         axis_grasp = trimesh.creation.axis(
             transform=pose @ T, axis_length=0.01, origin_size=0.001

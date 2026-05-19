@@ -106,6 +106,19 @@ class GraspPipeline:
             print(f"\n>>> [RUN] 원본 stable_poses[{idx}] -> 현재 계산 중 (yielded_count: {yielded_count})")
             obj_key = f'bin_{idx}'
             self.checker.set_object(obj_key, self.graspable_obj.mesh, T_world_obj=pose)
+            if use_visual:
+                MIN_VIS = 3
+                for attempt in range(200):
+                    perpendicular_grasps = [g.perpendicular_table(pose) for g in self.initial_grasps]
+                    vis_grasps = [
+                        g for g in perpendicular_grasps
+                        if g.grasp_angles_from_stp_z(pose)[1] < self.max_approach_angle
+                    ]
+                    if len(vis_grasps) >= MIN_VIS:
+                        break
+                    print(f"[retry {attempt+1}] vis_grasps={len(vis_grasps)} → regenerate")
+                    self.initial_grasps = self.sampler.generate_grasps(self.graspable_obj, self.num_grasps)
+
             # 테이블에 맞춰 정렬
             perpendicular_grasps = [grasp.perpendicular_table(pose) for grasp in self.initial_grasps]
             aligned_grasps = [g for grasp in perpendicular_grasps for g in grasp.multi_angle_grasps(pose)]
@@ -116,9 +129,15 @@ class GraspPipeline:
             print(f"Collision-free grasps: {len(collision_free_grasps)}")
             print(f"Collision grasps: {len(collision_grasps)}")
             if use_visual:
-                # visualize_samples(self.graspable_obj,self.initial_grasps,pose=pose,title="Sampled Grasps")
-                visualize_grasps(self.graspable_obj,aligned_grasps,pose=pose,title="Sampled Grasps", duplicate=True)
-                visualize_grasps(self.graspable_obj,vertical_grasps,pose=pose,title="vertical_grasps")
+                vis_grasps=[]
+                for grasp in perpendicular_grasps:
+                    _, approach_angle, _ = grasp.grasp_angles_from_stp_z(pose)
+                    
+                    if approach_angle < self.max_approach_angle:
+                        vis_grasps.append(grasp)
+                visualize_grasps(self.graspable_obj,vis_grasps,pose=pose,title="Sampled Grasps")
+                visualize_grasps(self.graspable_obj,aligned_grasps,pose=pose,title="Sampled Grasps")
+                visualize_grasps(self.graspable_obj,vertical_grasps,pose=pose,title="vertical_grasps", duplicate=True)
             seen={}
             for grasp in collision_free_grasps:
                 key=grasp.grasp_key()
@@ -161,12 +180,12 @@ class GraspPipeline:
 if __name__ == "__main__":
     # 1. 설정 파라미터
     # 실제 환경에 맞춰 경로를 수정하세요.
-    OBJ_FILE_PATH = '/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/Real Objects/CNC1.obj'
+    OBJ_FILE_PATH = '/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/Frankapanda/3/00576648_d4d00869b27c21532c4f2e7b_step_000_0000.obj'
     # OBJ_FILE_PATH='/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/bin.stl'
     
     # --- 테스트 제어 변수 ---
     START_INDEX = 0      # 0부터 시작하거나, 특정 Pose부터 재개하고 싶을 때 변경
-    NUM_TEST_GRASPS = 1 # 한 Pose당 생성할 Grasp 후보 개수
+    NUM_TEST_GRASPS = 3 # 한 Pose당 생성할 Grasp 후보 개수
     VISUALIZE = True   # 시각화 여부
     # -----------------------
 
