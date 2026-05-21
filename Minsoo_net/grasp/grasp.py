@@ -33,6 +33,7 @@ class ParallelJawGrasp:
         self.approach_angle=None
         self.T_grasp_obj=np.eye(4)
         self.contact_points=contact_points
+        self.original=True
         if approach is not None:
             self.approach = np.array(approach, dtype=np.float64)
             self.approach /= np.linalg.norm(self.approach)
@@ -275,6 +276,8 @@ class ParallelJawGrasp:
             new_grasp.approach_angle = theta
             new_grasp.T_grasp_obj[:3, :3] = gripper_axis @ R
             new_grasp.T_grasp_obj[:3, 3] = self.center
+            if deg != 0:
+                new_grasp.original = False
             results.append(new_grasp)
         return results
     

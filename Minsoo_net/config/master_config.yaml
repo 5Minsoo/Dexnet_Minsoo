@@ -21,7 +21,7 @@ hande:
     - [0.0,  0.0,  1.0,  0.056]
     - [0.0, -1.0,  0.0,  0.0]
     - [0.0,  0.0,  0.0,  1.0]
-  mesh_path: '/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/D455.obj'
+  mesh_path: '/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/gripper.stl'
   
 # ---------------------------------------------------------
 # 불확실성(Uncertainty) 모델링을 위한 Gaussian 노이즈 설정값
@@ -89,9 +89,9 @@ cam_offset:
   num: 2
 
 angle_offsets_deg:
-  start: -90
-  stop: 90
-  num: 15
+  start: -30
+  stop: 30
+  num: 3
 
 # ---------------------------------------------------------
 # 학습 파라미터

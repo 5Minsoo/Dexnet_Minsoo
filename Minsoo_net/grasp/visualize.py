@@ -40,7 +40,7 @@ def _create_stick_gripper(open_width=0.05, finger_length=0.045,
 
 def visualize_grasps(graspable, grasps, pose,
                      finger_length=0.04, tube_radius=0.0015,
-                     gripper=None, gripper_type="panda", title=None, duplicate=False):
+                     gripper=None, gripper_type="panda", title=None, example_grasp=False, original_grasp=False):
     """
     pyrender로 메쉬 + 그래스프를 시각화한다.
 
@@ -91,9 +91,20 @@ def visualize_grasps(graspable, grasps, pose,
 
     # ---- 색상 팔레트 ----
     colors = [
-        [0,170,0,255],
-    ]
+    [0, 170, 0, 255],     # green
+    [255, 200, 0, 255],   # amber/yellow
+    [0, 180, 220, 255],   # cyan
+    [150, 80, 220, 255],  # purple
+    [255, 130, 0, 255],   # orange
+    [40, 90, 255, 255],   # blue
+]
     red = [255, 0, 0, 255]
+
+    center_to_color = {}
+    for g in grasps:
+        k = tuple(g.center)
+        if k not in center_to_color:
+            center_to_color[k] = colors[len(center_to_color) % len(colors)]
 
     min_angle_idx = min(
       range(len(grasps)),                                                           
@@ -107,10 +118,13 @@ def visualize_grasps(graspable, grasps, pose,
     # ---- 그래스프 ----
     for i, g in enumerate(grasps):
         T = g.T_grasp_obj
-        color = colors[i % len(colors)]
-        if i == max_angle_idx and duplicate:
+        color = center_to_color[tuple(g.center)]
+        if i == max_angle_idx and example_grasp:
             color = red
             pass
+        if original_grasp:
+            if g.original:
+                color = red
         # 그래스프 좌표축
         axis_grasp = trimesh.creation.axis(
             transform=pose @ T, axis_length=0.01, origin_size=0.001
