@@ -75,7 +75,12 @@ def visualize_grasps(graspable, grasps, pose,
 
     # ---- 메쉬 ----
     mesh = graspable.mesh.copy()
-    scene.add(pyrender.Mesh.from_trimesh(mesh), pose=pose)
+    material = pyrender.MetallicRoughnessMaterial(
+    baseColorFactor=[0.6,0.6,0.6, 1.0],   # RGBA, 0~1 범위 (주의: 0~255 아님)
+    metallicFactor=0.8,
+    roughnessFactor=0.7
+    )
+    scene.add(pyrender.Mesh.from_trimesh(mesh, material=material), pose=pose)
 
     # ---- 월드 좌표축 ----
     axis_world = trimesh.creation.axis(
@@ -155,7 +160,7 @@ def visualize_grasps(graspable, grasps, pose,
                       pose=np.eye(4))
 
     # ---- 조명 ----
-    light = pyrender.DirectionalLight(color=[1, 1, 1], intensity=3.0)
+    light = pyrender.DirectionalLight(color=[1, 1, 1], intensity=1.0)
     scene.add(light)
 
     pyrender.Viewer(scene, use_raymond_lighting=True, window_title=title)

@@ -131,36 +131,31 @@ class RealSenseCamera:
         반환값: N개의 크롭된 이미지 배열 (N, crop_size[1], crop_size[0])
         """
         cropped_images = []
-        
         for grasp in grasps:
             u, v, theta, _ = grasp
             cx, cy = float(u), float(v)
-            
+
             # 1. 각도 계산 (Sampler의 theta는 라디안이므로 도(Degree)로 변환)
             angle_deg = math.degrees(theta)
-            rotation_angle = angle_deg  
-            
+            rotation_angle = angle_deg
+
             # 2. 중심점 기준 회전 행렬 생성
             M = cv2.getRotationMatrix2D((cx, cy), rotation_angle, 1.0)
-            
-            # 3. [최적화 핵심] 잘라낼 영역의 중심이 결과 이미지의 정중앙에 오도록 평행 이동
+
+            # 3. 잘라낼 영역의 중심이 결과 이미지의 정중앙에 오도록 평행 이동
             M[0, 2] += (crop_size[0] / 2.0) - cx
             M[1, 2] += (crop_size[1] / 2.0) - cy
-            
+
             # 4. 회전과 크롭을 한 방에 처리
-            # 🚨 Depth 이미지는 보간(Interpolation)을 하면 경계선 픽셀 값이 뭉개지므로 
-            # 반드시 INTER_NEAREST를 써야 물리적인 깊이값이 훼손되지 않습니다.
             cropped_image = cv2.warpAffine(
-                image, 
-                M, 
-                crop_size, 
-                flags=cv2.INTER_CUBIC, 
-                borderMode=cv2.BORDER_REPLICATE, 
-                borderValue=0
+                image,
+                M,
+                crop_size,
+                flags=cv2.INTER_NEAREST,
+                borderMode=cv2.BORDER_REPLICATE,
             )
-            
             cropped_images.append(cropped_image)
-            
+
         # 파이토치 모델에 넣기 좋게 (N, H, W) 형태의 다차원 넘파이 배열로 묶어서 반환
         return np.array(cropped_images, dtype=image.dtype)
 

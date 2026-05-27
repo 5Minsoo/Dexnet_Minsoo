@@ -165,7 +165,7 @@ if __name__ == '__main__':
             img_display = np.squeeze(img).astype(np.float32)
 
             # ── 대비 향상: 1~99 퍼센타일로 clip해서 outlier 제거 ──
-            valid = img_display[img_display > 0] if (img_display > 0).any() else img_display
+            valid = img_display[img_display >= 0] if (img_display >= 0).any() else img_display
             vmin, vmax = np.percentile(valid, [1, 99])
             if vmax - vmin < 1e-6:        # 거의 평탄한 이미지 보호
                 vmin, vmax = img_display.min(), img_display.max() + 1e-6
@@ -173,8 +173,10 @@ if __name__ == '__main__':
             ax.clear()
             ax.imshow(
                 img_display,
-                cmap='turbo',             # 'viridis', 'plasma', 'magma'도 좋음
-                vmin=vmin, vmax=vmax,
+                cmap='gray',          # 원본 그대로 회색조
+                interpolation='none',
+                 vmin=vmin,
+                vmax=vmax, # 픽셀 보간 없이 원본 픽셀 그대로 표시
             )
 
             is_success = "SUCCESS" if label > threshold else "FAIL"
