@@ -1,11 +1,11 @@
 tilts:
   left:
-    joint_1: 14.00
-    joint_2: -2.0000
-    joint_3: 90.0000
-    joint_4: -8.0002
-    joint_5: 65.0004
-    joint_6: -71.9872
+    joint_1: 16.00
+    joint_2: -6.0000
+    joint_3: 107.0000
+    joint_4: -11.0002
+    joint_5: 51.0004
+    joint_6: -67.9872
 
   vertical:
     joint_1: 9.0
@@ -42,4 +42,4 @@ sampling_offset: [0.006, 0.05, 10]
 
 place: [0.306, 0.048, 0.104]
 
-model_path: '/root/humble/Dexnet_Minsoo/output/04-30_17-00_grasp_dataset_ABC_th0.002/best.pt'
+model_path: '/root/humble/Dexnet_Minsoo/output/06-04_09-41_grasp_dataset_NEAREST_th0.002/best.pt'
