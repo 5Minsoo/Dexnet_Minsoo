@@ -189,6 +189,36 @@ class GraspRenderer:
 
     # ── Grasp 이미지 크롭 ──────────────────────────────────
 
+    # @staticmethod
+    # def crop_grasp_image(
+    #     image: np.ndarray,
+    #     center: tuple,
+    #     axis: tuple,
+    #     crop_size: int = 256,
+    #     output_size: int = 32,
+    # ) -> np.ndarray:
+    #     """
+    #     grasp 중심점 + 축 방향으로 이미지를 정렬·크롭·스케일링한다.
+        
+    #     :param image: (H,W) 또는 (H,W,C) 이미지
+    #     :param center: 픽셀 좌표 (u, v)
+    #     :param axis: 그립 방향 벡터 (du, dv)
+    #     :param crop_size: 크롭 영역 한 변 크기
+    #     :param output_size: 최종 출력 크기
+    #     :return: (output_size, output_size) 크롭 이미지
+    #     """
+    #     angle = math.degrees(math.atan2(axis[1], axis[0]))
+    #     rot_mat = cv2.getRotationMatrix2D(center, angle, 1.0)
+
+    #     h, w = image.shape[:2]
+    #     rotated = cv2.warpAffine(
+    #         image, rot_mat, (w, h),
+    #         flags=cv2.INTER_CUBIC,
+    #         borderMode=cv2.BORDER_REPLICATE,
+    #     )
+    #     cropped = cv2.getRectSubPix(rotated, (crop_size, crop_size), center)
+    #     return cv2.resize(cropped, (output_size, output_size), interpolation=cv2.INTER_AREA)
+
     @staticmethod
     def crop_grasp_image(
         image: np.ndarray,
@@ -199,26 +229,24 @@ class GraspRenderer:
     ) -> np.ndarray:
         """
         grasp 중심점 + 축 방향으로 이미지를 정렬·크롭·스케일링한다.
-        
-        :param image: (H,W) 또는 (H,W,C) 이미지
-        :param center: 픽셀 좌표 (u, v)
-        :param axis: 그립 방향 벡터 (du, dv)
-        :param crop_size: 크롭 영역 한 변 크기
-        :param output_size: 최종 출력 크기
-        :return: (output_size, output_size) 크롭 이미지
+        회전·크롭·스케일을 하나의 affine 변환으로 합쳐 보간을 1회(nearest)만 수행한다.
         """
         angle = math.degrees(math.atan2(axis[1], axis[0]))
-        rot_mat = cv2.getRotationMatrix2D(center, angle, 1.0)
+        scale = output_size / crop_size
 
-        h, w = image.shape[:2]
-        rotated = cv2.warpAffine(
-            image, rot_mat, (w, h),
-            flags=cv2.INTER_CUBIC,
+        # 회전 + 스케일을 center 기준으로 구성 (center는 변환 후에도 center에 고정)
+        M = cv2.getRotationMatrix2D(center, angle, scale)
+
+        # center -> 출력 이미지의 중심으로 이동
+        M[0, 2] += (output_size - 1) / 2.0 - center[0]
+        M[1, 2] += (output_size - 1) / 2.0 - center[1]
+
+        return cv2.warpAffine(
+            image, M, (output_size, output_size),
+            flags=cv2.INTER_NEAREST,
             borderMode=cv2.BORDER_REPLICATE,
         )
-        cropped = cv2.getRectSubPix(rotated, (crop_size, crop_size), center)
-        return cv2.resize(cropped, (output_size, output_size), interpolation=cv2.INTER_AREA)
-
+    
     def _draw_grasp_marks(
         self,
         vis: np.ndarray,

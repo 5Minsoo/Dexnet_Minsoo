@@ -35,4 +35,7 @@ utils
 *.sh
 *.lock
 *.ipynb
+*.log
+test.py
 .python-version
+*.svg

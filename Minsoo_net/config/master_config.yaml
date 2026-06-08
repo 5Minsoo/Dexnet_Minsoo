@@ -77,12 +77,12 @@ uniqueness_ratio: 50
 # ---------------------------------------------------------
 # 데이터셋 생성 파라미터들
 # ---------------------------------------------------------
-zarr_path : "/home/minsoo/Dexnet_Minsoo/grasp_dataset_ABC.zarr"
+zarr_path : "/home/minsoo/Dexnet_Minsoo/grasp_dataset_NEAREST.zarr"
 num_grasps : 100
 quality_threshold : 0.002
 stable_pose_prob_threshold : 0.05 # 현재는 안씀
 num_stable_poses : 15
-max_angle_deg : 30
+max_angle_deg : 40
 cam_offset:
   start: 0.45
   stop: 0.60
@@ -91,7 +91,7 @@ cam_offset:
 angle_offsets_deg:
   start: -90
   stop: 90
-  num: 15
+  num: 8
 
 # ---------------------------------------------------------
 # 학습 파라미터

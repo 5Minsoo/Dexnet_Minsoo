@@ -38,7 +38,7 @@ batch_size = 2048
 batch_flush = 512
 
 # --- 단일 mesh 파일 지정 ---
-mesh_path = Path('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/FKT38-A50-P25.stl')
+mesh_path = Path('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/Figure_object.obj')
 object_name = mesh_path.stem
 mesh_path_str = str(mesh_path)
 
@@ -184,7 +184,7 @@ for pose, failed_grasps, quality_grasps, quality_scores in grasp_pipeline.execut
                     combined_img = cv2.hconcat([depth_debug, cropped_resized])
 
                     cv2.imshow('Depth vs Cropped', depth_debug)
-                    cv2.imshow('Cropped',cropped_debug)
+                    cv2.imshow(f'Cropped Label',cropped_debug)
                     while True:
                         renderer.scene.step()
                         renderer.scene.update_render()

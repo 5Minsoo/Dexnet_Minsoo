@@ -115,7 +115,7 @@ class GraspPipeline:
                     # 접근각 조건을 통과한 후보들
                     candidates = [
                         g for g in perpendicular_grasps
-                        if g.grasp_angles_from_stp_z(pose)[1] < self.max_approach_angle
+                        if g.grasp_angles_from_stp_z(pose)[1] < 5
                     ]
 
                     # 서로 MIN_DIST 이상 떨어진 것만 greedy하게 선택
@@ -145,9 +145,10 @@ class GraspPipeline:
                     
                     if approach_angle < self.max_approach_angle:
                         vis_grasps.append(grasp)
-                visualize_grasps(self.graspable_obj,vis_grasps,pose=pose,title="Sampled Grasps",gripper=self.gripper)
-                visualize_grasps(self.graspable_obj,aligned_grasps,pose=pose,title="Sampled Grasps", gripper= self.gripper)
-                visualize_grasps(self.graspable_obj,vertical_grasps,pose=pose,title="vertical_grasps")
+                gripper=None
+                visualize_grasps(self.graspable_obj,vis_grasps,pose=pose,title="Sampled Grasps",gripper=gripper)
+                visualize_grasps(self.graspable_obj,aligned_grasps,pose=pose,title="Sampled Grasps", gripper= gripper)
+                visualize_grasps(self.graspable_obj,vertical_grasps,pose=pose,title="vertical_grasps", gripper= gripper)
             seen={}
             for grasp in collision_free_grasps:
                 key=grasp.grasp_key()
@@ -194,7 +195,7 @@ if __name__ == "__main__":
     OBJ_FILE_PATH='/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/bin.stl'
     
     # --- 테스트 제어 변수 ---
-    START_INDEX = 6      # 0부터 시작하거나, 특정 Pose부터 재개하고 싶을 때 변경
+    START_INDEX = 0      # 0부터 시작하거나, 특정 Pose부터 재개하고 싶을 때 변경
     NUM_TEST_GRASPS = 1 # 한 Pose당 생성할 Grasp 후보 개수
     VISUALIZE = True   # 시각화 여부
     # -----------------------

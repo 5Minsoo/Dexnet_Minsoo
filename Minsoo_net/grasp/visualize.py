@@ -75,6 +75,7 @@ def visualize_grasps(graspable, grasps, pose,
 
     # ---- 메쉬 ----
     mesh = graspable.mesh.copy()
+    mesh.apply_scale(0.9)
     material = pyrender.MetallicRoughnessMaterial(
     baseColorFactor=[0.6,0.6,0.6, 1.0],   # RGBA, 0~1 범위 (주의: 0~255 아님)
     metallicFactor=0.8,
@@ -152,7 +153,7 @@ def visualize_grasps(graspable, grasps, pose,
             stick = _create_stick_gripper(
                 open_width=g.open_width,
                 finger_length=finger_length,
-                tube_radius=tube_radius,
+                tube_radius=0.002,
                 color=color
             )
             stick.apply_transform(pose @ T)

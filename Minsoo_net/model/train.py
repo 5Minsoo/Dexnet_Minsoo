@@ -123,6 +123,7 @@ class DexNetZarrDataset(Dataset):
         if image.shape[0] != self.im_height or image.shape[1] != self.im_width:
             image = cv2.resize(image, (self.im_width, self.im_height), interpolation=cv2.INTER_CUBIC)
 
+
         # ── depth / label ──
         depth = float(np.array(group["gripper_depth"][grasp_idx]))
         label = float(np.array(group["labels"][grasp_idx]))
@@ -263,10 +264,11 @@ def train(args,cfg):
     for obj_key in root.keys():
         obj_group = root[obj_key]
         for pose_key in obj_group.keys():
+            image_len = np.array(obj_group[pose_key]["images"]).shape[0]
             labels = np.array(obj_group[pose_key]["labels"])
-            total_samples+= len(labels)
+            total_samples+= image_len
             success += np.sum(labels > cfg['metric_thresh'])
-            num_grasps=len(labels)
+            num_grasps= image_len
             for grasp_idx in range(num_grasps):
                 all_paths.append((obj_key, pose_key, grasp_idx))
 
@@ -346,20 +348,49 @@ def train(args,cfg):
     scheduler = torch.optim.lr_scheduler.ExponentialLR(
         optimizer,
         gamma=cfg["decay_rate"])
+    
+    start_epoch = 1
+    global_step = 0
+    best_val_error = 1.0
 
+    if args.resume:
+        log.info(f"[resume] {args.resume} 에서 완전 재개")
+        ckpt = torch.load(args.resume, map_location=device)
+        model.load_state_dict(ckpt["model_state_dict"])
+        optimizer.load_state_dict(ckpt["optimizer_state_dict"])
+        scheduler.load_state_dict(ckpt["scheduler_state_dict"])
+        start_epoch = ckpt["epoch"] + 1
+        global_step = ckpt.get("global_step", 0)
+        best_val_error = ckpt.get("best_val_error", 1.0)
+        # 저장된 정규화 통계 복원 (이어하기는 같은 데이터이므로 그대로)
+        if "im_mean" in ckpt:
+            model.im_mean = ckpt["im_mean"]
+            model.im_std = ckpt["im_std"]
+            model.pose_mean = ckpt["pose_mean"]
+            model.pose_std = ckpt["pose_std"]
+        log.info(f"[resume] epoch {start_epoch}부터, global_step={global_step}, "
+                 f"best_val_error={best_val_error:.4f}")
+
+    elif args.init_from:
+        log.info(f"[init-from] {args.init_from} 가중치만 초기값으로 로드, 새 학습 시작")
+        ckpt = torch.load(args.init_from, map_location=device)
+        state = ckpt["state_dict"] if isinstance(ckpt, dict) and "state_dict" in ckpt else ckpt
+        missing, unexpected = model.load_state_dict(state, strict=False)
+        if missing:
+            log.warning(f"[init-from] 로드 안 된 레이어: {missing}")
+        if unexpected:
+            log.warning(f"[init-from] 무시된 키: {unexpected}")
 
     # ── 학습 ──
     log.info("=" * 60)
     log.info("Starting training")
     log.info("=" * 60)
 
-    global_step = 0
-    best_val_error = 1.0
     loss_graph=[]
     train_loss_graph=[]
     val_loss_graph=[]
 
-    for epoch in range(1, cfg["num_epochs"] + 1):
+    for epoch in range(start_epoch, cfg["num_epochs"] + 1):
         model.train()
         epoch_loss = 0.0
         epoch_correct = 0
@@ -431,7 +462,20 @@ def train(args,cfg):
             ckpt_path = os.path.join(args.output, f"epoch_{epoch:03d}.pt")
             model.save(ckpt_path)
             log.info(f"  Checkpoint saved: {ckpt_path}")
-        
+
+            resume_path = os.path.join(args.output, "resume_ckpt.pt")
+            torch.save({
+                "epoch": epoch,
+                "global_step": global_step,
+                "best_val_error": best_val_error,
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+                "scheduler_state_dict": scheduler.state_dict(),
+                "im_mean": im_mean, "im_std": im_std,
+                "pose_mean": pose_mean, "pose_std": pose_std,
+            }, resume_path)
+            log.info(f"  Resume checkpoint saved: {resume_path}")
+
         plt.figure(figsize=(12,4))
         plt.subplot(1,3,1)
         plt.plot(train_loss_graph, label='Train Loss')
@@ -483,6 +527,10 @@ def build_parser():
     p.add_argument("--weight-decay",    dest="weight_decay",     type=float, default=None)
     p.add_argument("--seed",            dest="seed",             type=int,   default=None)
     p.add_argument("--train-split",       dest="train_split",        type=float, default=None)
+    p.add_argument("--resume", type=str, default=None,
+                    help="중단 지점부터 완전 재개 (옵티마이저·epoch 복원)")
+    p.add_argument("--init-from", type=str, default=None,
+                        help="가중치만 초기값으로 로드, epoch 0부터 새 학습")
     return p
 
 def merge_cfg(base_cfg: dict, args: argparse.Namespace) -> dict:

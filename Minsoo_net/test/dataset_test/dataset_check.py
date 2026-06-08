@@ -8,7 +8,7 @@ import multiprocessing as mp
 from pathlib import Path
 from matplotlib.colors import Normalize
 
-zarr_path = '/home/minsoo/Dexnet_Minsoo/grasp_dataset_ABC.zarr'
+zarr_path = '/home/minsoo/Dexnet_Minsoo/grasp_dataset_NEAREST.zarr'
 mesh_root = Path('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/Frankapanda')
 MESH_EXTS = ('.obj', '.stl', '.ply', '.OBJ', '.STL', '.PLY')
 
@@ -161,6 +161,7 @@ if __name__ == '__main__':
 
             img = root[obj_key][pose_key]["images"][sample_idx]
             label = root[obj_key][pose_key]["labels"][sample_idx]
+            depth= root[obj_key][pose_key]["gripper_depth"][sample_idx]
 
             img_display = np.squeeze(img).astype(np.float32)
 
@@ -181,7 +182,7 @@ if __name__ == '__main__':
 
             is_success = "SUCCESS" if label > threshold else "FAIL"
             ax.set_title(f"Obj: {obj_key} | Pose: {pose_key} | Idx: {sample_idx}\n"
-                        f"Label: {label:.5f} ({is_success}) | depth: [{vmin:.3f}, {vmax:.3f}]")
+                        f"Label: {label:.5f} ({is_success}) | depth: {depth}")
             ax.axis('off')
             plt.draw()
 

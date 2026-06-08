@@ -16,7 +16,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     datefmt="%H:%M:%S",
 )
-zarr_path='/home/minsoo/Dexnet_Minsoo/grasp_dataset_ABC.zarr'
+zarr_path='/home/minsoo/Dexnet_Minsoo/grasp_dataset_NEAREST.zarr'
 
 class TestDataset(TestCase):
     def setUp(self):
@@ -55,3 +55,14 @@ class TestDataset(TestCase):
                 self.assertFalse(np.any(np.isnan(img)))
                 if not img.size ==0:
                     self.assertGreater(np.mean(img), 0.02, msg=f"Broken Image mean:{np.mean(img)}")
+                    
+    def test_label_sum_equal(self):
+        thresh = 0.002
+        for key in self.f.keys():
+            for pose in self.f[key].keys():
+                labels = self.f[key][pose]['labels'][:]
+                s = int(np.sum(labels > thresh))
+                self.assertLessEqual(
+                    s, len(labels),
+                    msg=f"{key}/{pose}: sum={s} > len={len(labels)}, "
+                        f"dtype={labels.dtype}, max={labels.max()}")
