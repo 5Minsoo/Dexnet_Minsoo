@@ -1,6 +1,7 @@
 import sys,logging
 
 import cv2,time
+cv2.setNumThreads(0)
 import numpy as np
 import argparse
 import yaml
@@ -12,6 +13,7 @@ import rclpy
 from rclpy.node import Node
 from tf2_ros import Buffer, TransformListener, TransformBroadcaster,StaticTransformBroadcaster
 from geometry_msgs.msg import TransformStamped
+from rclpy.logging import LoggingSeverity
 
 from Minsoo_net.online.online_camera import RealSenseCamera
 from Minsoo_net.online.online_sampler import OnlineAntipodalSampler,CrossEntropyRobustGraspingPolicy
@@ -60,8 +62,8 @@ class GraspPlannerNode(Node):
         self.depth = self.camera.get_depth_image()
 
     def plan_grasp(self,extrinsic):
-        filter=self._make_grasp_filter()
-        self.best_grasp,_=self.policy.cem_best(self.depth,num_iters=10,filter=filter)
+        # filter=self._make_grasp_filter()
+        self.best_grasp,_=self.policy.cem_best(depth_image=self.depth,num_iters=10, filter=None)
         if self.best_grasp is None:
             return None, None, None
         self.viz.visualize_from_grasps(self.depth._data,self.best_grasp,title="Best grasp")
@@ -83,17 +85,13 @@ class GraspPlannerNode(Node):
         logging.debug(f'물체의 월드 좌표계 좌표: {obj_pos}')
 
         # ── 현재 그리퍼 orientation ──
-        t = self.tf_buffer.lookup_transform('base_link', 'link_6', rclpy.time.Time())
-        r = t.transform.rotation
-        R_grip = Rotation.from_quat([r.x, r.y, r.z, r.w])
+        p, R_grip= self.get_tf('base_link', 'link_6')
         grip_z = -R_grip.as_matrix()[:3, 2]
 
-
         # ── 그리퍼 z축 기준으로 yaw만 회전 ──
-        t = self.tf_buffer.lookup_transform('link_6', 'camera_link', rclpy.time.Time())
-        r = t.transform.rotation
+        p, r= self.get_tf('link_6', 'camera_link')
         dir_cam = np.array([np.cos(theta), np.sin(theta), 0])
-        R_cam2grip = Rotation.from_quat([r.x, r.y, r.z, r.w]).as_matrix()
+        R_cam2grip = r.as_matrix()
         dir_grip = R_cam2grip @ dir_cam
         yaw = np.arctan2(dir_grip[1], dir_grip[0]) + np.pi / 2
 
@@ -105,13 +103,21 @@ class GraspPlannerNode(Node):
         return obj_pos, quat,grip_z
         
     def get_extrinsic(self):
-        t = self.tf_buffer.lookup_transform('base_link', 'camera_link', rclpy.time.Time())
-        p = t.transform.translation
-        r = t.transform.rotation
+        p,r = self.get_tf('base_link','camera_link')
         mat = np.eye(4)
-        mat[:3, :3] = Rotation.from_quat([r.x, r.y, r.z, r.w]).as_matrix()
-        mat[:3, 3] = [p.x, p.y, p.z]
+        mat[:3, :3] = r.as_matrix()
+        mat[:3, 3] = p
         return mat
+    
+    def get_tf(self, start, end):
+        t = self.tf_buffer.lookup_transform(start, end, rclpy.time.Time())
+        
+        p = np.array([t.transform.translation.x, t.transform.translation.y, t.transform.translation.z])
+        q = [t.transform.rotation.x, t.transform.rotation.y, t.transform.rotation.z, t.transform.rotation.w]
+        
+        r = Rotation.from_quat(q) 
+        
+        return p, r
     
     def publish_grasp_tf(self, pos, quat):
         t = TransformStamped()
@@ -128,39 +134,64 @@ class GraspPlannerNode(Node):
 
     def _make_grasp_filter(self):
         # TODO: Sampling 단계에서 충돌 Grasp 제거 call back Filter 작성 필요. TF, Box -> Generates Collision grasp pre-remove filter. Input of filter -> (us,vs,theta,depth)
+        p, r = self.get_tf('base_link', 'link_6')
+        z_dir= -r.as_matrix()[2,2]
+        p1, r1 = self.get_tf('link_6', 'hande_left_finger')
+        p2, r2 = self.get_tf('link_6', 'hande_right_finger')
+        finger=np.c_(p1.T,p2.T)
+        def filter(grasps):
+            N=len(grasps)
+            uv1=np.stack([grasps[:,0], grasps[:,1], np.ones(N)])
+            K_inv = np.linalg.inv(self.camera.intrinsic_parameter)
+            cam=(K_inv @ uv1) * grasps[:,3]
+            cam=np.vstack([cam, np.ones(N)])
+            world = (self.get_extrinsic() @ cam)[:3].T
 
-        return 0
+            theta=grasps[:,2]
+            new_r=r * Rotation.from_euler('z', theta+np.pi/2)
+            idx=(new_r*finger+world)[2,:]>self.config['box_z']
+            return grasps[idx]
+        return filter
         
     def pick_and_place(self,pos,quat,offset_dir,offset):
-        pos+=offset*offset_dir
-        logging.debug(f' 다음 이동 Position: {pos}')
-        input1=input('계속하려면 Enter')
-        self.helper.move_cartesian(pos,quat)
+        pos1=pos+offset*offset_dir
+        i = input(f'다음 이동 Position: {pos1} 이동하려면 Enter 취소: q  ')
+        if i == 'q':
+            return
+        self.helper.move_cartesian(pos1,quat)
 
         time.sleep(0.3)
-        pos-=0.10*offset_dir
-        self.helper.move_cartesian(pos,quat)
+        pos2=pos+0.05*offset_dir
+        self.helper.move_cartesian(pos2,quat)
 
-        pos-=(offset+self.config["hard_offset"])*offset_dir
-        logging.debug(f' 다음 이동 Position: {pos}, 취소: q')
-        input1=input('계속하려면 Enter')
-        if input1 == 'q':
-            return 0
-
-        self.helper.move_cartesian(pos,quat)
+        pos3=pos+self.config["hard_offset"]*offset_dir
+        i = input(f'다음 이동 Position: {pos3} 이동하려면 Enter 취소: q  ')
+        if i == 'q':
+            return
+        
+        self.helper.move_cartesian(pos3,quat)
         time.sleep(0.5)
         self.helper.gripper_close()
         time.sleep(0.5)
-        pos+=offset*offset_dir
-        self.helper.move_cartesian(pos,quat)
+        pos4=pos+0.15*offset_dir
+        self.helper.move_cartesian(pos4,quat)
         time.sleep(0.5)
-        pos-=offset*offset_dir
         self.helper.move_cartesian(pos,quat)
         time.sleep(0.5)
         self.helper.gripper_open()
-        time.sleep(0.5)
-        pos+=offset*offset_dir
-        self.helper.move_cartesian(pos,quat)    
+        # place = np.array(self.config['place'])
+        # place1 = place.copy()
+        # place1[2]+= 0.20
+        # self.helper.move_cartesian(place1,quat)
+        # time.sleep(0.5)
+        # place = self.config['place']
+        # self.helper.move_cartesian(place,quat) 
+        # self.helper.gripper_open()
+        # time.sleep(0.5)
+        # self.helper.move_cartesian(place1,quat)
+        # time.sleep(0.5)
+        # place1[2] += 0.20
+        # self.helper.move_cartesian(place1,quat)    
                 
 def main():    
     yaml_path=Path(__file__).parent.parent.parent.resolve() / "Minsoo_net" / "config" / "online_config.yaml"
@@ -174,6 +205,7 @@ def main():
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG)
+
     rclpy.init()
     node = GraspPlannerNode(args,config)
     try:

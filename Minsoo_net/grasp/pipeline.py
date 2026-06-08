@@ -192,7 +192,7 @@ if __name__ == "__main__":
     # 1. 설정 파라미터
     # 실제 환경에 맞춰 경로를 수정하세요.
     # OBJ_FILE_PATH = '/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/Frankapanda/3/00576648_d4d00869b27c21532c4f2e7b_step_000_0000.obj'
-    OBJ_FILE_PATH='/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/bin.stl'
+    OBJ_FILE_PATH='/root/humble/Dexnet_Minsoo/Minsoo_net/data/object/Real Objects/bin.stl'
     
     # --- 테스트 제어 변수 ---
     START_INDEX = 0      # 0부터 시작하거나, 특정 Pose부터 재개하고 싶을 때 변경

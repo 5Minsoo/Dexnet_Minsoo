@@ -231,13 +231,12 @@ class CrossEntropyRobustGraspingPolicy:
         else:
             self.camera=None
             self.K=None
-        self.sampler=sampler(image_margin=0.3)
-        self.renderer=GraspRenderer(mesh_path="")
+        self.sampler=sampler
         
     def cem_best(self, depth_image, elite_percentage=0.2, num_iters=3, gmm_component_frac=0.3, reg_covar=1e-3, filter=None):
         # 1. 초기 샘플링
         samples = self.sampler.sample_grasps(depth_image=depth_image,use_visualize=self.visualize)
-        if filter is not None:
+        if filter is not None and callable(filter):
             samples=filter(samples)
         if len(samples) ==0:
             return None,None
@@ -256,7 +255,7 @@ class CrossEntropyRobustGraspingPolicy:
 
             if self.visualize:
                 self.viz.visualize_debug(depth_image._data, samples, q_values,max_show=10)
-                self.viz.visualize_cropped_debug(cropped)
+                # self.viz.visualize_cropped_debug(cropped)
 
             # 3. elite 선택
             num_elite = max(int(len(samples) * elite_percentage), 1)

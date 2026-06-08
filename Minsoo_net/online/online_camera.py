@@ -124,7 +124,7 @@ class RealSenseCamera:
             return color_result,depth_result
         
     @staticmethod
-    def crop_and_rotate_batch(image, grasps, crop_size=(200, 200)):
+    def crop_and_rotate_batch(image, grasps, crop_size):
         """
         image: 원본 Depth 이미지 (2D 배열)
         grasps: Sampler에서 반환된 (N, 4) 배열 [u, v, theta, depth]
@@ -148,11 +148,20 @@ class RealSenseCamera:
 
             # 4. 회전과 크롭을 한 방에 처리
             cropped_image = cv2.warpAffine(
+<<<<<<< HEAD
                 image,
                 M,
                 crop_size,
                 flags=cv2.INTER_NEAREST,
                 borderMode=cv2.BORDER_REPLICATE,
+=======
+                image, 
+                M, 
+                crop_size, 
+                flags=cv2.INTER_NEAREST, 
+                borderMode=cv2.BORDER_REPLICATE, 
+                borderValue=0
+>>>>>>> 6c4b0117e (.)
             )
             cropped_images.append(cropped_image)
 

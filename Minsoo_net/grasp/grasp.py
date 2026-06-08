@@ -4,7 +4,7 @@ from Minsoo_net.grasp.contact import Contact3D
 import yaml
 from copy import deepcopy
 
-with open('/home/minsoo/Dexnet_Minsoo/Minsoo_net/config/master_config.yaml') as f:
+with open('/root/humble/Dexnet_Minsoo/Minsoo_net/config/master_config.yaml') as f:
     config=yaml.safe_load(f)
     ao = config['angle_offsets_deg']
     angle_offsets_deg = np.linspace(ao['start'], ao['stop'], ao['num'])

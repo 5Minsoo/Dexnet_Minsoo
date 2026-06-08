@@ -21,7 +21,7 @@ hande:
     - [0.0,  0.0,  1.0,  0.056]
     - [0.0, -1.0,  0.0,  0.0]
     - [0.0,  0.0,  0.0,  1.0]
-  mesh_path: '/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/gripper.stl'
+  mesh_path: '/root/humble/Dexnet_Minsoo/Minsoo_net/data/gripper/gripper.stl'
   
 # ---------------------------------------------------------
 # 불확실성(Uncertainty) 모델링을 위한 Gaussian 노이즈 설정값
