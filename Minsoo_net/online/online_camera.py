@@ -148,20 +148,11 @@ class RealSenseCamera:
 
             # 4. 회전과 크롭을 한 방에 처리
             cropped_image = cv2.warpAffine(
-<<<<<<< HEAD
                 image,
                 M,
                 crop_size,
                 flags=cv2.INTER_NEAREST,
                 borderMode=cv2.BORDER_REPLICATE,
-=======
-                image, 
-                M, 
-                crop_size, 
-                flags=cv2.INTER_NEAREST, 
-                borderMode=cv2.BORDER_REPLICATE, 
-                borderValue=0
->>>>>>> 6c4b0117e (.)
             )
             cropped_images.append(cropped_image)
 

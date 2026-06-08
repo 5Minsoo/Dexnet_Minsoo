@@ -62,8 +62,8 @@ class GraspPlannerNode(Node):
         self.depth = self.camera.get_depth_image()
 
     def plan_grasp(self,extrinsic):
-        # filter=self._make_grasp_filter()
-        self.best_grasp,_=self.policy.cem_best(depth_image=self.depth,num_iters=10, filter=None)
+        filter=self._make_grasp_filter()
+        self.best_grasp,_=self.policy.cem_best(depth_image=self.depth,num_iters=10, filter=filter)
         if self.best_grasp is None:
             return None, None, None
         self.viz.visualize_from_grasps(self.depth._data,self.best_grasp,title="Best grasp")
@@ -133,25 +133,51 @@ class GraspPlannerNode(Node):
         self.tf_broadcaster.sendTransform(self.last_tf)
 
     def _make_grasp_filter(self):
-        # TODO: Sampling 단계에서 충돌 Grasp 제거 call back Filter 작성 필요. TF, Box -> Generates Collision grasp pre-remove filter. Input of filter -> (us,vs,theta,depth)
-        p, r = self.get_tf('base_link', 'link_6')
-        z_dir= -r.as_matrix()[2,2]
-        p1, r1 = self.get_tf('link_6', 'hande_left_finger')
-        p2, r2 = self.get_tf('link_6', 'hande_right_finger')
-        finger=np.c_(p1.T,p2.T)
-        def filter(grasps):
-            N=len(grasps)
-            uv1=np.stack([grasps[:,0], grasps[:,1], np.ones(N)])
-            K_inv = np.linalg.inv(self.camera.intrinsic_parameter)
-            cam=(K_inv @ uv1) * grasps[:,3]
-            cam=np.vstack([cam, np.ones(N)])
-            world = (self.get_extrinsic() @ cam)[:3].T
+        _, R_grip     = self.get_tf('base_link', 'hande_tcp_link')   # 현재 그리퍼 자세
+        _, R_cam2tcp = self.get_tf('hande_tcp_link', 'camera_link')
+        R_cam2tcp    = R_cam2tcp.as_matrix()
+        p_left,  _    = self.get_tf('hande_tcp_link', 'hande_left_finger')   # link_6 기준 손가락 끝 위치
+        p_right, _    = self.get_tf('hande_tcp_link', 'hande_right_finger')
+        
+        K_inv     = np.linalg.inv(self.camera.intrinsic_parameter)
+        extrinsic = self.get_extrinsic()
+        box_z     = self.config['box_z']
+        margin    = 0.0   # 필요하면 안전 여유(m) 추가
 
-            theta=grasps[:,2]
-            new_r=r * Rotation.from_euler('z', theta+np.pi/2)
-            idx=(new_r*finger+world)[2,:]>self.config['box_z']
-            return grasps[idx]
-        return filter
+        def grasp_filter(grasps):
+            grasps = np.atleast_2d(np.asarray(grasps, dtype=float))
+            N = grasps.shape[0]
+            if N == 0:
+                return grasps
+            u, v, theta, z = grasps[:, 0], grasps[:, 1], grasps[:, 2], grasps[:, 3]
+
+            # 1) pixel -> camera -> world (grasp 중심 = grasp 시 link_6 위치)
+            uv1   = np.stack([u, v, np.ones(N)])      # (3, N)
+            cam   = (K_inv @ uv1) * z                  # (3, N), 각 열을 z로 스케일
+            cam   = np.vstack([cam, np.ones(N)])       # (4, N)
+            world = (extrinsic @ cam)[:3].T            # (N, 3)
+
+            # 2) 이미지 theta -> 그리퍼 yaw 
+            dir_cam  = np.stack([np.cos(theta), np.sin(theta), np.zeros(N)])  # (3, N)
+            dir_tcp  = R_cam2tcp @ dir_cam                                     # (3, N)
+            yaw      = np.arctan2(dir_tcp[1], dir_tcp[0]) + np.pi / 2 
+
+            # 3) grasp 자세 = R_grip * Rz(yaw)  (단일 회전 * 스택 브로드캐스트)
+            #    scipy 1.17 에서는 1D 각도가 안 먹혀 (-1,1) 로 reshape 필요
+            R_grasp = R_grip * Rotation.from_euler('z', yaw.reshape(-1, 1))
+
+            # 4) 손가락 양끝 월드 z = world_z + (R_grasp @ p_finger)_z
+            tip_left_z  = world[:, 2] + R_grasp.apply(p_left)[:, 2]
+            tip_right_z = world[:, 2] + R_grasp.apply(p_right)[:, 2]
+
+            # 5) 더 낮은 손가락 끝이 바닥 아래면 제거
+            lowest = np.minimum(tip_left_z, tip_right_z)
+            keep   = lowest > (box_z + margin)
+            keep_grasps = grasps[keep]
+            print(f'Filtered { N - keep_grasps.shape[0] }')
+            return keep_grasps
+
+        return grasp_filter
         
     def pick_and_place(self,pos,quat,offset_dir,offset):
         pos1=pos+offset*offset_dir
