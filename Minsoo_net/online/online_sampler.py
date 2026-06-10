@@ -52,7 +52,7 @@ def camera_coords(depth_image, pixel_points, K_inv):
 viz=GraspVisualizer2D()
 
 class OnlineAntipodalSampler:
-    def __init__(self, gripper_width_m=0.05,grad_threshold=0.015, K=None, max_grasps=1000, image_margin=0.10, max_edge=100, gripper_min= 0.3, gripper_max= 1.5, offset = [0.01, 0.05, 10], visualize=False):
+    def __init__(self, gripper_width_m=0.05,grad_threshold=0.015, K=None, max_grasps=1000, image_margin=0.10, max_edge=100, gripper_min= 0.3, gripper_max= 1.5, offset = [0.01, 0.05, 10], hard_offset = 0, visualize=False):
         self.gripper_width_m = gripper_width_m  
         if K is None:
             self.K=np.array([[392.23574829  , 0.     ,    324.36325073],
@@ -68,13 +68,15 @@ class OnlineAntipodalSampler:
         self.gripper_max=gripper_max
         self.offset=offset
         self.visualize=visualize
+        self.hard_offset=hard_offset
 
-    def sample_grasps(self, depth_image,use_visualize=False):
+    def sample_grasps(self, depth_image, use_visualize=False):
         """
         깊이 이미지를 기반으로 N개의 4-DOF 파지 후보군을 배치로 반환합니다.
         반환 형태: (N, 4) 크기의 NumPy 배열 [u(x), v(y), theta, depth]
         """
-        # depth_image=depth_image.inpaint_depth()
+        depth_image._data += self.hard_offset
+        depth_image=depth_image.inpaint_depth()
         edge = depth_image.gradient_threshold(self.grad_threshold,use_visualize=use_visualize)
         
         h, w = edge.shape[:2]
@@ -244,11 +246,7 @@ class CrossEntropyRobustGraspingPolicy:
         for i in range(num_iters):
             # 2. 평가
             cropped = RealSenseCamera.crop_and_rotate_batch(
-                depth_image._data, samples, crop_size=(96, 96))
-            cropped = np.array([
-                cv2.resize(img, (32, 32), interpolation=cv2.INTER_CUBIC)
-                for img in cropped
-            ])
+                depth_image._data, samples, crop_size=96, output_size= 32)
             cropped_input = np.expand_dims(cropped, axis=-1)
             poses_input = samples[:, 3].reshape(-1, 1)
             q_values = self.model.predict_success(cropped_input, poses_input)
@@ -280,11 +278,7 @@ class CrossEntropyRobustGraspingPolicy:
 
         # 6. 최종 평가 + best 반환
         cropped = RealSenseCamera.crop_and_rotate_batch(
-            depth_image._data, samples, crop_size=(96, 96))
-        cropped = np.array([
-            cv2.resize(img, (32, 32), interpolation=cv2.INTER_CUBIC)
-            for img in cropped
-        ])
+            depth_image._data, samples, crop_size=96, output_size= 32)
         cropped_input = np.expand_dims(cropped, axis=-1)
         poses_input = samples[:, 3].reshape(-1, 1)
         q_values = self.model.predict_success(cropped_input, poses_input)

@@ -124,7 +124,7 @@ class RealSenseCamera:
             return color_result,depth_result
         
     @staticmethod
-    def crop_and_rotate_batch(image, grasps, crop_size):
+    def crop_and_rotate_batch(image, grasps, crop_size, output_size):
         """
         image: 원본 Depth 이미지 (2D 배열)
         grasps: Sampler에서 반환된 (N, 4) 배열 [u, v, theta, depth]
@@ -134,23 +134,22 @@ class RealSenseCamera:
         for grasp in grasps:
             u, v, theta, _ = grasp
             cx, cy = float(u), float(v)
-
+            scale = output_size / crop_size
             # 1. 각도 계산 (Sampler의 theta는 라디안이므로 도(Degree)로 변환)
             angle_deg = math.degrees(theta)
-            rotation_angle = angle_deg
 
             # 2. 중심점 기준 회전 행렬 생성
-            M = cv2.getRotationMatrix2D((cx, cy), rotation_angle, 1.0)
+            M = cv2.getRotationMatrix2D((cx, cy), angle_deg, scale)
 
             # 3. 잘라낼 영역의 중심이 결과 이미지의 정중앙에 오도록 평행 이동
-            M[0, 2] += (crop_size[0] / 2.0) - cx
-            M[1, 2] += (crop_size[1] / 2.0) - cy
+            M[0, 2] += (output_size -1 ) / 2.0 - cx
+            M[1, 2] += (output_size -1 ) / 2.0 - cy
 
             # 4. 회전과 크롭을 한 방에 처리
             cropped_image = cv2.warpAffine(
                 image,
                 M,
-                crop_size,
+                (output_size, output_size),
                 flags=cv2.INTER_NEAREST,
                 borderMode=cv2.BORDER_REPLICATE,
             )

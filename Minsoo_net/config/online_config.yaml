@@ -1,5 +1,5 @@
 tilts:
-  left:
+  left_30:
     joint_1: 16.00
     joint_2: -6.0000
     joint_3: 107.0000
@@ -15,31 +15,33 @@ tilts:
     joint_5: 95.0
     joint_6: -77.0
 
-  back:
-    joint_1: 25.0007
-    joint_2: 31.9978
-    joint_3: 45.0018
-    joint_4: -21.0000
-    joint_5: 112.9928
-    joint_6: -61.9999
+  left_15:
+    joint_1: 11.0007
+    joint_2: 4.9978
+    joint_3: 81.0018
+    joint_4: -1.0000
+    joint_5: 84.9928
+    joint_6: -70.9999
   
   
 
 cem_num: 5 # CEM 최대 반복 횟수
-hard_offset: -0.01 # Realsense 카메라 자체 오차
+hard_offset: 0.005 # Realsense 카메라 자체 오차
 
 max_edge: 1000 # Online sampling 선택 edge points 개수
 image_margin: 0.25 # 이미지 가장자리 처리
-max_grasps: 100 # Online sampling 최종 선택 grasps 개수
+max_grasps: 500 # Online sampling 최종 선택 grasps 개수
 gripper_width: 0.05 # 그리퍼 폭
 finger_length: 0.158
 gripper_width_min: 0.0   # Online sampling 후보 최소 너비 (그리퍼 너비 n배)
 gripper_width_max: 1.5
 
-box_z: 0.128 # World좌표 기준 box 위치
+box_z: 0.117 # World좌표 기준 box 위치
 
-sampling_offset: [0.006, 0.05, 10]
+sampling_offset: [0.0, 0.05, 10]
 
-place: [0.306, 0.048, 0.104]
+box_center: [0.751, 0.223, 0.117]
+place_x_offset: 0.12 
+place_y_offset: 0.07
 
 model_path: '/root/humble/Dexnet_Minsoo/output/06-04_09-41_grasp_dataset_NEAREST_th0.002/best.pt'

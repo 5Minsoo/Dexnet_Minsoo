@@ -34,7 +34,7 @@ class GraspPlannerNode(Node):
         self.image_size=None
         self.samples=None
         self.visualize=self.args.visualize
-        self.sampler=OnlineAntipodalSampler(gripper_width_m=self.config['gripper_width'], K=self.camera.intrinsic_parameter ,image_margin= self.config['image_margin'],max_edge=self.config['max_edge'],max_grasps=self.config['max_grasps'],visualize=self.visualize)
+        self.sampler=OnlineAntipodalSampler(gripper_width_m=self.config['gripper_width'], K=self.camera.intrinsic_parameter ,image_margin= self.config['image_margin'],max_edge=self.config['max_edge'],max_grasps=self.config['max_grasps'],hard_offset= self.config['hard_offset'], visualize=self.visualize)
         self.policy=CrossEntropyRobustGraspingPolicy(self.config['model_path'],self.sampler,use_visualize=self.visualize)
         self.helper=MoveItMoveHelper()
         self.timer=self.create_timer(0.1,self.main_loop)
@@ -174,23 +174,20 @@ class GraspPlannerNode(Node):
             lowest = np.minimum(tip_left_z, tip_right_z)
             keep   = lowest > (box_z + margin)
             keep_grasps = grasps[keep]
-            print(f'Filtered { N - keep_grasps.shape[0] }')
+            print(f' Original: { N }, Filtered { keep_grasps.shape[0] }')
             return keep_grasps
 
         return grasp_filter
         
     def pick_and_place(self,pos,quat,offset_dir,offset):
         pos1=pos+offset*offset_dir
-        i = input(f'다음 이동 Position: {pos1} 이동하려면 Enter 취소: q  ')
-        if i == 'q':
-            return
         self.helper.move_cartesian(pos1,quat)
 
         time.sleep(0.3)
         pos2=pos+0.05*offset_dir
         self.helper.move_cartesian(pos2,quat)
 
-        pos3=pos+self.config["hard_offset"]*offset_dir
+        pos3=pos
         i = input(f'다음 이동 Position: {pos3} 이동하려면 Enter 취소: q  ')
         if i == 'q':
             return
@@ -202,22 +199,48 @@ class GraspPlannerNode(Node):
         pos4=pos+0.15*offset_dir
         self.helper.move_cartesian(pos4,quat)
         time.sleep(0.5)
-        self.helper.move_cartesian(pos,quat)
+        # box_center = self.config['box_center']
+        # box_center[2] = pos[2]
+        # self.place_random(box_center, self.config['place_x_offset'], self.config['place_y_offset'])
+        pos5=pos+0.02*offset_dir
+        self.helper.move_cartesian(pos5,quat)
         time.sleep(0.5)
         self.helper.gripper_open()
-        # place = np.array(self.config['place'])
-        # place1 = place.copy()
-        # place1[2]+= 0.20
-        # self.helper.move_cartesian(place1,quat)
-        # time.sleep(0.5)
-        # place = self.config['place']
-        # self.helper.move_cartesian(place,quat) 
-        # self.helper.gripper_open()
-        # time.sleep(0.5)
-        # self.helper.move_cartesian(place1,quat)
-        # time.sleep(0.5)
-        # place1[2] += 0.20
-        # self.helper.move_cartesian(place1,quat)    
+        time.sleep(0.5)
+
+    def place_random(self, box_center, x_offset_limit, y_offset_limit):
+            """
+            상자 중앙 좌표와 X, Y 오프셋 한계값을 받아 랜덤한 위치/Yaw로 물체를 내려놓습니다.
+            box_center: 예) [0.4, 0.0, 0.1] (list 또는 numpy array)
+            x_offset_limit, y_offset_limit: 예) 0.1 (미터 단위)
+            """
+            # 1. 랜덤 X, Y 위치 계산
+            random_x = np.random.uniform(-x_offset_limit, x_offset_limit)
+            random_y = np.random.uniform(-y_offset_limit, y_offset_limit)
+            
+            # 2. 랜덤 Yaw 각도 계산 (0도 ~ 180도) 및 쿼터니언 변환
+            p, R_grip= self.get_tf('base_link', 'link_6')
+            random_yaw = np.random.uniform(0, np.pi)
+            yaw = Rotation.from_euler('z', random_yaw)
+            place_quat = R_grip * yaw
+            place_quat = place_quat.as_quat()
+
+            # 3. 최종 Place 타겟 좌표 및 접근(Approach) 좌표 계산
+            place_pos = np.array(box_center) + np.array([random_x, random_y, 0.0])
+            
+            place_approach = place_pos.copy()
+            place_approach[2] += 0.20  # 상자 위 20cm에서 대기
+            
+            # 4. 로봇 이동 및 그리퍼 제어 (내려놓기)
+            self.helper.move_cartesian(place_approach, place_quat)
+            
+            self.helper.move_cartesian(place_pos, place_quat)
+            time.sleep(0.5)
+            
+            self.helper.gripper_open()
+            time.sleep(0.5)
+            
+            self.helper.move_cartesian(place_approach, place_quat)
                 
 def main():    
     yaml_path=Path(__file__).parent.parent.parent.resolve() / "Minsoo_net" / "config" / "online_config.yaml"
