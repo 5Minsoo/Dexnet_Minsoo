@@ -45,7 +45,7 @@ def load_config():
 
 
 def list_mesh_files(folder_num: str):
-    mesh_dir = PROJECT_ROOT / "data" / "object" / "Frankapanda" / folder_num
+    mesh_dir = PROJECT_ROOT / "data" / "object" / "selected" / folder_num
     files = list(mesh_dir.rglob("*.obj")) + list(mesh_dir.rglob("*.stl"))
     return mesh_dir, files
 

@@ -21,7 +21,7 @@ hande:
     - [0.0,  0.0,  1.0,  0.056]
     - [0.0, -1.0,  0.0,  0.0]
     - [0.0,  0.0,  0.0,  1.0]
-  mesh_path: '/root/humble/Dexnet_Minsoo/Minsoo_net/data/gripper/gripper.stl'
+  mesh_path: '/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/gripper.stl'
   
 # ---------------------------------------------------------
 # 불확실성(Uncertainty) 모델링을 위한 Gaussian 노이즈 설정값
@@ -77,7 +77,7 @@ uniqueness_ratio: 50
 # ---------------------------------------------------------
 # 데이터셋 생성 파라미터들
 # ---------------------------------------------------------
-zarr_path : "/home/minsoo/Dexnet_Minsoo/grasp_dataset_NEAREST.zarr"
+zarr_path : "/home/minsoo/Dexnet_Minsoo/grasp_dataset_SELECTED.zarr"
 num_grasps : 100
 quality_threshold : 0.002
 stable_pose_prob_threshold : 0.05 # 현재는 안씀

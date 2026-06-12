@@ -3,8 +3,10 @@ from typing import Optional, Tuple, List, Dict
 from Minsoo_net.grasp.contact import Contact3D
 import yaml
 from copy import deepcopy
+from pathlib import Path
 
-with open('/root/humble/Dexnet_Minsoo/Minsoo_net/config/master_config.yaml') as f:
+_CONFIG_PATH = Path(__file__).resolve().parent.parent / "config" / "master_config.yaml"
+with open(_CONFIG_PATH) as f:
     config=yaml.safe_load(f)
     ao = config['angle_offsets_deg']
     angle_offsets_deg = np.linspace(ao['start'], ao['stop'], ao['num'])

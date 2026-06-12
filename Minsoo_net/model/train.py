@@ -373,7 +373,7 @@ def train(args,cfg):
 
     elif args.init_from:
         log.info(f"[init-from] {args.init_from} 가중치만 초기값으로 로드, 새 학습 시작")
-        ckpt = torch.load(args.init_from, map_location=device)
+        ckpt = torch.load(args.init_from, map_location=device, weights_only= False)
         state = ckpt["state_dict"] if isinstance(ckpt, dict) and "state_dict" in ckpt else ckpt
         missing, unexpected = model.load_state_dict(state, strict=False)
         if missing:
