@@ -32,8 +32,8 @@ with open('/home/minsoo/Dexnet_Minsoo/Minsoo_net/config/master_config.yaml') as 
 
 zarr_path = '/home/minsoo/Dexnet_Minsoo/grasp_dataset_test.zarr'
 num_grasps = 10
-output_size = 32
-crop_size = 96
+output_size = 64
+crop_size = 256
 batch_size = 2048
 batch_flush = 512
 

@@ -8,7 +8,7 @@ import multiprocessing as mp
 from pathlib import Path
 from matplotlib.colors import Normalize
 
-zarr_path = '/home/minsoo/Dexnet_Minsoo/grasp_dataset_SELECTED.zarr'
+zarr_path = '/home/minsoo/Dexnet_Minsoo/grasp_dataset_NEAREST.zarr'
 mesh_root = Path('/home/minsoo/Dexnet_Minsoo/Minsoo_net/data/object/Frankapanda')
 MESH_EXTS = ('.obj', '.stl', '.ply', '.OBJ', '.STL', '.PLY')
 
