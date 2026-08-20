@@ -6,7 +6,6 @@ KITECH Autonomous Manufacturing Process Research Division
 
 > 📄 Minsoo Oh, Jaehak Lee*, "*Depth-Noise-Robust 5-DOF Robotic Grasping of Metallic Objects Using Synthetic Depth Data*", Journal of the Korean Society of Manufacturing Technology Engineers (KSMTE), accepted, 2026.
 
----
 
 ## Overview
 
@@ -15,14 +14,11 @@ A 5-DOF grasp framework based on [GQ-CNN (Dex-Net 2.0)](https://arxiv.org/abs/17
 - **Problem**: 6-DOF grasping is computationally heavy; 4-DOF is lightweight but top-down only. Metallic surfaces cause severe depth noise on low-cost cameras (RealSense D435i), creating a large sim-to-real gap.
 - **Tilt-based 5-DOF**: discrete tilts about the grasp axis extend 4-DOF to 5-DOF — wrench space invariance lets existing labels be reused without relabeling.
 - **Noise-realistic synthetic data**: training data generated in [SAPIEN](https://github.com/haosulab/SAPIEN) with an active stereo sensor model + Landau et al. IR noise model, reproducing real metallic reflection noise.
-  
 <p align="center">
   <img width="45%" alt="RealSense depth image" src="https://github.com/user-attachments/assets/64070c2b-cfd6-4799-b388-552a3ad95f36" />
   <img width="45%" alt="Simulation comparison" src="https://github.com/user-attachments/assets/ceab5755-5424-44ba-bb08-7e05bbc83caf" />
 </p>
 <p align="center"><em>RealSense Depth Image (Left) / Simulation Depth Image (Right)</em></p>
-
-<br>
 
 ## Method
 
@@ -36,7 +32,6 @@ A 5-DOF grasp framework based on [GQ-CNN (Dex-Net 2.0)](https://arxiv.org/abs/17
 <img width="11699" height="3664" alt="Image" src="https://github.com/user-attachments/assets/6cc2727d-42ea-4df0-9c5d-5879d8929e37" />
 <p align="center"><em>Realtime Inference</em></p>
 
-<br>
 
 ## Hardware
 
@@ -45,7 +40,6 @@ A 5-DOF grasp framework based on [GQ-CNN (Dex-Net 2.0)](https://arxiv.org/abs/17
 - **Inference Device**: RTX 3070 Laptop GPU (real-time inference)
 - **Target Objects**: Metallic raw materials / pre-machining workpieces
 
-<br>
 
 ## Results
 
@@ -69,13 +63,11 @@ Real-world experiments were conducted on 10 unseen objects — 6 metallic (CNC1�
 
 </div>
 
-<br>
 
 ## Future Work
 
 The current model selects from discretized tilt angles explicitly. Future work will extend the framework with multi-task learning so that a single network can infer the optimal approach angle and collision probability.
 
-<br>
 
 ## Acknowledgments
 
